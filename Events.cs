@@ -19,4 +19,12 @@ namespace VSL
         public byte ID { get; }
         public byte[] Content { get; }
     }
+    public class ConnectionClosedEventArgs : EventArgs
+    {
+        public ConnectionClosedEventArgs(string reason)
+        {
+            Reason = reason;
+        }
+        public string Reason { get; }
+    }
 }
