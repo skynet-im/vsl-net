@@ -14,8 +14,8 @@ namespace VSL
     public class VSLClient : VSLSocket
     {
         // <fields
-        new NetworkChannelClient channel;
-        new PacketHandlerClient handler;
+        new internal NetworkChannelClient channel;
+        new internal PacketHandlerClient handler;
         //  fields>
 
         // <constructor

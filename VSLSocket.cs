@@ -14,7 +14,7 @@ namespace VSL
     public abstract class VSLSocket
     {
         // <fields
-        internal bool ConnectionEstablished = false;
+        internal bool ConnectionAvailable = false;
         internal uint TargetVersion;
         internal NetworkChannel channel;
         internal PacketHandler handler;
@@ -44,15 +44,34 @@ namespace VSL
         //  properties>
 
         // <events
+        public event EventHandler ConnectionEstablished;
+        /// <summary>
+        /// Raises the ConnectionEstablished event
+        /// </summary>
+        internal virtual void OnConnectionEstablished()
+        {
+            ConnectionEstablished?.Invoke(this, new EventArgs());
+        }
+
         public event EventHandler<PacketReceivedEventArgs> PacketReceived;
         /// <summary>
         /// Raises the PacketReceived event
         /// </summary>
         /// <param name="e"></param>
-        internal void OnPacketReceived(byte id, byte[] content)
+        internal virtual void OnPacketReceived(byte id, byte[] content)
         {
             if (!handler.TryHandlePacket(id, content))
                 PacketReceived?.Invoke(this, new PacketReceivedEventArgs(id, content));
+        }
+
+        public event EventHandler<ConnectionClosedEventArgs> ConnectionClosed;
+        /// <summary>
+        /// Raises the ConnectionClosed event
+        /// </summary>
+        /// <param name="reason">Reason why the connection was closed</param>
+        internal virtual void OnConnectionClosed(string reason)
+        {
+            ConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(reason));
         }
         //  events>
 
