@@ -26,7 +26,7 @@ namespace VSL
         // <functions
         internal override async void OnDataReveive(CancellationToken ct)
         {
-            if (parent.ConnectionEstablished)
+            if (parent.ConnectionAvailable)
             {
                 base.OnDataReveive(ct);
             }
@@ -56,7 +56,7 @@ namespace VSL
                         return;
                     }
                     parent.SendPacket(new Packet255Accepted() { Accepted = true });
-                    parent.ConnectionEstablished = true;
+                    parent.ConnectionAvailable = true;
                 }
                 catch (TimeoutException ex)
                 {
