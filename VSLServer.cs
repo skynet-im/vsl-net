@@ -11,7 +11,7 @@ namespace VSL
     /// <summary>
     /// The server implementation of a VSL socket
     /// </summary>
-    public class VSLListener : VSLSocket
+    public class VSLServer : VSLSocket
     {
         // <fields
         new internal NetworkChannelServer channel;
@@ -26,7 +26,7 @@ namespace VSL
         /// <param name="tcp">TCP Listener</param>
         /// <param name="appVersion">The application feature version (independent from VSL)</param>
         /// <param name="keypair">The RSA-keypair of the server application</param>
-        public VSLListener(TcpClient tcp, uint appVersion, string keypair)
+        public VSLServer(TcpClient tcp, uint appVersion, string keypair)
         {
             InitializeComponent();
 

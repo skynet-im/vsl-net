@@ -62,7 +62,7 @@
     <Compile Include="util\PacketBuffer.cs" />
     <Compile Include="util\Queue.cs" />
     <Compile Include="VSLClient.cs" />
-    <Compile Include="VSLListener.cs" />
+    <Compile Include="VSLServer.cs" />
     <Compile Include="VSLSocket.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

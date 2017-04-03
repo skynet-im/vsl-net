@@ -12,11 +12,11 @@ namespace VSL
     internal class NetworkChannelServer : NetworkChannel
     {
         // <fields
-        new private VSLListener parent;
+        new private VSLServer parent;
         //  fields>
 
         // <constructor
-        internal NetworkChannelServer(VSLListener parent)
+        internal NetworkChannelServer(VSLServer parent)
         {
             this.parent = parent;
             base.parent = parent;
