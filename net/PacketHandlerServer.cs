@@ -9,11 +9,11 @@ namespace VSL
     internal class PacketHandlerServer : PacketHandler
     {
         // <fields
-        new internal VSLListener parent;
+        new internal VSLServer parent;
         //  fields>
 
         // <constructor
-        internal PacketHandlerServer(VSLListener parent)
+        internal PacketHandlerServer(VSLServer parent)
         {
             this.parent = parent;
             base.parent = parent;
