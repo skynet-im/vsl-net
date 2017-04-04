@@ -70,12 +70,16 @@ namespace VSL
 
             // <key exchange
             byte[] aesKey = Crypt.AES.GenerateKey();
-            byte[] aesIV = Crypt.AES.GenerateIV();
+            byte[] clientIV = Crypt.AES.GenerateIV();
+            byte[] serverIV = Crypt.AES.GenerateIV();
             byte[] vslVersion = BitConverter.GetBytes(Constants.VSLVersionNumber);
             byte[] clientVersion = BitConverter.GetBytes(parent.TargetVersion);
-            byte[] request = Crypt.Util.ConnectBytesPA(aesKey, aesIV, vslVersion, clientVersion);
+            byte[] request = Crypt.Util.ConnectBytesPA(aesKey, clientIV, serverIV, vslVersion, clientVersion);
             request = await Crypt.RSA.Encrypt(request, serverKey);
             SendRaw(request);
+            AesKey = aesKey;
+            SendIV = clientIV;
+            ReceiveIV = serverIV;
             //  key exchange>
         }
         //  functions>
