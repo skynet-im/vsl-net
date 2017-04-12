@@ -12,7 +12,7 @@ namespace VSL
     /// </summary>
     public class PacketBuffer
     {
-        // v4 © 2017 Daniel Lerch
+        // v5 © 2017 Daniel Lerch
         // <fields
         MemoryStream baseStream;
         UTF8Encoding encoding;
@@ -58,6 +58,10 @@ namespace VSL
         {
             baseStream.Write(b, 0, b.Length);
         }
+        /// <summary>
+        /// Returns the content of the underlying MemoryStream as a byte array
+        /// </summary>
+        /// <returns></returns>
         public byte[] ToArray()
         {
             return baseStream.ToArray();
@@ -98,6 +102,26 @@ namespace VSL
             WriteByteRaw(new byte[1] { Convert.ToByte(b ? 1 : 0) });
         }
         //   bool>
+        //  <short
+        public short ReadShort()
+        {
+            return BitConverter.ToInt16(ReadByteRaw(2), 0);
+        }
+        public void WriteShort(short s)
+        {
+            WriteByteRaw(BitConverter.GetBytes(s));
+        }
+        //   short>
+        //  <ushort
+        public ushort ReadUShort()
+        {
+            return BitConverter.ToUInt16(ReadByteRaw(2), 0);
+        }
+        public void WriteUShort(ushort s)
+        {
+            WriteByteRaw(BitConverter.GetBytes(s));
+        }
+        //   ushort>
         //  <int
         public int ReadInt()
         {
