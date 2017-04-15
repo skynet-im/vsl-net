@@ -124,14 +124,14 @@ namespace VSL
             try
             {
                 byte[] head = await Read(32, ct);
-                head = await Crypt.AES.Decrypt(head, AesKey, ReceiveIV);
+                head = await Crypt.AES.DecryptAsync(head, AesKey, ReceiveIV);
                 PacketBuffer hreader = new PacketBuffer(head);
                 byte[] iv = hreader.ReadByteArray(16);
                 int length = Convert.ToInt32(hreader.ReadUInt());
                 byte id = hreader.ReadByte();
 
                 byte[] content = await Read(length, ct);
-                content = await Crypt.AES.Decrypt(content, AesKey, iv);
+                content = await Crypt.AES.DecryptAsync(content, AesKey, iv);
                 ReceiveIV = iv;
                 parent.OnPacketReceived(id, content);
             }
@@ -170,10 +170,10 @@ namespace VSL
         internal async void SendPacket(byte id, byte[] content)
         {
             byte[] iv = Crypt.AES.GenerateIV();
-            byte[] buf = await Crypt.AES.Encrypt(content, AesKey, iv);
+            byte[] buf = await Crypt.AES.EncryptAsync(content, AesKey, iv);
             byte[] length = BitConverter.GetBytes(Convert.ToUInt32(buf.Length));
             byte[] head = Crypt.Util.ConnectBytesPA(iv, length, new byte[1] { id });
-            head = await Crypt.AES.Encrypt(head, AesKey, SendIV);
+            head = await Crypt.AES.EncryptAsync(head, AesKey, SendIV);
             byte[] data = Crypt.Util.ConnectBytesPA(head, buf);
             SendIV = iv;
             SendRaw(data);

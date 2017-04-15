@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace VSL.Crypt
 {
+    /// <summary>
+    /// Provides useful functions for cryptography
+    /// </summary>
     public static class Util
     {
         // v9 © 2017 Daniel Lerch
@@ -57,8 +60,12 @@ namespace VSL.Crypt
         {
             return ConnectBytes(b);
         }
-
-        public static string BytesToHexString(byte[] b)
+        /// <summary>
+        /// Converts a byte array to a hexadecimal string
+        /// </summary>
+        /// <param name="b">byte array to convert</param>
+        /// <returns></returns>
+        public static string GetHexString(byte[] b)
         {
             string result = "";
             foreach (byte sb in b)
@@ -67,17 +74,32 @@ namespace VSL.Crypt
             }
             return result;
         }
-
-        public static byte[] HexStringToBytes(string s)
+        [Obsolete("Util.BytesToHexString(byte[]) is deprecated, please use Util.GetHexString(byte[]) instead.")]
+        public static string BytesToHexString(byte[] b)
         {
-            if (s.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
+            return GetHexString(b);
+        }
+
+        /// <summary>
+        /// Converts a hexadecimal string to a byte array
+        /// </summary>
+        /// <param name="hexadecimal">hexadecimal string to convert</param>
+        /// <returns></returns>
+        public static byte[] GetBytes(string hexadecimal)
+        {
+            if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
             List<byte> l = new List<byte>();
-            for (int i = 0; i <= s.Length; i += 2)
+            for (int i = 0; i <= hexadecimal.Length; i += 2)
             {
-                string hx = Convert.ToString(s[i]) + Convert.ToString(s[i + 1]);
+                string hx = Convert.ToString(hexadecimal[i]) + Convert.ToString(hexadecimal[i + 1]);
                 l.Add(Convert.ToByte(hx, 16));
             }
             return l.ToArray();
+        }
+        [Obsolete("Util.HexStringToBytes(string) is deprecated, please use Util.GetBytes(string) instead.")]
+        public static byte[] HexStringToBytes(string s)
+        {
+            return GetBytes(s);
         }
     }
 }
