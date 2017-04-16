@@ -69,14 +69,13 @@ namespace VSL.Crypt
             if (plaintext == null) throw new ArgumentNullException("Plaintext must not be null");
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
             byte[][] blocks = Util.SplitBytes(plaintext, 214);
-            int blockCount = blocks.GetUpperBound(0) + 1;
-            Task<byte[]>[] workers = new Task<byte[]>[blockCount];
-            for (int i = 0; i < blockCount; i++)
+            Task<byte[]>[] workers = new Task<byte[]>[blocks.Length]; //Works with nested arrays too!
+            for (int i = 0; i < blocks.Length; i++)
             {
                 workers[i] = Task.Run(() => EncryptBlock(blocks[i], key));
             }
             byte[] ciphertext = new byte[0];
-            for (int i = 0; i < blockCount; i++)
+            for (int i = 0; i < blocks.Length; i++)
             {
                 ciphertext = ciphertext.Concat(await workers[i]).ToArray();
             }
@@ -139,14 +138,13 @@ namespace VSL.Crypt
             if (ciphertext == null) throw new ArgumentNullException("Plaintext must not be null");
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
             byte[][] blocks = Util.SplitBytes(ciphertext, 256);
-            int blockCount = blocks.GetUpperBound(0) + 1;
-            Task<byte[]>[] workers = new Task<byte[]>[blockCount];
-            for (int i = 0; i < blockCount; i++)
+            Task<byte[]>[] workers = new Task<byte[]>[blocks.Length]; //Works with nested arrays too!
+            for (int i = 0; i < blocks.Length; i++)
             {
                 workers[i] = Task.Run(() => DecryptBlock(blocks[i], key));
             }
             byte[] plaintext = new byte[0];
-            for (int i = 0; i < blockCount; i++)
+            for (int i = 0; i < blocks.Length; i++)
             {
                 plaintext = plaintext.Concat(await workers[i]).ToArray();
             }
