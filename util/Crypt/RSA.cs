@@ -120,6 +120,7 @@ namespace VSL.Crypt
         {
             if (ciphertext == null) throw new ArgumentNullException("Plaintext must not be null");
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
+            if (ciphertext.Length % 256 != 0) throw new ArgumentOutOfRangeException("The blocksize must be 256 bytes");
             byte[] plaintext = new byte[0];
             foreach (byte[] block in Util.SplitBytes(ciphertext, 256))
             {
@@ -138,6 +139,7 @@ namespace VSL.Crypt
         {
             if (ciphertext == null) throw new ArgumentNullException("Plaintext must not be null");
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
+            if (ciphertext.Length % 256 != 0) throw new ArgumentOutOfRangeException("The blocksize must be 256 bytes");
             byte[][] blocks = Util.SplitBytes(ciphertext, 256);
             Task<byte[]>[] workers = new Task<byte[]>[blocks.Length]; //Works with nested arrays too!
             for (int i = 0; i < blocks.Length; i++)
