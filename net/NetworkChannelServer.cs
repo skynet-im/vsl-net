@@ -35,7 +35,7 @@ namespace VSL
                 try
                 {
                     byte[] buf = await Read(256, ct);
-                    buf = await Crypt.RSA.Decrypt(buf, parent.Keypair);
+                    buf = await Crypt.RSA.DecryptAsync(buf, parent.Keypair);
                     PacketBuffer pb = new PacketBuffer(buf);
                     byte[] aesKey = pb.ReadByteArray(32);
                     byte[] clientIV = pb.ReadByteArray(16);

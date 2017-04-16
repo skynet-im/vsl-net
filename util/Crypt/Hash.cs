@@ -7,13 +7,16 @@ using System.Security.Cryptography;
 
 namespace VSL.Crypt
 {
+    /// <summary>
+    /// The simple implementation of SHA256 in VSL
+    /// </summary>
     public static class Hash
     {
-        // v9 © 2017 Daniel Lerch
+        // © 2017 Daniel Lerch
         /// <summary>
-        /// Berechnet den SHA256-Hash eines Strings
+        /// Computes the SHA256 hash of a string
         /// </summary>
-        /// <param name="s">String (UTF8-Encoding)</param>
+        /// <param name="s">string (UTF8 encoding)</param>
         /// <returns></returns>
         public static byte[] SHA256(string s)
         {
@@ -21,9 +24,9 @@ namespace VSL.Crypt
             return SHA256(enc.GetBytes(s));
         }
         /// <summary>
-        /// Berechnet den SHA256-Hash eines Bytearrays
+        /// Computes the SHA256 hash of a byte array
         /// </summary>
-        /// <param name="b">Bytearray</param>
+        /// <param name="b">byte array to hash</param>
         /// <returns></returns>
         public static byte[] SHA256(byte[] b)
         {
