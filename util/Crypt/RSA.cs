@@ -72,7 +72,8 @@ namespace VSL.Crypt
             Task<byte[]>[] workers = new Task<byte[]>[blocks.Length]; //Works with nested arrays too!
             for (int i = 0; i < blocks.Length; i++)
             {
-                workers[i] = Task.Run(() => EncryptBlock(blocks[i], key));
+                byte[] block = blocks[i];
+                workers[i] = Task.Run(() => EncryptBlock(block, key));
             }
             byte[] ciphertext = new byte[0];
             for (int i = 0; i < blocks.Length; i++)
@@ -141,7 +142,8 @@ namespace VSL.Crypt
             Task<byte[]>[] workers = new Task<byte[]>[blocks.Length]; //Works with nested arrays too!
             for (int i = 0; i < blocks.Length; i++)
             {
-                workers[i] = Task.Run(() => DecryptBlock(blocks[i], key));
+                byte[] block = blocks[i];
+                workers[i] = Task.Run(() => DecryptBlock(block, key));
             }
             byte[] plaintext = new byte[0];
             for (int i = 0; i < blocks.Length; i++)
