@@ -11,7 +11,7 @@ namespace VSL.Crypt
     /// </summary>
     public static class Util
     {
-        // v9 © 2017 Daniel Lerch
+        // © 2017 Daniel Lerch
         /// <summary>
         /// Splits a byte array into blocks
         /// </summary>
@@ -28,9 +28,13 @@ namespace VSL.Crypt
                     rb.Add(b.Take(blocksize).ToArray());
                     b = b.Skip(blocksize).ToArray();
                 }
-                else
+                else if (b.Length > 0)
                 {
                     rb.Add(b);
+                    break;
+                }
+                else
+                {
                     break;
                 }
             }
@@ -89,7 +93,7 @@ namespace VSL.Crypt
         {
             if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
             List<byte> l = new List<byte>();
-            for (int i = 0; i <= hexadecimal.Length; i += 2)
+            for (int i = 0; i < hexadecimal.Length - 1; i += 2)
             {
                 string hx = Convert.ToString(hexadecimal[i]) + Convert.ToString(hexadecimal[i + 1]);
                 l.Add(Convert.ToByte(hx, 16));
