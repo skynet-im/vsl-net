@@ -100,7 +100,7 @@ namespace VSL.Crypt
                 try
                 {
                     rsa.FromXmlString(key);
-                    ciphertext = rsa.Decrypt(ciphertext, true);
+                    plaintext = rsa.Decrypt(ciphertext, true);
                 }
                 catch (CryptographicException ex)
                 {
@@ -140,6 +140,7 @@ namespace VSL.Crypt
             if (ciphertext == null) throw new ArgumentNullException("Plaintext must not be null");
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
             if (ciphertext.Length % 256 != 0) throw new ArgumentOutOfRangeException("The blocksize must be 256 bytes");
+            if (ciphertext.Length == 0) return ciphertext;
             byte[][] blocks = Util.SplitBytes(ciphertext, 256);
             Task<byte[]>[] workers = new Task<byte[]>[blocks.Length]; //Works with nested arrays too!
             for (int i = 0; i < blocks.Length; i++)
