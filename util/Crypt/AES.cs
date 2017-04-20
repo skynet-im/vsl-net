@@ -23,8 +23,8 @@ namespace VSL.Crypt
         public static byte[] Encrypt(byte[] b, byte[] key, byte[] iv = null)
         {
             if (key.Length != 32) throw new ArgumentOutOfRangeException("The key must have a length of 256 bit");
-            if (iv?.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
             if (iv == null) iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+            if (iv.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
             byte[] ciphertext = new byte[0];
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
@@ -53,8 +53,8 @@ namespace VSL.Crypt
         public async static Task<byte[]> EncryptAsync(byte[] b, byte[] key, byte[] iv = null)
         {
             if (key.Length != 32) throw new ArgumentOutOfRangeException("The key must have a length of 256 bit");
-            if (iv?.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
             if (iv == null) iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+            if (iv.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
             byte[] ciphertext = new byte[0];
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
@@ -84,8 +84,8 @@ namespace VSL.Crypt
         public static byte[] Decrypt(byte[] b, byte[] key, byte[] iv = null)
         {
             if (key.Length != 32) throw new ArgumentOutOfRangeException("The key must have a length of 256 bits");
-            if (iv?.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bits");
             if (iv == null) iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+            if (iv.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bits");
             byte[] plaintext = new byte[0];
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
@@ -114,8 +114,8 @@ namespace VSL.Crypt
         public async static Task<byte[]> DecryptAsync(byte[] b, byte[] key, byte[] iv = null)
         {
             if (key.Length != 32) throw new ArgumentOutOfRangeException("The key must have a length of 256 bits");
-            if (iv?.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bits");
             if (iv == null) iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+            if (iv.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bits");
             byte[] plaintext = new byte[0];
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
