@@ -78,6 +78,11 @@ namespace VSL.Crypt
             }
             return result;
         }
+        /// <summary>
+        /// Converts a byte array to a hexadecimal string
+        /// </summary>
+        /// <param name="b">byte array to convert</param>
+        /// <returns></returns>
         [Obsolete("Util.BytesToHexString(byte[]) is deprecated, please use Util.GetHexString(byte[]) instead.")]
         public static string BytesToHexString(byte[] b)
         {
@@ -100,6 +105,11 @@ namespace VSL.Crypt
             }
             return l.ToArray();
         }
+        /// <summary>
+        /// Converts a hexadecimal string to a byte array
+        /// </summary>
+        /// <param name="s">hexadecimal string to convert</param>
+        /// <returns></returns>
         [Obsolete("Util.HexStringToBytes(string) is deprecated, please use Util.GetBytes(string) instead.")]
         public static byte[] HexStringToBytes(string s)
         {

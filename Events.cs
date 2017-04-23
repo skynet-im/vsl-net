@@ -19,6 +19,9 @@ namespace VSL
         public byte ID { get; }
         public byte[] Content { get; }
     }
+    /// <summary>
+    /// Event data when the VSL connection was closed
+    /// </summary>
     public class ConnectionClosedEventArgs : EventArgs
     {
         public ConnectionClosedEventArgs(string reason)
