@@ -57,13 +57,16 @@ namespace VSL
         /// <summary>
         /// Raises the PacketReceived event
         /// </summary>
-        /// <param name="e"></param>
+        /// <param name="id">Packet ID</param>
+        /// <param name="content">Packet content</param>
         internal virtual void OnPacketReceived(byte id, byte[] content)
         {
             if (!handler.TryHandlePacket(id, content))
                 PacketReceived?.Invoke(this, new PacketReceivedEventArgs(id, content));
         }
-
+        /// <summary>
+        /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it
+        /// </summary>
         public event EventHandler<ConnectionClosedEventArgs> ConnectionClosed;
         /// <summary>
         /// Raises the ConnectionClosed event

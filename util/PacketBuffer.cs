@@ -86,6 +86,11 @@ namespace VSL
             int count = Convert.ToInt32(ReadUInt());
             return ReadByteRaw(count);
         }
+        /// <summary>
+        /// Writes a byte array to the end buffer
+        /// </summary>
+        /// <param name="b">Byte array to write</param>
+        /// <param name="autosize">True to write a uint for length, otherwise false</param>
         public void WriteByteArray(byte[] b, bool autosize = true)
         {
             if (autosize) WriteUInt(Convert.ToUInt32(b.Length));
