@@ -12,12 +12,11 @@ namespace VSL
     /// </summary>
     public class PacketBuffer
     {
-        // v5 © 2017 Daniel Lerch
+        // © 2017 Daniel Lerch
         // <fields
         MemoryStream baseStream;
         UTF8Encoding encoding;
         //  fields>
-
         // <constructor
         /// <summary>
         /// Initializes a new instance of the PacketBuffer class
@@ -37,7 +36,6 @@ namespace VSL
             encoding = new UTF8Encoding();
         }
         //  constructor>
-
         // <functions
         /// <summary>
         /// Reads a byte array from the buffer
@@ -66,6 +64,26 @@ namespace VSL
         {
             return baseStream.ToArray();
         }
+        ///// <summary>
+        ///// Reads an Array of the specified type from the buffer
+        ///// </summary>
+        ///// <typeparam name="T">Type to read</typeparam>
+        ///// <returns></returns>
+        //public T[] ReadArray<T>()
+        //{
+        //    List<T> list = new List<T>();
+        //    if (typeof(T) == typeof(uint))
+        //    {
+        //        for (int i = 0; i < ReadUShort(); i++)
+        //        {
+        //            list.Add((T)ReadUInt());
+        //        }
+        //    }
+        //    else
+        //    {
+        //        return null;
+        //    }
+        //}
         //  <byte
         public byte ReadByte()
         {
