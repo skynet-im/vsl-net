@@ -85,6 +85,7 @@ namespace VSL
         //    }
         //}
         //  <byte
+#pragma warning disable CS1591 //Disables "Missing XML comment..."
         public byte ReadByte()
         {
             return ReadByteRaw(1)[0];
