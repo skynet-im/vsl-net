@@ -19,7 +19,6 @@ namespace VSL
         internal NetworkChannel channel;
         internal PacketHandler handler;
         //  fields>
-
         // <constructor
         /// <summary>
         /// Initializes all non-child-specific components
@@ -28,8 +27,10 @@ namespace VSL
         {
         }
         //  constructor>
-
         // <properties
+        /// <summary>
+        /// Gets or sets the size of the second receive buffer
+        /// </summary>
         public int NetworkBufferSize
         {
             get
@@ -42,8 +43,10 @@ namespace VSL
             }
         }
         //  properties>
-
         // <events
+        /// <summary>
+        /// The ConnectionEstablished event occurs when the connection was build up and the key exchange was finished
+        /// </summary>
         public event EventHandler ConnectionEstablished;
         /// <summary>
         /// Raises the ConnectionEstablished event
@@ -52,7 +55,9 @@ namespace VSL
         {
             ConnectionEstablished?.Invoke(this, new EventArgs());
         }
-
+        /// <summary>
+        /// The PacketReceived event occurs when a packet with an external ID was received
+        /// </summary>
         public event EventHandler<PacketReceivedEventArgs> PacketReceived;
         /// <summary>
         /// Raises the PacketReceived event
@@ -77,7 +82,6 @@ namespace VSL
             ConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(reason));
         }
         //  events>
-
         // <functions
         /// <summary>
         /// Sends a packet to the remotehost

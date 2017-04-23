@@ -17,7 +17,6 @@ namespace VSL
         new internal NetworkChannelClient channel;
         new internal PacketHandlerClient handler;
         //  fields>
-
         // <constructor
         /// <summary>
         /// Creates a VSL Client that has to be connected
@@ -34,7 +33,6 @@ namespace VSL
             base.handler = handler;
         }
         // constructor>
-
         // <functions
         /// <summary>
         /// Connects the TCP Client asynchronously
@@ -50,7 +48,6 @@ namespace VSL
             if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException();
             if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException();
             // check args>
-
             return channel.Connect(address, port, serverKey);
         }
         //  functions>

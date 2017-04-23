@@ -18,7 +18,6 @@ namespace VSL
         new internal PacketHandlerServer handler;
         internal string Keypair;
         //  fields>
-
         // <constructor
         /// <summary>
         /// Creates a VSL listener for the specified client
@@ -39,9 +38,7 @@ namespace VSL
             base.handler = handler;
         }
         //  constructor>
-
         // <functions
-
         //  functions>
     }
 }
