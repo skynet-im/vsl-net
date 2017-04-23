@@ -69,7 +69,7 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="b">byte array to convert</param>
         /// <returns></returns>
-        public static string GetHexString(byte[] b)
+        public static string ToHexString(byte[] b)
         {
             string result = "";
             foreach (byte sb in b)
@@ -83,11 +83,15 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="b">byte array to convert</param>
         /// <returns></returns>
-        [Obsolete("Util.BytesToHexString(byte[]) is deprecated, please use Util.GetHexString(byte[]) instead.")]
-        public static string BytesToHexString(byte[] b)
-        {
-            return GetHexString(b);
-        }
+        [Obsolete("Util.GetHexString(byte[]) is deprecated, please use Util.ToHexString(byte[]) instead.")]
+        public static string GetHexString(byte[] b) { return ToHexString(b); }
+        /// <summary>
+        /// Converts a byte array to a hexadecimal string
+        /// </summary>
+        /// <param name="b">byte array to convert</param>
+        /// <returns></returns>
+        [Obsolete("Util.BytesToHexString(byte[]) is deprecated, please use Util.ToHexString(byte[]) instead.", true)]
+        public static string BytesToHexString(byte[] b) { return ToHexString(b); }
 
         /// <summary>
         /// Converts a hexadecimal string to a byte array
@@ -110,10 +114,7 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="s">hexadecimal string to convert</param>
         /// <returns></returns>
-        [Obsolete("Util.HexStringToBytes(string) is deprecated, please use Util.GetBytes(string) instead.")]
-        public static byte[] HexStringToBytes(string s)
-        {
-            return GetBytes(s);
-        }
+        [Obsolete("Util.HexStringToBytes(string) is deprecated, please use Util.GetBytes(string) instead.", true)]
+        public static byte[] HexStringToBytes(string s) { return GetBytes(s); }
     }
 }
