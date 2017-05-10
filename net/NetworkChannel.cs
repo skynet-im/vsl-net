@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,7 @@ namespace VSL
 
         private TcpClient tcp;
         private Queue cache;
+        private ConcurrentQueue<byte[]> queue;
         private CancellationTokenSource cts;
         private CancellationToken ct;
         private int _networkBufferSize = 65536;
@@ -50,6 +52,7 @@ namespace VSL
         {
             tcp = new TcpClient() { ReceiveBufferSize = _networkBufferSize };
             cache = new Queue();
+            queue = new ConcurrentQueue<byte[]>();
             cts = new CancellationTokenSource();
             ct = cts.Token;
         }
@@ -73,6 +76,7 @@ namespace VSL
         {
             Task lt = ListenerTask(ct);
             Task wt = WorkerTask(ct);
+            Task st = SenderTask(ct);
         }
 
         /// <summary>
@@ -86,7 +90,7 @@ namespace VSL
             {
                 try
                 {
-                    byte[] buf = new byte[_networkBufferSize - 1];
+                    byte[] buf = new byte[_networkBufferSize];
                     int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None);
                     if (len == 0)
                     {
@@ -119,18 +123,46 @@ namespace VSL
             }
         }
 
+        /// <summary>
+        /// Sends pending data from the queue
+        /// </summary>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        private async Task SenderTask(CancellationToken ct)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                if (queue.Count > 0)
+                {
+                    byte[] buf = new byte[0];
+                    if (queue.TryDequeue(out buf))
+                    {
+                        SendRaw(buf);
+                    }
+                    else
+                    {
+                        Console.WriteLine("[VSL] Error at deqeuing the send queue in NetworkChannel.SenderTask");
+                    }
+                }
+                else
+                {
+                    await Task.Delay(10, ct);
+                }
+            }
+        }
+
         internal virtual async void OnDataReveive(CancellationToken ct)
         {
             try
             {
-                byte[] head = await Read(32, ct);
+                byte[] head = await ReadAsync(32, ct);
                 head = await Crypt.AES.DecryptAsync(head, AesKey, ReceiveIV);
                 PacketBuffer hreader = new PacketBuffer(head);
                 byte[] iv = hreader.ReadByteArray(16);
                 int length = Convert.ToInt32(hreader.ReadUInt());
                 byte id = hreader.ReadByte();
 
-                byte[] content = await Read(length, ct);
+                byte[] content = await ReadAsync(length, ct);
                 content = await Crypt.AES.DecryptAsync(content, AesKey, iv);
                 ReceiveIV = iv;
                 parent.OnPacketReceived(id, content);
@@ -147,7 +179,7 @@ namespace VSL
         /// <param name="count">count of bytes to read</param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        internal async Task<byte[]> Read(int count, CancellationToken ct)
+        internal async Task<byte[]> ReadAsync(int count, CancellationToken ct)
         {
             int cycle = 1;
             while (cache.Length < count)
@@ -156,7 +188,7 @@ namespace VSL
                 await Task.Delay(10, ct);
                 cycle++;
             }
-            byte[] buf = new byte[count - 1];
+            byte[] buf = new byte[count];
             bool success = cache.Dequeue(out buf, count);
             if (!success) throw new Exception("Error in the cache");
             return buf;
@@ -176,13 +208,13 @@ namespace VSL
             head = await Crypt.AES.EncryptAsync(head, AesKey, SendIV);
             byte[] data = Crypt.Util.ConnectBytesPA(head, buf);
             SendIV = iv;
-            SendRaw(data);
+            SendAsync(data);
         }
 
         /// <summary>
         /// Sends data to the remote client
         /// </summary>
-        /// <param name="buf"></param>
+        /// <param name="buf">data to send</param>
         internal void SendRaw(byte[] buf)
         {
             try
@@ -191,8 +223,17 @@ namespace VSL
             }
             catch (SocketException ex)
             {
-                Console.WriteLine("[VSL] SocketException in NetworkChannel.Send(): " + ex.ToString());
+                Console.WriteLine("[VSL] SocketException in NetworkChannel.SendRaw(): " + ex.ToString());
             }
+        }
+
+        /// <summary>
+        /// Sends data to the remote client asynchronously
+        /// </summary>
+        /// <param name="buf">data to send</param>
+        internal void SendAsync(byte[] buf)
+        {
+            queue.Enqueue(buf);
         }
         //  functions>
     }

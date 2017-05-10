@@ -44,7 +44,7 @@ namespace VSL
         /// <returns></returns>
         private byte[] ReadByteRaw(int count)
         {
-            byte[] b = new byte[count - 1];
+            byte[] b = new byte[count];
             baseStream.Read(b, 0, count);
             return b;
         }
@@ -64,26 +64,6 @@ namespace VSL
         {
             return baseStream.ToArray();
         }
-        ///// <summary>
-        ///// Reads an Array of the specified type from the buffer
-        ///// </summary>
-        ///// <typeparam name="T">Type to read</typeparam>
-        ///// <returns></returns>
-        //public T[] ReadArray<T>()
-        //{
-        //    List<T> list = new List<T>();
-        //    if (typeof(T) == typeof(uint))
-        //    {
-        //        for (int i = 0; i < ReadUShort(); i++)
-        //        {
-        //            list.Add((T)ReadUInt());
-        //        }
-        //    }
-        //    else
-        //    {
-        //        return null;
-        //    }
-        //}
         //  <byte
 #pragma warning disable CS1591 //Disables "Missing XML comment..."
         public byte ReadByte()
