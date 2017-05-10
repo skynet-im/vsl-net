@@ -76,7 +76,7 @@ namespace VSL
             byte[] clientVersion = BitConverter.GetBytes(parent.TargetVersion);
             byte[] request = Crypt.Util.ConnectBytesPA(aesKey, clientIV, serverIV, vslVersion, clientVersion);
             request = await Crypt.RSA.EncryptAsync(request, serverKey);
-            SendRaw(request);
+            SendAsync(request);
             AesKey = aesKey;
             SendIV = clientIV;
             ReceiveIV = serverIV;
