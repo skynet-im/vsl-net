@@ -12,12 +12,16 @@ namespace VSL
     public static class Constants
     {
         /// <summary>
-        /// The installed version in the format "X.X (X.X.X.X)"
+        /// The installed version of VSL
         /// </summary>
-        public const string VSLVersionString = "1.0 (1.0.0.0)";
+        public const string ProductVersion = "1.0.0.0";
         /// <summary>
-        /// The installed version as uint
+        /// The installed version as ushort
         /// </summary>
-        public const uint VSLVersionNumber = 0;     
+        public const ushort VersionNumber = 0;
+        /// <summary>
+        /// The oldest supported version of VSL
+        /// </summary>
+        public const ushort CompatibilityVersion = 0;
     }
 }
