@@ -72,7 +72,7 @@ namespace VSL
             byte[] aesKey = Crypt.AES.GenerateKey();
             byte[] clientIV = Crypt.AES.GenerateIV();
             byte[] serverIV = Crypt.AES.GenerateIV();
-            byte[] vslVersion = BitConverter.GetBytes(Constants.VSLVersionNumber);
+            byte[] vslVersion = BitConverter.GetBytes(Constants.VersionNumber);
             byte[] clientVersion = BitConverter.GetBytes(parent.TargetVersion);
             byte[] request = Crypt.Util.ConnectBytesPA(aesKey, clientIV, serverIV, vslVersion, clientVersion);
             request = await Crypt.RSA.EncryptAsync(request, serverKey);

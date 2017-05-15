@@ -45,7 +45,7 @@ namespace VSL
                     AesKey = aesKey;
                     ReceiveIV = clientIV;
                     SendIV = serverIV;
-                    if (vslVersion != Constants.VSLVersionNumber)
+                    if (vslVersion != Constants.VersionNumber)
                     {
                         parent.SendPacket(new Packet255Accepted() { Accepted = false, Reason = "Invalid VSL version" });
                         return;

@@ -15,7 +15,8 @@ namespace VSL
     {
         // <fields
         internal bool ConnectionAvailable = false;
-        internal uint TargetVersion;
+        internal ushort VSLVersionNumber;
+        internal ushort VSLCompatibilityVersion;
         internal NetworkChannel channel;
         internal PacketHandler handler;
         //  fields>

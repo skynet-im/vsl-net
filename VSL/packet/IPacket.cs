@@ -21,7 +21,7 @@ namespace VSL
         /// <param name="buf">packet content</param>
         void ReadPacket(byte[] buf);
         /// <summary>
-        /// Creates a new packet of the specified type
+        /// Creates a new packet and reads the data
         /// </summary>
         /// <param name="buf">Packet content</param>
         /// <returns></returns>

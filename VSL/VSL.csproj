@@ -54,7 +54,9 @@
     <Compile Include="net\NetworkChannelServer.cs" />
     <Compile Include="net\PacketHandler.cs" />
     <Compile Include="net\PacketHandlerServer.cs" />
-    <Compile Include="packet\Packet.cs" />
+    <Compile Include="packet\RequestType.cs" />
+    <Compile Include="packet\IPacket.cs" />
+    <Compile Include="packet\Packet00Handshake.cs" />
     <Compile Include="packet\Packet255Accepted.cs" />
     <Compile Include="util\Constants.cs" />
     <Compile Include="util\Crypt\AES.cs" />

@@ -44,6 +44,7 @@ namespace VSL
             return false;
         }
 
+        internal abstract void HandlePacket00Handshake(Packet00Handshake p);
         internal abstract void HandlePacket255Accepted(Packet255Accepted p);
         //  functions>
     }
