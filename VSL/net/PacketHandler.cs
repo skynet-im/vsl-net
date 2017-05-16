@@ -24,7 +24,10 @@ namespace VSL
         {
             RegisteredPackets = new List<IPacket>
             {
-                new Packet255Accepted()
+                new Packet00Handshake(),
+                new Packet01KeyExchange(),
+                new Packet03FinishHandshake(),
+                new Packet04ChangeIV()
             };
         }
         //  constructor>
@@ -46,7 +49,9 @@ namespace VSL
 
         internal abstract void HandlePacket00Handshake(Packet00Handshake p);
         internal abstract void HandlePacket01KeyExchange(Packet01KeyExchange p);
-        internal abstract void HandlePacket255Accepted(Packet255Accepted p);
+        internal abstract void HandlePacket02Certificate(Packet02Certificate p);
+        internal abstract void HandlePacket03FinishHandshake(Packet03FinishHandshake p);
+        internal abstract void HandlePacket04ChangeIV(Packet04ChangeIV p);
         //  functions>
     }
 }
