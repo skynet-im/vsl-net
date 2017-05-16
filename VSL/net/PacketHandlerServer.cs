@@ -29,9 +29,17 @@ namespace VSL
         {
             //TODO: Implement Handler
         }
-        internal override void HandlePacket255Accepted(Packet255Accepted p)
+        internal override void HandlePacket02Certificate(Packet02Certificate p)
         {
             throw new NotImplementedException();
+        }
+        internal override void HandlePacket03FinishHandshake(Packet03FinishHandshake p)
+        {
+            //TODO: Implement Handler
+        }
+        internal override void HandlePacket04ChangeIV(Packet04ChangeIV p)
+        {
+            //TODO: Implement Handler
         }
         //  functions>
     }
