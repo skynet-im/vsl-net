@@ -45,6 +45,7 @@ namespace VSL
         }
 
         internal abstract void HandlePacket00Handshake(Packet00Handshake p);
+        internal abstract void HandlePacket01KeyExchange(Packet01KeyExchange p);
         internal abstract void HandlePacket255Accepted(Packet255Accepted p);
         //  functions>
     }

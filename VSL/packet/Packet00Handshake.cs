@@ -3,19 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Packet;
 
 namespace VSL
 {
     internal class Packet00Handshake : IPacket
     {
-        internal Packet.RequestType RequestType;
+        internal RequestType RequestType;
 
         internal Packet00Handshake()
         {
 
         }
 
-        internal Packet00Handshake(Packet.RequestType requestType)
+        internal Packet00Handshake(RequestType requestType)
         {
             RequestType = requestType;
         }
@@ -42,12 +43,15 @@ namespace VSL
 
         public void ReadPacket(byte[] buf)
         {
-            throw new NotImplementedException();
+            PacketBuffer reader = new PacketBuffer(buf);
+            RequestType = (RequestType)reader.ReadByte();
         }
 
         public byte[] WritePacket()
         {
-            throw new NotImplementedException();
+            PacketBuffer writer = new PacketBuffer();
+            writer.WriteByte((byte)RequestType);
+            return writer.ToArray();
         }
     }
 }

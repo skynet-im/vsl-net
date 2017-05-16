@@ -21,6 +21,14 @@ namespace VSL
         //  constructor>
 
         // <functions
+        internal override void HandlePacket00Handshake(Packet00Handshake p)
+        {
+            //TODO: Implement Handler
+        }
+        internal override void HandlePacket01KeyExchange(Packet01KeyExchange p)
+        {
+            //TODO: Implement Handler
+        }
         internal override void HandlePacket255Accepted(Packet255Accepted p)
         {
             throw new NotImplementedException();
