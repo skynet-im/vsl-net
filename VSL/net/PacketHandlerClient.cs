@@ -41,6 +41,10 @@ namespace VSL
         {
             throw new NotImplementedException();
         }
+        internal override void HandlePacket05KeepAlive(Packet05KeepAlive p)
+        {
+            throw new NotImplementedException();
+        }
         //  functions>
     }
 }

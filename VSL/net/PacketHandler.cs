@@ -52,6 +52,7 @@ namespace VSL
         internal abstract void HandlePacket02Certificate(Packet02Certificate p);
         internal abstract void HandlePacket03FinishHandshake(Packet03FinishHandshake p);
         internal abstract void HandlePacket04ChangeIV(Packet04ChangeIV p);
+        internal abstract void HandlePacket05KeepAlive(Packet05KeepAlive p);
         //  functions>
     }
 }

@@ -41,6 +41,10 @@ namespace VSL
         {
             //TODO: Implement Handler
         }
+        internal override void HandlePacket05KeepAlive(Packet05KeepAlive p)
+        {
+            //TODO: Implement Handler
+        }
         //  functions>
     }
 }
