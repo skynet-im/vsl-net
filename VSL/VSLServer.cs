@@ -17,19 +17,25 @@ namespace VSL
         new internal NetworkChannelServer channel;
         new internal PacketHandlerServer handler;
         internal string Keypair;
+        internal ushort ServerLatestProduct;
+        internal ushort ServerOldestProduct;
+        internal ushort ClientLatestVSL;
+        internal ushort ClientOldestVSL;
         //  fields>
         // <constructor
         /// <summary>
         /// Creates a VSL listener for the specified client
         /// </summary>
         /// <param name="tcp">TCP Listener</param>
-        /// <param name="appVersion">The application feature version (independent from VSL)</param>
+        /// <param name="latestProduct">The application version</param>
+        /// <param name="oldestProduct">The oldest supported version</param>
         /// <param name="keypair">The RSA-keypair of the server application</param>
-        public VSLServer(TcpClient tcp, uint appVersion, string keypair)
+        public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair)
         {
             InitializeComponent();
 
-            TargetVersion = appVersion;
+            ServerLatestProduct = latestProduct;
+            ServerOldestProduct = oldestProduct;
             Keypair = keypair;
             channel = new NetworkChannelServer(this);
             base.channel = channel;

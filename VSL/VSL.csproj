@@ -58,6 +58,7 @@
     <Compile Include="packet\Packet02Certificate.cs" />
     <Compile Include="packet\Packet01KeyExchange.cs" />
     <Compile Include="packet\Packet03FinishHandshake.cs" />
+    <Compile Include="packet\Packet05KeepAlive.cs" />
     <Compile Include="packet\Packet04ChangeIV.cs" />
     <Compile Include="packet\RequestType.cs" />
     <Compile Include="packet\IPacket.cs" />
