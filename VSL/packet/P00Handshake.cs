@@ -5,33 +5,29 @@ using System.Text;
 using System.Threading.Tasks;
 using VSL.Packet;
 
-namespace VSL
+namespace VSL.Packet
 {
-    internal class Packet00Handshake : IPacket
+    internal class P00Handshake : IPacket
     {
         internal RequestType RequestType;
 
-        internal Packet00Handshake()
+        internal P00Handshake()
         {
 
         }
 
-        internal Packet00Handshake(RequestType requestType)
+        internal P00Handshake(RequestType requestType)
         {
             RequestType = requestType;
         }
 
-        public byte ID
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public byte ID { get; } = 0;
+
+        public PacketLength Length { get; } = new ConstantLength(1);
 
         public IPacket CreatePacket(byte[] buf)
         {
-            Packet00Handshake packet = new Packet00Handshake();
+            P00Handshake packet = new P00Handshake();
             packet.ReadPacket(buf);
             return packet;
         }

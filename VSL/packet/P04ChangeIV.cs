@@ -3,36 +3,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Packet;
 
-namespace VSL
+namespace VSL.Packet
 {
-    internal class Packet04ChangeIV : IPacket
+    internal class P04ChangeIV : IPacket
     {
         internal byte[] ClientIV;
         internal byte[] ServerIV;
 
-        internal Packet04ChangeIV()
+        internal P04ChangeIV()
         {
 
         }
 
-        internal Packet04ChangeIV(byte[] clientIV, byte[] serverIV)
+        internal P04ChangeIV(byte[] clientIV, byte[] serverIV)
         {
             ClientIV = clientIV;
             ServerIV = serverIV;
         }
 
-        public byte ID
-        {
-            get
-            {
-                return 4;
-            }
-        }
+        public byte ID { get; } = 4;
+
+        public PacketLength Length { get; } = new ConstantLength(32);
 
         public IPacket CreatePacket(byte[] buf)
         {
-            Packet04ChangeIV packet = new Packet04ChangeIV();
+            P04ChangeIV packet = new P04ChangeIV();
             packet.ReadPacket(buf);
             return packet;
         }

@@ -18,6 +18,11 @@ namespace VSL
         }
         //  constructor>
         // <functions
+        internal void HandleInvalidOperationException(InvalidOperationException ex)
+        {
+            parent.channel.CloseConnection("Invalid packet received");
+            Console.WriteLine("Invalid packet received: " + ex.ToString());
+        }
         internal void HandleReceiveTimeoutException(TimeoutException ex)
         {
             parent.channel.CloseConnection("Timeout while waiting for more data");

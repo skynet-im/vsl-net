@@ -198,7 +198,16 @@ namespace VSL
             if (!success) throw new Exception("Error in the cache");
             return buf;
         }
-
+        /// <summary>
+        /// Reads data from the buffer
+        /// </summary>
+        /// <param name="count">count of bytes to read</param>
+        /// <returns></returns>
+        internal Task<byte[]> ReadAsync(uint count)
+        {
+            return ReadAsync(Convert.ToInt32(count));
+        }
+        
         /// <summary>
         /// Sends a packet to the remote client
         /// </summary>

@@ -5,37 +5,33 @@ using System.Text;
 using System.Threading.Tasks;
 using VSL.Packet;
 
-namespace VSL
+namespace VSL.Packet
 {
-    internal class Packet03FinishHandshake : IPacket
+    internal class P03FinishHandshake : IPacket
     {
         internal ConnectionType ConnectionType;
         internal string Address;
         internal ushort Port;
 
-        internal Packet03FinishHandshake()
+        internal P03FinishHandshake()
         {
 
         }
 
-        internal Packet03FinishHandshake(ConnectionType connectionType, string address = null, ushort port = 0)
+        internal P03FinishHandshake(ConnectionType connectionType, string address = null, ushort port = 0)
         {
             ConnectionType = connectionType;
             Address = address;
             Port = port;
         }
 
-        public byte ID
-        {
-            get
-            {
-                return 3;
-            }
-        }
+        public byte ID { get; } = 3;
 
+        public PacketLength Length { get; } = new VariableLength();
+        
         public IPacket CreatePacket(byte[] buf)
         {
-            Packet03FinishHandshake packet = new Packet03FinishHandshake();
+            P03FinishHandshake packet = new P03FinishHandshake();
             packet.ReadPacket(buf);
             return packet;
         }

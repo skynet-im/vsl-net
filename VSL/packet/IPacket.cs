@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VSL
+namespace VSL.Packet
 {
     /// <summary>
     /// Represents an internal VSL packet
@@ -16,10 +16,9 @@ namespace VSL
         /// </summary>
         byte ID { get; }
         /// <summary>
-        /// Reads the data from the byte array
+        /// Returns the length characteristics of the packet
         /// </summary>
-        /// <param name="buf">packet content</param>
-        void ReadPacket(byte[] buf);
+        PacketLength Length { get; }
         /// <summary>
         /// Creates a new packet and reads the data
         /// </summary>
@@ -27,14 +26,19 @@ namespace VSL
         /// <returns></returns>
         IPacket CreatePacket(byte[] buf);
         /// <summary>
-        /// Writes the data to a byte array
-        /// </summary>
-        /// <returns></returns>
-        byte[] WritePacket();
-        /// <summary>
         /// Forwards the packet to the handler
         /// </summary>
         /// <param name="handler">The responsible packet handler</param>
         void HandlePacket(PacketHandler handler);
+        /// <summary>
+        /// Reads the data from the byte array
+        /// </summary>
+        /// <param name="buf">packet content</param>
+        void ReadPacket(byte[] buf);
+        /// <summary>
+        /// Writes the data to a byte array
+        /// </summary>
+        /// <returns></returns>
+        byte[] WritePacket();
     }
 }

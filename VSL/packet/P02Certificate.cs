@@ -3,23 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Packet;
 
-namespace VSL
+namespace VSL.Packet
 {
-    internal class Packet02Certificate : IPacket
+    internal class P02Certificate : IPacket
     {
-        internal Packet02Certificate()
+        internal P02Certificate()
         {
 
         }
 
-        public byte ID
-        {
-            get
-            {
-                return 2;
-            }
-        }
+        public byte ID { get; } = 2;
+
+        public PacketLength Length { get; } = new VariableLength();
 
         public IPacket CreatePacket(byte[] buf)
         {
