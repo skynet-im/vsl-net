@@ -3,27 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Packet;
 
-namespace VSL
+namespace VSL.Packet
 {
-    internal class Packet05KeepAlive : IPacket
+    internal class P05KeepAlive : IPacket
     {
-        internal Packet05KeepAlive()
+        internal P05KeepAlive()
         {
 
         }
 
-        public byte ID
-        {
-            get
-            {
-                return 4;
-            }
-        }
+        public byte ID { get; } = 4;
+
+        public PacketLength Length { get; } = new ConstantLength(0);
 
         public IPacket CreatePacket(byte[] buf)
         {
-            return new Packet05KeepAlive();
+            return new P05KeepAlive();
         }
 
         public void HandlePacket(PacketHandler handler)

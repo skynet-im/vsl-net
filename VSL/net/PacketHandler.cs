@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Packet;
 
 namespace VSL
 {
@@ -24,15 +25,29 @@ namespace VSL
         {
             RegisteredPackets = new List<IPacket>
             {
-                new Packet00Handshake(),
-                new Packet01KeyExchange(),
-                new Packet03FinishHandshake(),
-                new Packet04ChangeIV()
+                new P00Handshake(),
+                new P01KeyExchange(),
+                new P03FinishHandshake(),
+                new P04ChangeIV()
             };
         }
         //  constructor>
 
         // <functions
+        internal bool TryGetPacket(byte id, out IPacket packet)
+        {
+            foreach (IPacket p in RegisteredPackets)
+            {
+                if (id == p.ID)
+                {
+                    packet = p;
+                    return true;
+                }
+            }
+            packet = null;
+            return false;
+        }
+
         internal virtual bool TryHandlePacket(byte id, byte[] content)
         {
             foreach (IPacket p in RegisteredPackets)
@@ -47,12 +62,12 @@ namespace VSL
             return false;
         }
 
-        internal abstract void HandlePacket00Handshake(Packet00Handshake p);
-        internal abstract void HandlePacket01KeyExchange(Packet01KeyExchange p);
-        internal abstract void HandlePacket02Certificate(Packet02Certificate p);
-        internal abstract void HandlePacket03FinishHandshake(Packet03FinishHandshake p);
-        internal abstract void HandlePacket04ChangeIV(Packet04ChangeIV p);
-        internal abstract void HandlePacket05KeepAlive(Packet05KeepAlive p);
+        internal abstract void HandlePacket00Handshake(P00Handshake p);
+        internal abstract void HandlePacket01KeyExchange(P01KeyExchange p);
+        internal abstract void HandlePacket02Certificate(P02Certificate p);
+        internal abstract void HandlePacket03FinishHandshake(P03FinishHandshake p);
+        internal abstract void HandlePacket04ChangeIV(P04ChangeIV p);
+        internal abstract void HandlePacket05KeepAlive(P05KeepAlive p);
         //  functions>
     }
 }

@@ -35,6 +35,7 @@ namespace VSL
                 switch (algorithm)
                 {
                     case CryptographicAlgorithm.None:
+                        await ReceivePacket_Plaintext();
                         break;
                     case CryptographicAlgorithm.RSA_2048:
                         break;
@@ -51,7 +52,28 @@ namespace VSL
         {
             try
             {
-
+                byte id = (await parent.channel.ReadAsync(1))[0];
+                Packet.IPacket packet;
+                bool success = parent.handler.TryGetPacket(id, out packet);
+                if (success)
+                {
+                    uint length = 0;
+                    if (packet.Length.Type == Packet.PacketLength.LengthType.Constant)
+                    {
+                        length = packet.Length.Length;
+                    }
+                    else if (packet.Length.Type == Packet.PacketLength.LengthType.UInt32)
+                    {
+                        length = BitConverter.ToUInt32(await parent.channel.ReadAsync(4), 0);
+                    }
+                    byte[] content = await parent.channel.ReadAsync(length);
+                    Packet.IPacket finishedPacket = packet.CreatePacket(content);
+                    finishedPacket.HandlePacket(parent.handler);
+                }
+                else
+                {
+                    parent.ExceptionHandler.HandleInvalidOperationException(new InvalidOperationException());
+                }
             }
             catch (TimeoutException ex)
             {

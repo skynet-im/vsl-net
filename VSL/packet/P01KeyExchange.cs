@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Packet;
 
-namespace VSL
+namespace VSL.Packet
 {
-    internal class Packet01KeyExchange : IPacket
+    internal class P01KeyExchange : IPacket
     {
         internal byte[] AesKey;
         internal byte[] ClientIV;
@@ -16,12 +17,12 @@ namespace VSL
         internal ushort LatestProduct;
         internal ushort OldestProduct;
 
-        internal Packet01KeyExchange()
+        internal P01KeyExchange()
         {
 
         }
 
-        internal Packet01KeyExchange(byte[] aesKey, byte[] clientIV, byte[] serverIV, ushort latestVSL, ushort oldestVSL, ushort latestProduct, ushort oldestProduct)
+        internal P01KeyExchange(byte[] aesKey, byte[] clientIV, byte[] serverIV, ushort latestVSL, ushort oldestVSL, ushort latestProduct, ushort oldestProduct)
         {
             AesKey = aesKey;
             ClientIV = clientIV;
@@ -32,17 +33,13 @@ namespace VSL
             OldestProduct = oldestProduct;
         }
 
-        public byte ID
-        {
-            get
-            {
-                return 1;
-            }
-        }
+        public byte ID { get; } = 1;
+
+        public PacketLength Length { get; } = new ConstantLength(72);
 
         public IPacket CreatePacket(byte[] buf)
         {
-            Packet01KeyExchange packet = new Packet01KeyExchange();
+            P01KeyExchange packet = new P01KeyExchange();
             packet.ReadPacket(buf);
             return packet;
         }
