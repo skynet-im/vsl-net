@@ -74,9 +74,9 @@ namespace VSL
         /// </summary>
         private void StartTasks()
         {
-            Task lt = ListenerTask(ct);
-            Task wt = WorkerTask(ct);
-            Task st = SenderTask(ct);
+            Task lt = ListenerTask();
+            Task wt = WorkerTask();
+            Task st = SenderTask();
         }
 
         /// <summary>
@@ -91,9 +91,8 @@ namespace VSL
         /// <summary>
         /// Receives bytes from the socket to the cache
         /// </summary>
-        /// <param name="ct"></param>
         /// <returns></returns>
-        private async Task ListenerTask(CancellationToken ct)
+        private async Task ListenerTask()
         {
             while (!ct.IsCancellationRequested)
             {
@@ -115,15 +114,14 @@ namespace VSL
         /// <summary>
         /// Compounds packets from the received data
         /// </summary>
-        /// <param name="ct"></param>
         /// <returns></returns>
-        private async Task WorkerTask(CancellationToken ct)
+        private async Task WorkerTask()
         {
             while (!ct.IsCancellationRequested)
             {
                 if (cache.Length > 0)
                 {
-                    OnDataReveive(ct);
+                    await parent.manager.OnDataReceive();
                 }
                 else
                 {
@@ -135,9 +133,8 @@ namespace VSL
         /// <summary>
         /// Sends pending data from the queue
         /// </summary>
-        /// <param name="ct"></param>
         /// <returns></returns>
-        private async Task SenderTask(CancellationToken ct)
+        private async Task SenderTask()
         {
             while (!ct.IsCancellationRequested)
             {
@@ -159,19 +156,19 @@ namespace VSL
                 }
             }
         }
-
+        [Obsolete]
         internal virtual async void OnDataReveive(CancellationToken ct)
         {
             try
             {
-                byte[] head = await ReadAsync(32, ct);
+                byte[] head = await ReadAsync(32);
                 head = await Crypt.AES.DecryptAsync(head, AesKey, ReceiveIV);
                 PacketBuffer hreader = new PacketBuffer(head);
                 byte[] iv = hreader.ReadByteArray(16);
                 int length = Convert.ToInt32(hreader.ReadUInt());
                 byte id = hreader.ReadByte();
 
-                byte[] content = await ReadAsync(length, ct);
+                byte[] content = await ReadAsync(length);
                 content = await Crypt.AES.DecryptAsync(content, AesKey, iv);
                 ReceiveIV = iv;
                 parent.OnPacketReceived(id, content);
@@ -186,9 +183,8 @@ namespace VSL
         /// Reads data from the buffer
         /// </summary>
         /// <param name="count">count of bytes to read</param>
-        /// <param name="ct"></param>
         /// <returns></returns>
-        internal async Task<byte[]> ReadAsync(int count, CancellationToken ct)
+        internal async Task<byte[]> ReadAsync(int count)
         {
             int cycle = 1;
             while (cache.Length < count)
@@ -245,10 +241,11 @@ namespace VSL
             queue.Enqueue(buf);
         }
 
-        internal void CloseConnection()
+        internal void CloseConnection(string reason)
         {
             StopTasks();
             tcp.Close();
+            parent.OnConnectionClosed(reason);
         }
         //  functions>
     }
