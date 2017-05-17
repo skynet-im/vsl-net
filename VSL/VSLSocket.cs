@@ -20,6 +20,7 @@ namespace VSL
         internal NetworkChannel channel;
         internal NetworkManager manager;
         internal PacketHandler handler;
+        internal ExceptionHandler ExceptionHandler;
         //  fields>
         // <constructor
         /// <summary>
@@ -27,6 +28,7 @@ namespace VSL
         /// </summary>
         internal void InitializeComponent()
         {
+            ExceptionHandler = new ExceptionHandler(this);
         }
         //  constructor>
         // <properties
@@ -107,9 +109,9 @@ namespace VSL
         /// <summary>
         /// Closes the TCP Connection
         /// </summary>
-        public void CloseConnection()
+        public void CloseConnection(string reason)
         {
-            channel.CloseConnection();
+            channel.CloseConnection(reason);
         }
         //  functions>
     }

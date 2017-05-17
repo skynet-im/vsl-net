@@ -42,7 +42,7 @@ namespace VSL
             }
             else
             {
-                parent.CloseConnection();
+                parent.CloseConnection("Unexpected packet received");
             }
         }
         internal override void HandlePacket02Certificate(Packet02Certificate p)
