@@ -18,7 +18,7 @@ namespace VSL
 
         }
 
-        internal Packet03FinishHandshake(ConnectionType connectionType, string address, ushort port)
+        internal Packet03FinishHandshake(ConnectionType connectionType, string address = null, ushort port = 0)
         {
             ConnectionType = connectionType;
             Address = address;

@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events.cs" />
+    <Compile Include="net\NetworkManager.cs" />
     <Compile Include="net\PacketHandlerClient.cs" />
     <Compile Include="net\NetworkChannel.cs" />
     <Compile Include="net\NetworkChannelClient.cs" />
