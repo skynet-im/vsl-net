@@ -18,6 +18,7 @@ namespace VSL
         internal ushort ClientLatestProduct;
         internal ushort ClientOldestProduct;
         internal NetworkChannel channel;
+        internal NetworkManager manager;
         internal PacketHandler handler;
         //  fields>
         // <constructor
@@ -91,7 +92,8 @@ namespace VSL
         /// <param name="content">Packet data</param>
         public void SendPacket(byte id, byte[] content)
         {
-            if (content == null) throw new ArgumentNullException("\"content\" must not be null");
+            if (content == null)
+                throw new ArgumentNullException("\"content\" must not be null");
             channel.SendPacket(id, content);
         }
         /// <summary>
@@ -101,6 +103,13 @@ namespace VSL
         internal void SendPacket(IPacket packet)
         {
             SendPacket(packet.ID, packet.WritePacket());
+        }
+        /// <summary>
+        /// Closes the TCP Connection
+        /// </summary>
+        public void CloseConnection()
+        {
+            channel.CloseConnection();
         }
         //  functions>
     }

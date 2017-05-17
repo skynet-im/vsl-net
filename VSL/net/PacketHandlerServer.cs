@@ -10,6 +10,7 @@ namespace VSL
     {
         // <fields
         new internal VSLServer parent;
+        private bool pending01KeyExchange = false;
         //  fields>
 
         // <constructor
@@ -23,11 +24,26 @@ namespace VSL
         // <functions
         internal override void HandlePacket00Handshake(Packet00Handshake p)
         {
-            //TODO: Implement Handler
+            switch (p.RequestType)
+            {
+                case Packet.RequestType.DirectPublicKey:
+                    pending01KeyExchange = true;
+                    break;
+                default:
+                    parent.SendPacket(new Packet03FinishHandshake(Packet.ConnectionType.NotCompatible));
+                    break;
+            }
         }
         internal override void HandlePacket01KeyExchange(Packet01KeyExchange p)
         {
-            //TODO: Implement Handler
+            if (pending01KeyExchange)
+            {
+                //TODO: Implement Handler
+            }
+            else
+            {
+                parent.CloseConnection();
+            }
         }
         internal override void HandlePacket02Certificate(Packet02Certificate p)
         {

@@ -8,6 +8,10 @@ namespace VSL.Packet
 {
     internal enum RequestType : byte
     {
-        DirectPublicKey
+        DirectPublicKey,
+        Undefined1,
+        Undefined2,
+        Undefined3,
+        Undefined4
     }
 }

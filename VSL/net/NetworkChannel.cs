@@ -80,6 +80,15 @@ namespace VSL
         }
 
         /// <summary>
+        /// Stops the tasks for receiving and compounding
+        /// </summary>
+        private void StopTasks()
+        {
+            if (!cts.IsCancellationRequested)
+                cts.Cancel();
+        }
+
+        /// <summary>
         /// Receives bytes from the socket to the cache
         /// </summary>
         /// <param name="ct"></param>
@@ -234,6 +243,12 @@ namespace VSL
         internal void SendAsync(byte[] buf)
         {
             queue.Enqueue(buf);
+        }
+
+        internal void CloseConnection()
+        {
+            StopTasks();
+            tcp.Close();
         }
         //  functions>
     }
