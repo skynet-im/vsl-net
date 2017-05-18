@@ -64,14 +64,13 @@ namespace VSL
         /// </summary>
         public event EventHandler<PacketReceivedEventArgs> PacketReceived;
         /// <summary>
-        /// Raises the PacketReceived event
+        /// Raises the PacketReceived event and inverts the packet id
         /// </summary>
         /// <param name="id">Packet ID</param>
         /// <param name="content">Packet content</param>
         internal virtual void OnPacketReceived(byte id, byte[] content)
         {
-            if (!handler.TryHandlePacket(id, content))
-                PacketReceived?.Invoke(this, new PacketReceivedEventArgs(id, content));
+            PacketReceived?.Invoke(this, new PacketReceivedEventArgs(Convert.ToByte(255 - id), content));
         }
         /// <summary>
         /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it
@@ -102,7 +101,7 @@ namespace VSL
         /// Sends a packet to the remotehost
         /// </summary>
         /// <param name="packet"></param>
-        internal void SendPacket(IPacket packet)
+        internal void SendPacket(Packet.IPacket packet)
         {
             SendPacket(packet.ID, packet.WritePacket());
         }

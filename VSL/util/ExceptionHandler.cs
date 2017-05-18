@@ -18,6 +18,10 @@ namespace VSL
         }
         //  constructor>
         // <functions
+        /// <summary>
+        /// Handles an exception caused by invalid packets
+        /// </summary>
+        /// <param name="ex">Exception to print</param>
         internal void HandleArgumentOutOfRangeException(ArgumentOutOfRangeException ex)
         {
             parent.channel.CloseConnection("Argument out of range -> invalid packet");

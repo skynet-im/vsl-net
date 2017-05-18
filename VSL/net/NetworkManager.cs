@@ -67,9 +67,7 @@ namespace VSL
                     {
                         length = BitConverter.ToUInt32(await parent.channel.ReadAsync(4), 0);
                     }
-                    byte[] content = await parent.channel.ReadAsync(length);
-                    Packet.IPacket finishedPacket = packet.CreatePacket(content);
-                    finishedPacket.HandlePacket(parent.handler);
+                    parent.handler.TryHandlePacket(id, await parent.channel.ReadAsync(length));
                 }
                 else
                 {
@@ -90,7 +88,28 @@ namespace VSL
                 byte[] ciphertext = await parent.channel.ReadAsync(256); //TimeoutException
                 byte[] plaintext = await Task.Run(() => RSA.DecryptBlock(ciphertext, keypair)); //CryptographicException
                 byte id = plaintext.Take(1).ToArray()[0];
-
+                plaintext = plaintext.Skip(1).ToArray();
+                Packet.IPacket packet;
+                bool success = parent.handler.TryGetPacket(id, out packet);
+                if (success)
+                {
+                    uint length = 0;
+                    if (packet.Length.Type == Packet.PacketLength.LengthType.Constant)
+                    {
+                        length = packet.Length.Length;
+                    }
+                    else if (packet.Length.Type == Packet.PacketLength.LengthType.UInt32)
+                    {
+                        length = BitConverter.ToUInt32(plaintext.Take(4).ToArray(), 0);
+                        plaintext = plaintext.Skip(4).ToArray();
+                    }
+                    parent.handler.TryHandlePacket(id, plaintext.Take(Convert.ToInt32(length)).ToArray());
+                }
+                else
+                {
+                    parent.ExceptionHandler.HandleInvalidOperationException(new InvalidOperationException());
+                    return;
+                }
             }
             catch (ArgumentOutOfRangeException ex)
             {
@@ -112,27 +131,61 @@ namespace VSL
                 parent.ExceptionHandler.HandleReceiveTimeoutException(ex);
                 return;
             }
+        }
+        internal async Task ReceivePacket_AES_256()
+        {
             try
             {
-
+                byte[] ciphertext = await parent.channel.ReadAsync(32); //TimeoutException
+                byte[] plaintext = await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV); //CryptographicException
+                byte id = plaintext.Take(1).ToArray()[0];
+                plaintext.Skip(1).ToArray();
+                Packet.IPacket packet;
+                bool success = parent.handler.TryGetPacket(id, out packet);
+                uint length = 0;
+                if (success && packet.Length.Type == Packet.PacketLength.LengthType.Constant)
+                {
+                    length = packet.Length.Length;
+                }
+                else
+                {
+                    length = BitConverter.ToUInt32(plaintext.Take(4).ToArray(), 0);
+                    plaintext = plaintext.Skip(4).ToArray();
+                }
+                if (length > plaintext.Length - 3) // 3 random bytes in the header for more security
+                {
+                    uint pendingLength = Convert.ToUInt32(length - plaintext.Length - 3);
+                    uint pendingPackets = Convert.ToUInt32(Math.Ceiling(pendingLength / 32d)); // round up
+                    ciphertext = new byte[0];
+                    for (int i = 0; i < pendingPackets; i++)
+                    {
+                        ciphertext = ciphertext.Concat(await parent.channel.ReadAsync(32)).ToArray(); //TimeoutException
+                    }
+                    plaintext = plaintext.Concat(await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV)).ToArray();
+                }
+                int startIndex = Convert.ToInt32(plaintext.Length - length);
+                byte[] content = plaintext.Skip(startIndex).ToArray(); // remove random bytes
+                if (success)
+                {
+                    parent.handler.TryHandlePacket(id, content);
+                }
+                else
+                {
+                    parent.OnPacketReceived(id, content);
+                }
             }
-            catch
+            catch (System.Security.Cryptography.CryptographicException ex)
             {
+                parent.ExceptionHandler.HandleCryptographicException(ex);
             }
-            Packet.IPacket packet;
-            bool success = parent.handler.TryGetPacket(id, out packet);
-            if (success)
+            catch (TimeoutException ex)
             {
-
-            }
-            else
-            {
-                parent.ExceptionHandler.HandleInvalidOperationException(new InvalidOperationException());
-                return;
+                parent.ExceptionHandler.HandleReceiveTimeoutException(ex);
             }
         }
-        internal abstract Task ReceivePacket_AES_256();
         internal abstract string Keypair { get; }
+        internal abstract byte[] AesKey { get; }
+        internal abstract byte[] ReceiveIV { get; }
         //  functions>
     }
 }
