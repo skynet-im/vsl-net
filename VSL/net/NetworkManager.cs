@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using VSL.Crypt;
 
 namespace VSL
 {
@@ -73,6 +74,7 @@ namespace VSL
                 else
                 {
                     parent.ExceptionHandler.HandleInvalidOperationException(new InvalidOperationException());
+                    return;
                 }
             }
             catch (TimeoutException ex)
@@ -80,8 +82,57 @@ namespace VSL
                 parent.ExceptionHandler.HandleReceiveTimeoutException(ex);
             }
         }
-        internal abstract Task ReceivePacket_RSA_2048();
+        internal async Task ReceivePacket_RSA_2048()
+        {
+            try
+            {
+                string keypair = Keypair; //NotImplementedException
+                byte[] ciphertext = await parent.channel.ReadAsync(256); //TimeoutException
+                byte[] plaintext = await Task.Run(() => RSA.DecryptBlock(ciphertext, keypair)); //CryptographicException
+                byte id = plaintext.Take(1).ToArray()[0];
+
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                parent.ExceptionHandler.HandleArgumentOutOfRangeException(ex);
+                return;
+            }
+            catch (System.Security.Cryptography.CryptographicException ex)
+            {
+                parent.ExceptionHandler.HandleCryptographicException(ex);
+                return;
+            }
+            catch (NotImplementedException ex)
+            {
+                parent.ExceptionHandler.HandleNotImplementedException(ex);
+                return;
+            }
+            catch (TimeoutException ex)
+            {
+                parent.ExceptionHandler.HandleReceiveTimeoutException(ex);
+                return;
+            }
+            try
+            {
+
+            }
+            catch
+            {
+            }
+            Packet.IPacket packet;
+            bool success = parent.handler.TryGetPacket(id, out packet);
+            if (success)
+            {
+
+            }
+            else
+            {
+                parent.ExceptionHandler.HandleInvalidOperationException(new InvalidOperationException());
+                return;
+            }
+        }
         internal abstract Task ReceivePacket_AES_256();
+        internal abstract string Keypair { get; }
         //  functions>
     }
 }
