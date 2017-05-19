@@ -27,16 +27,7 @@ namespace VSL
         {
             try
             {
-                CryptographicAlgorithm algorithm;
-                try
-                {
-                    algorithm = (CryptographicAlgorithm)(await parent.channel.ReadAsync(1))[0];
-                }
-                catch (InvalidCastException ex)
-                {
-                    parent.ExceptionHandler.HandleInvalidCastException(ex);
-                    return;
-                }
+                CryptographicAlgorithm algorithm = (CryptographicAlgorithm)(await parent.channel.ReadAsync(1))[0];
                 switch (algorithm)
                 {
                     case CryptographicAlgorithm.None:
@@ -50,9 +41,15 @@ namespace VSL
                         break;
                 }
             }
+            catch (InvalidCastException ex) //Enum Parse
+            {
+                parent.ExceptionHandler.HandleInvalidCastException(ex);
+                return;
+            }
             catch (TimeoutException ex)
             {
                 parent.ExceptionHandler.HandleReceiveTimeoutException(ex);
+                return;
             }
         }
         internal async Task ReceivePacket_Plaintext()
@@ -81,6 +78,14 @@ namespace VSL
                     return;
                 }
             }
+            catch (ArgumentOutOfRangeException ex) //PacketBuffer
+            {
+                parent.ExceptionHandler.HandleArgumentOutOfRangeException(ex);
+            }
+            catch (NotImplementedException ex) //PacketHandler
+            {
+                parent.ExceptionHandler.HandleNotImplementedException(ex);
+            }
             catch (TimeoutException ex)
             {
                 parent.ExceptionHandler.HandleReceiveTimeoutException(ex);
@@ -90,9 +95,9 @@ namespace VSL
         {
             try
             {
-                string keypair = Keypair; //NotImplementedException
-                byte[] ciphertext = await parent.channel.ReadAsync(256); //TimeoutException
-                byte[] plaintext = await Task.Run(() => RSA.DecryptBlock(ciphertext, keypair)); //CryptographicException
+                string keypair = Keypair;
+                byte[] ciphertext = await parent.channel.ReadAsync(256);
+                byte[] plaintext = await Task.Run(() => RSA.DecryptBlock(ciphertext, keypair));
                 byte id = plaintext.Take(1).ToArray()[0];
                 plaintext = plaintext.Skip(1).ToArray();
                 Packet.IPacket packet;
@@ -117,7 +122,7 @@ namespace VSL
                     return;
                 }
             }
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException ex) //PacketBuffer
             {
                 parent.ExceptionHandler.HandleArgumentOutOfRangeException(ex);
                 return;
@@ -127,7 +132,7 @@ namespace VSL
                 parent.ExceptionHandler.HandleCryptographicException(ex);
                 return;
             }
-            catch (NotImplementedException ex)
+            catch (NotImplementedException ex) //Keys, PacketHandler
             {
                 parent.ExceptionHandler.HandleNotImplementedException(ex);
                 return;
@@ -180,9 +185,17 @@ namespace VSL
                     parent.OnPacketReceived(id, content);
                 }
             }
+            catch (ArgumentOutOfRangeException ex) //PacketBuffer
+            {
+                parent.ExceptionHandler.HandleArgumentOutOfRangeException(ex);
+            }
             catch (System.Security.Cryptography.CryptographicException ex)
             {
                 parent.ExceptionHandler.HandleCryptographicException(ex);
+            }
+            catch (NotImplementedException ex) //PacketHandler
+            {
+                parent.ExceptionHandler.HandleNotImplementedException(ex);
             }
             catch (TimeoutException ex)
             {

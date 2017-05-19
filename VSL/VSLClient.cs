@@ -14,7 +14,6 @@ namespace VSL
     public class VSLClient : VSLSocket
     {
         // <fields
-        new internal NetworkChannelClient channel;
         new internal NetworkManagerClient manager;
         new internal PacketHandlerClient handler;
         //  fields>
@@ -30,8 +29,7 @@ namespace VSL
 
             ClientLatestProduct = latestProduct;
             ClientOldestProduct = oldestProduct;
-            channel = new NetworkChannelClient(this);
-            base.channel = channel;
+            channel = new NetworkChannel(this);
             manager = new NetworkManagerClient(this);
             base.manager = manager;
             handler = new PacketHandlerClient(this);
@@ -46,14 +44,46 @@ namespace VSL
         /// <param name="port">Port</param>
         /// <param name="serverKey">Public RSA key of the server</param>
         /// <returns></returns>
-        public Task ConnectAsync(string address, int port, string serverKey)
+        public async Task ConnectAsync(string address, int port, string serverKey)
         {
             // <check args
             if (string.IsNullOrEmpty(address)) throw new ArgumentNullException();
             if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException();
             if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException();
-            // check args>
-            return channel.Connect(address, port, serverKey);
+            //  check args>
+            // <resolve hostname
+            IPAddress[] ips;
+            try
+            {
+                ips = await Dns.GetHostAddressesAsync(address);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Could not resolve hostname " + address + ": " + ex);
+            }
+            // resolve hostname>
+
+            // <connect
+            TcpClient tcp = new TcpClient();
+            bool couldConnect = false;
+            foreach (IPAddress ip in ips)
+            {
+                try
+                {
+                    await tcp.ConnectAsync(ip, port);
+                    channel.Connect(tcp);
+                    couldConnect = true;
+                    Console.WriteLine(ip.ToString());
+                    break;
+                }
+                catch { }
+            }
+            if (!couldConnect) throw new Exception("Could not connect to the specified host");
+            // connect>
+
+            // <key exchange
+            // TODO: Implement Key Exchange
+            //  key exchange>
         }
         //  functions>
     }

@@ -14,7 +14,6 @@ namespace VSL
     public class VSLServer : VSLSocket
     {
         // <fields
-        new internal NetworkChannelServer channel;
         new internal NetworkManagerServer manager;
         new internal PacketHandlerServer handler;
         internal string Keypair;
@@ -38,8 +37,7 @@ namespace VSL
             ServerLatestProduct = latestProduct;
             ServerOldestProduct = oldestProduct;
             Keypair = keypair;
-            channel = new NetworkChannelServer(this);
-            base.channel = channel;
+            channel = new NetworkChannel(this, tcp);
             channel.Connect(tcp);
             manager = new NetworkManagerServer(this);
             base.manager = manager;

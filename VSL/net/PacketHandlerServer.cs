@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Packet;
 
 namespace VSL
 {
@@ -22,19 +23,19 @@ namespace VSL
         //  constructor>
 
         // <functions
-        internal override void HandlePacket00Handshake(Packet00Handshake p)
+        internal override void HandlePacket00Handshake(P00Handshake p)
         {
             switch (p.RequestType)
             {
-                case Packet.RequestType.DirectPublicKey:
+                case RequestType.DirectPublicKey:
                     pending01KeyExchange = true;
                     break;
                 default:
-                    parent.SendPacket(new Packet03FinishHandshake(Packet.ConnectionType.NotCompatible));
+                    parent.SendPacket(new P03FinishHandshake(ConnectionType.NotCompatible));
                     break;
             }
         }
-        internal override void HandlePacket01KeyExchange(Packet01KeyExchange p)
+        internal override void HandlePacket01KeyExchange(P01KeyExchange p)
         {
             if (pending01KeyExchange)
             {
@@ -45,19 +46,19 @@ namespace VSL
                 parent.CloseConnection("Unexpected packet received");
             }
         }
-        internal override void HandlePacket02Certificate(Packet02Certificate p)
+        internal override void HandlePacket02Certificate(P02Certificate p)
         {
             throw new NotImplementedException();
         }
-        internal override void HandlePacket03FinishHandshake(Packet03FinishHandshake p)
+        internal override void HandlePacket03FinishHandshake(P03FinishHandshake p)
         {
             //TODO: Implement Handler
         }
-        internal override void HandlePacket04ChangeIV(Packet04ChangeIV p)
+        internal override void HandlePacket04ChangeIV(P04ChangeIV p)
         {
             //TODO: Implement Handler
         }
-        internal override void HandlePacket05KeepAlive(Packet05KeepAlive p)
+        internal override void HandlePacket05KeepAlive(P05KeepAlive p)
         {
             //TODO: Implement Handler
         }

@@ -13,7 +13,7 @@ namespace VSL
     /// <summary>
     /// Responsible for the network communication
     /// </summary>
-    internal abstract class NetworkChannel
+    internal class NetworkChannel
     {
         // <fields
         internal byte[] AesKey; // AES key for the running connection
@@ -48,16 +48,21 @@ namespace VSL
         /// <summary>
         /// Initializes a new instance of the NetworkChannel class
         /// </summary>
-        internal NetworkChannel()
+        /// <param name="parent">Underlying VSL socket</param>
+        internal NetworkChannel(VSLSocket parent)
         {
+            this.parent = parent;
             InitializeComponent();
         }
         /// <summary>
         /// Initializes a new instance of the NetworkChannel class
         /// </summary>
-        /// <param name="tcp">connected TCP client</param>
-        internal NetworkChannel(TcpClient tcp)
+        /// <param name="parent">Underlying VSL socket</param>
+        /// <param name="tcp">Connected TCP client</param>
+        internal NetworkChannel(VSLSocket parent, TcpClient tcp)
         {
+            this.parent = parent;
+            this.tcp = tcp;
             InitializeComponent();
         }
         /// <summary>
@@ -65,7 +70,7 @@ namespace VSL
         /// </summary>
         internal void InitializeComponent()
         {
-            tcp = new TcpClient() { ReceiveBufferSize = _networkBufferSize };
+            tcp.ReceiveBufferSize = _networkBufferSize;
             cache = new Queue();
             queue = new ConcurrentQueue<byte[]>();
             cts = new CancellationTokenSource();

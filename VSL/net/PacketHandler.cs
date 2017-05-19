@@ -54,8 +54,15 @@ namespace VSL
             {
                 if (id == p.ID)
                 {
-                    IPacket packet = p.CreatePacket(content);
-                    packet.HandlePacket(this);
+                    try
+                    {
+                        IPacket packet = p.CreatePacket(content);
+                        packet.HandlePacket(this);
+                    }
+                    catch
+                    {
+
+                    }
                     return true;
                 }
             }
