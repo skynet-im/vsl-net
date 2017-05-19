@@ -36,6 +36,11 @@ namespace VSL
             parent.channel.CloseConnection("Cryptographic operation failed due to wrong keys");
             Console.WriteLine("Cryptographic operation failed due to wrong keys: " + ex.ToString());
         }
+        internal void HandleInvalidCastException(InvalidCastException ex)
+        {
+            parent.channel.CloseConnection("Enum cast failed -> algorithm or feature not supported");
+            Console.WriteLine("Enum cast failed -> algorithm or feature not supported: " + ex.ToString());
+        }
         internal void HandleInvalidOperationException(InvalidOperationException ex)
         {
             parent.channel.CloseConnection("Invalid packet received");

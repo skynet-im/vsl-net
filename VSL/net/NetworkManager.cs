@@ -17,6 +17,10 @@ namespace VSL
         internal VSLSocket parent;
         //  fields>
         // <constructor
+        internal void InitializeComponent()
+        {
+
+        }
         //  constructor>
         // <functions
         internal async Task OnDataReceive()
@@ -30,7 +34,7 @@ namespace VSL
                 }
                 catch (InvalidCastException ex)
                 {
-                    Console.WriteLine("[VSL] Cryptographic algorithm not supported: " + ex.ToString());
+                    parent.ExceptionHandler.HandleInvalidCastException(ex);
                     return;
                 }
                 switch (algorithm)
@@ -39,8 +43,10 @@ namespace VSL
                         await ReceivePacket_Plaintext();
                         break;
                     case CryptographicAlgorithm.RSA_2048:
+                        await ReceivePacket_RSA_2048();
                         break;
                     case CryptographicAlgorithm.AES_256:
+                        await ReceivePacket_AES_256();
                         break;
                 }
             }
@@ -136,7 +142,7 @@ namespace VSL
         {
             try
             {
-                byte[] ciphertext = await parent.channel.ReadAsync(32); //TimeoutException
+                byte[] ciphertext = await parent.channel.ReadAsync(16); //TimeoutException
                 byte[] plaintext = await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV); //CryptographicException
                 byte id = plaintext.Take(1).ToArray()[0];
                 plaintext.Skip(1).ToArray();
@@ -155,11 +161,11 @@ namespace VSL
                 if (length > plaintext.Length - 3) // 3 random bytes in the header for more security
                 {
                     uint pendingLength = Convert.ToUInt32(length - plaintext.Length - 3);
-                    uint pendingPackets = Convert.ToUInt32(Math.Ceiling(pendingLength / 32d)); // round up
+                    uint pendingPackets = Convert.ToUInt32(Math.Ceiling(pendingLength / 16d)); // round up
                     ciphertext = new byte[0];
                     for (int i = 0; i < pendingPackets; i++)
                     {
-                        ciphertext = ciphertext.Concat(await parent.channel.ReadAsync(32)).ToArray(); //TimeoutException
+                        ciphertext = ciphertext.Concat(await parent.channel.ReadAsync(16)).ToArray(); //TimeoutException
                     }
                     plaintext = plaintext.Concat(await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV)).ToArray();
                 }

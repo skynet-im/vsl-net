@@ -15,6 +15,7 @@ namespace VSL
     {
         // <fields
         new internal NetworkChannelServer channel;
+        new internal NetworkManagerServer manager;
         new internal PacketHandlerServer handler;
         internal string Keypair;
         internal ushort ServerLatestProduct;
@@ -40,6 +41,8 @@ namespace VSL
             channel = new NetworkChannelServer(this);
             base.channel = channel;
             channel.Connect(tcp);
+            manager = new NetworkManagerServer(this);
+            base.manager = manager;
             handler = new PacketHandlerServer(this);
             base.handler = handler;
         }
