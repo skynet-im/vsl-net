@@ -202,6 +202,24 @@ namespace VSL
                 parent.ExceptionHandler.HandleReceiveTimeoutException(ex);
             }
         }
+        internal Task SendPacket(byte id, byte[] content)
+        {
+            byte[] head = new byte[1] { id };
+            head = head.Concat(BitConverter.GetBytes(Convert.ToUInt32(content.Length))).ToArray();
+            return SendPacket(CryptographicAlgorithm.AES_256, head, content);
+        }
+        internal Task SendPacket(CryptographicAlgorithm alg, Packet.IPacket packet)
+        {
+            byte[] head = new byte[1] { packet.ID };
+            byte[] content = packet.WritePacket();
+            if (packet.Length.Type == Packet.PacketLength.LengthType.UInt32)
+                head = head.Concat(BitConverter.GetBytes(Convert.ToUInt32(content.Length))).ToArray();
+            return SendPacket(alg, head, content);
+        }
+        internal async Task SendPacket(CryptographicAlgorithm alg, byte[] head, byte[] content)
+        {
+            // TODO: Implement send packet
+        }
         internal abstract string Keypair { get; }
         internal abstract byte[] AesKey { get; }
         internal abstract byte[] ReceiveIV { get; }
