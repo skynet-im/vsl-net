@@ -46,6 +46,21 @@ namespace VSL
 
         // <constructor
         /// <summary>
+        /// Initializes a new instance of the NetworkChannel class
+        /// </summary>
+        internal NetworkChannel()
+        {
+            InitializeComponent();
+        }
+        /// <summary>
+        /// Initializes a new instance of the NetworkChannel class
+        /// </summary>
+        /// <param name="tcp">connected TCP client</param>
+        internal NetworkChannel(TcpClient tcp)
+        {
+            InitializeComponent();
+        }
+        /// <summary>
         /// Initializes all non-child-specific components
         /// </summary>
         internal void InitializeComponent()
@@ -156,28 +171,6 @@ namespace VSL
                 }
             }
         }
-        [Obsolete]
-        internal virtual async void OnDataReveive(CancellationToken ct)
-        {
-            try
-            {
-                byte[] head = await ReadAsync(32);
-                head = await Crypt.AES.DecryptAsync(head, AesKey, ReceiveIV);
-                PacketBuffer hreader = new PacketBuffer(head);
-                byte[] iv = hreader.ReadByteArray(16);
-                int length = Convert.ToInt32(hreader.ReadUInt());
-                byte id = hreader.ReadByte();
-
-                byte[] content = await ReadAsync(length);
-                content = await Crypt.AES.DecryptAsync(content, AesKey, iv);
-                ReceiveIV = iv;
-                parent.OnPacketReceived(id, content);
-            }
-            catch (TimeoutException ex)
-            {
-                Console.WriteLine("[VSL] TimeoutException in NetworkChannel.OnDataReceive(): " + ex.ToString());
-            }
-        }
 
         /// <summary>
         /// Reads data from the buffer
@@ -207,7 +200,7 @@ namespace VSL
         {
             return ReadAsync(Convert.ToInt32(count));
         }
-        
+
         /// <summary>
         /// Sends a packet to the remote client
         /// </summary>

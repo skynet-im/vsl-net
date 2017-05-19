@@ -50,6 +50,8 @@
     <Compile Include="Events.cs" />
     <Compile Include="net\CryptographicAlgorithm.cs" />
     <Compile Include="net\NetworkManager.cs" />
+    <Compile Include="net\NetworkManagerServer.cs" />
+    <Compile Include="net\NetworkManagerClient.cs" />
     <Compile Include="net\PacketHandlerClient.cs" />
     <Compile Include="net\NetworkChannel.cs" />
     <Compile Include="net\NetworkChannelClient.cs" />

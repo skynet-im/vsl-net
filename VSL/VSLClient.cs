@@ -15,6 +15,7 @@ namespace VSL
     {
         // <fields
         new internal NetworkChannelClient channel;
+        new internal NetworkManagerClient manager;
         new internal PacketHandlerClient handler;
         //  fields>
         // <constructor
@@ -31,6 +32,8 @@ namespace VSL
             ClientOldestProduct = oldestProduct;
             channel = new NetworkChannelClient(this);
             base.channel = channel;
+            manager = new NetworkManagerClient(this);
+            base.manager = manager;
             handler = new PacketHandlerClient(this);
             base.handler = handler;
         }
