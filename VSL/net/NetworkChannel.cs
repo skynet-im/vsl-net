@@ -63,14 +63,15 @@ namespace VSL
         {
             this.parent = parent;
             this.tcp = tcp;
+            this.tcp.ReceiveBufferSize = _networkBufferSize;
             InitializeComponent();
+            StartTasks();
         }
         /// <summary>
         /// Initializes all non-child-specific components
         /// </summary>
         internal void InitializeComponent()
         {
-            tcp.ReceiveBufferSize = _networkBufferSize;
             cache = new Queue();
             queue = new ConcurrentQueue<byte[]>();
             cts = new CancellationTokenSource();
@@ -87,6 +88,7 @@ namespace VSL
         {
             this.tcp = tcp;
             this.tcp.ReceiveBufferSize = _networkBufferSize;
+            StartTasks();
         }
 
         /// <summary>
@@ -141,7 +143,7 @@ namespace VSL
             {
                 if (cache.Length > 0)
                 {
-                    await parent.manager.OnDataReceive();
+                    await parent.manager.OnDataReceiveAsync();
                 }
                 else
                 {
@@ -204,23 +206,6 @@ namespace VSL
         internal Task<byte[]> ReadAsync(uint count)
         {
             return ReadAsync(Convert.ToInt32(count));
-        }
-
-        /// <summary>
-        /// Sends a packet to the remote client
-        /// </summary>
-        /// <param name="id">Packet ID</param>
-        /// <param name="content">Packet data</param>
-        internal async void SendPacket(byte id, byte[] content)
-        {
-            byte[] iv = Crypt.AES.GenerateIV();
-            byte[] buf = await Crypt.AES.EncryptAsync(content, AesKey, iv);
-            byte[] length = BitConverter.GetBytes(Convert.ToUInt32(buf.Length));
-            byte[] head = Crypt.Util.ConnectBytesPA(iv, length, new byte[1] { id });
-            head = await Crypt.AES.EncryptAsync(head, AesKey, SendIV);
-            byte[] data = Crypt.Util.ConnectBytesPA(head, buf);
-            SendIV = iv;
-            SendAsync(data);
         }
 
         /// <summary>
