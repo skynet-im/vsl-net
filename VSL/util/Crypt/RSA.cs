@@ -18,6 +18,9 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="plaintext">Data to encrypt (max. 214 bytes)</param>
         /// <param name="key">Public key (xmlstring)</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
         public static byte[] EncryptBlock(byte[] plaintext, string key)
         {
@@ -27,15 +30,8 @@ namespace VSL.Crypt
             byte[] ciphertext = null;
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {
-                try
-                {
-                    rsa.FromXmlString(key);
-                    ciphertext = rsa.Encrypt(plaintext, true);
-                }
-                catch (CryptographicException ex)
-                {
-                    throw new CryptographicException("Error during RSA encryption", ex);
-                }
+                rsa.FromXmlString(key);
+                ciphertext = rsa.Encrypt(plaintext, true);
             }
             return ciphertext;
         }
@@ -45,6 +41,8 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="plaintext">data to encrypt</param>
         /// <param name="key">Public key (xmlstring)</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
         public static byte[] Encrypt(byte[] plaintext, string key)
         {
@@ -63,6 +61,8 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="plaintext">data to encrypt</param>
         /// <param name="key">Public key (xmlstring)</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
         public async static Task<byte[]> EncryptAsync(byte[] plaintext, string key)
         {
@@ -88,6 +88,9 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="ciphertext">Data to decrypt (256 bytes)</param>
         /// <param name="key">Private key (xmlstring)</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
         public static byte[] DecryptBlock(byte[] ciphertext, string key)
         {
@@ -97,15 +100,8 @@ namespace VSL.Crypt
             byte[] plaintext = null;
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {
-                try
-                {
-                    rsa.FromXmlString(key);
-                    plaintext = rsa.Decrypt(ciphertext, true);
-                }
-                catch (CryptographicException ex)
-                {
-                    throw new CryptographicException("Error during RSA decryption", ex);
-                }
+                rsa.FromXmlString(key);
+                plaintext = rsa.Decrypt(ciphertext, true);
             }
             return plaintext;
         }
@@ -115,6 +111,9 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="ciphertext">data to decrypt</param>
         /// <param name="key">Private key (xmlstring)</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
         public static byte[] Decrypt(byte[] ciphertext, string key)
         {
@@ -134,6 +133,9 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="ciphertext">data to decrypt</param>
         /// <param name="key">Private key (xmlstring)</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
         public async static Task<byte[]> DecryptAsync(byte[] ciphertext, string key)
         {
@@ -174,9 +176,12 @@ namespace VSL.Crypt
         /// Extracts the parameters for a public key
         /// </summary>
         /// <param name="privateKey">Keypair (xmlstring)</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
         public static string ExtractPublicKey(string privateKey)
         {
+            if (privateKey == null) throw new ArgumentNullException("PrivateKey must not be null");
             string key;
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {

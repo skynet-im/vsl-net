@@ -33,7 +33,23 @@ namespace VSL
             }
         }
 
+        internal override string PublicKey
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         internal override byte[] ReceiveIV
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        internal override byte[] SendIV
         {
             get
             {

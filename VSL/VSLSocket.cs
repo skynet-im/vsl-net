@@ -91,11 +91,12 @@ namespace VSL
         /// </summary>
         /// <param name="id">Packet ID</param>
         /// <param name="content">Packet data</param>
-        public void SendPacket(byte id, byte[] content)
+        /// <exception cref="ArgumentNullException"></exception>
+        public async void SendPacket(byte id, byte[] content)
         {
             if (content == null)
                 throw new ArgumentNullException("\"content\" must not be null");
-            channel.SendPacket(id, content);
+            await manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
         /// <summary>
         /// Sends a packet to the remotehost
