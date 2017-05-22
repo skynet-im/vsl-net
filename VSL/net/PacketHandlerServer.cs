@@ -11,7 +11,6 @@ namespace VSL
     {
         // <fields
         new internal VSLServer parent;
-        private bool pending01KeyExchange = false;
         //  fields>
 
         // <constructor
@@ -23,28 +22,27 @@ namespace VSL
         //  constructor>
 
         // <functions
-        internal override void HandlePacket00Handshake(P00Handshake p)
+        internal override async void HandlePacket00Handshake(P00Handshake p)
         {
             switch (p.RequestType)
             {
                 case RequestType.DirectPublicKey:
-                    pending01KeyExchange = true;
                     break;
                 default:
-                    parent.SendPacket(new P03FinishHandshake(ConnectionType.NotCompatible));
+                    await parent.manager.SendPacketAsync(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));
                     break;
             }
         }
-        internal override void HandlePacket01KeyExchange(P01KeyExchange p)
+        internal override async void HandlePacket01KeyExchange(P01KeyExchange p)
         {
-            if (pending01KeyExchange)
+            if (VersionManager.IsVSLVersionSupported(p.LatestVSL, p.OldestVSL) && VersionManager.IsProductVersionSupported(parent.LatestProduct, parent.OldestProduct, p.LatestProduct, p.OldestProduct))
             {
-                //TODO: Implement Handler
+                parent.manager.AesKey = p.AesKey;
+                parent.manager.SendIV = p.ServerIV;
+                parent.manager.ReceiveIV = p.ClientIV;
             }
             else
-            {
-                parent.CloseConnection("Unexpected packet received");
-            }
+                await parent.manager.SendPacketAsync(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));
         }
         internal override void HandlePacket02Certificate(P02Certificate p)
         {
@@ -52,15 +50,16 @@ namespace VSL
         }
         internal override void HandlePacket03FinishHandshake(P03FinishHandshake p)
         {
-            //TODO: Implement Handler
+            throw new NotSupportedException("This VSL version does not support unsafe fallback servers");
         }
         internal override void HandlePacket04ChangeIV(P04ChangeIV p)
         {
-            //TODO: Implement Handler
+            parent.manager.SendIV = p.ServerIV;
+            parent.manager.ReceiveIV = p.ClientIV;
         }
         internal override void HandlePacket05KeepAlive(P05KeepAlive p)
         {
-            //TODO: Implement Handler
+            throw new NotSupportedException("This VSL version does not support keep alive packets");
         }
         //  functions>
     }

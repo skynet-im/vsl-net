@@ -16,6 +16,8 @@ namespace VSL
         // <fields
         new internal NetworkManagerClient manager;
         new internal PacketHandlerClient handler;
+        internal ushort LatestProduct;
+        internal ushort OldestProduct;
         //  fields>
         // <constructor
         /// <summary>
@@ -27,13 +29,8 @@ namespace VSL
         {
             InitializeComponent();
 
-            ClientLatestProduct = latestProduct;
-            ClientOldestProduct = oldestProduct;
-            channel = new NetworkChannel(this);
-            manager = new NetworkManagerClient(this);
-            base.manager = manager;
-            handler = new PacketHandlerClient(this);
-            base.handler = handler;
+            LatestProduct = latestProduct;
+            OldestProduct = oldestProduct;
         }
         // constructor>
         // <functions
@@ -51,6 +48,13 @@ namespace VSL
             if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException();
             if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException();
             //  check args>
+            // <initialize component
+            channel = new NetworkChannel(this);
+            manager = new NetworkManagerClient(this, serverKey);
+            base.manager = manager;
+            handler = new PacketHandlerClient(this);
+            base.handler = handler;
+            //  initialize component>
             // <resolve hostname
             IPAddress[] ips;
             try
@@ -82,7 +86,16 @@ namespace VSL
             // connect>
 
             // <key exchange
-            // TODO: Implement Key Exchange
+            Task s = manager.SendPacketAsync(CryptographicAlgorithm.None, new Packet.P00Handshake(Packet.RequestType.DirectPublicKey));
+            Task<byte[]> key = Task.Run(() => Crypt.AES.GenerateKey());
+            Task<byte[]> civ = Task.Run(() => Crypt.AES.GenerateIV());
+            Task<byte[]> siv = Task.Run(() => Crypt.AES.GenerateIV());
+            manager.AesKey = await key;
+            manager.SendIV = await civ;
+            manager.ReceiveIV = await siv;
+            await s;
+            await manager.SendPacketAsync(CryptographicAlgorithm.RSA_2048, new Packet.P01KeyExchange(manager.AesKey, manager.SendIV,
+                manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct));
             //  key exchange>
         }
         //  functions>

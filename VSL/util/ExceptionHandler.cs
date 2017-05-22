@@ -24,7 +24,7 @@ namespace VSL
         /// <param name="ex">Exception to print</param>
         internal void HandleArgumentOutOfRangeException(ArgumentOutOfRangeException ex)
         {
-            parent.channel.CloseConnection("Argument out of range -> invalid packet");
+            parent.CloseConnection("Argument out of range -> invalid packet");
             Console.WriteLine("Argument out of range -> invalid packet: " + ex.ToString());
         }
         /// <summary>
@@ -33,27 +33,32 @@ namespace VSL
         /// <param name="ex">Exception to print</param>
         internal void HandleCryptographicException(System.Security.Cryptography.CryptographicException ex)
         {
-            parent.channel.CloseConnection("Cryptographic operation failed due to wrong keys");
+            parent.CloseConnection("Cryptographic operation failed due to wrong keys");
             Console.WriteLine("Cryptographic operation failed due to wrong keys: " + ex.ToString());
         }
         internal void HandleInvalidCastException(InvalidCastException ex)
         {
-            parent.channel.CloseConnection("Enum cast failed -> algorithm or feature not supported");
+            parent.CloseConnection("Enum cast failed -> algorithm or feature not supported");
             Console.WriteLine("Enum cast failed -> algorithm or feature not supported: " + ex.ToString());
         }
         internal void HandleInvalidOperationException(InvalidOperationException ex)
         {
-            parent.channel.CloseConnection("Invalid packet received");
+            parent.CloseConnection("Invalid packet received");
             Console.WriteLine("Invalid packet received: " + ex.ToString());
         }
         internal void HandleNotImplementedException(NotImplementedException ex)
         {
-            parent.channel.CloseConnection("Method is not implemented -> invalid operation");
+            parent.CloseConnection("Method is not implemented -> invalid operation");
             Console.WriteLine("Method is not implemented -> invalid operation: " + ex.ToString());
+        }
+        internal void HandleNotSupportedException(NotSupportedException ex)
+        {
+            parent.CloseConnection("Method is not supported supported by this VSL version -> invalid operation");
+            Console.WriteLine("Method is not supported supported by this VSL version -> invalid operation: " + ex.ToString());
         }
         internal void HandleReceiveTimeoutException(TimeoutException ex)
         {
-            parent.channel.CloseConnection("Timeout while waiting for more data");
+            parent.CloseConnection("Timeout while waiting for more data");
             Console.WriteLine("Timeout while waiting for more data: " + ex.ToString());
         }
         //  functions>
