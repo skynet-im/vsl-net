@@ -48,25 +48,26 @@ namespace VSL
             return false;
         }
 
-        internal virtual bool TryHandlePacket(byte id, byte[] content)
+        /// <summary>
+        /// Handles an internal VSL packet
+        /// </summary>
+        /// <param name="id">Packet ID</param>
+        /// <param name="content">Packet data</param>
+        /// <exception cref="InvalidCastException"></exception>
+        /// <exception cref="NotImplementedException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <returns></returns>
+        internal void HandleInternalPacket(byte id, byte[] content)
         {
             foreach (IPacket p in RegisteredPackets)
             {
                 if (id == p.ID)
                 {
-                    try
-                    {
-                        IPacket packet = p.CreatePacket(content);
-                        packet.HandlePacket(this);
-                    }
-                    catch
-                    {
-
-                    }
-                    return true;
+                    IPacket packet = p.CreatePacket(content);
+                    packet.HandlePacket(this);
+                    return;
                 }
             }
-            return false;
         }
 
         internal abstract void HandlePacket00Handshake(P00Handshake p);

@@ -10,28 +10,17 @@ namespace VSL
     {
         new internal VSLServer parent;
 
-        internal NetworkManagerServer(VSLServer parent)
+        internal NetworkManagerServer(VSLServer parent, string keypair)
         {
             this.parent = parent;
             base.parent = parent;
+            Keypair = keypair;
             InitializeComponent();
         }
 
-        internal override byte[] AesKey
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override byte[] AesKey { get; set; }
 
-        internal override string Keypair
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override string Keypair { get; }
 
         internal override string PublicKey
         {
@@ -41,20 +30,8 @@ namespace VSL
             }
         }
 
-        internal override byte[] ReceiveIV
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override byte[] ReceiveIV { get; set; }
 
-        internal override byte[] SendIV
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override byte[] SendIV { get; set; }
     }
 }

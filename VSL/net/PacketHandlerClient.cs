@@ -32,11 +32,21 @@ namespace VSL
         }
         internal override void HandlePacket02Certificate(P02Certificate p)
         {
-            //TODO: Implement Handler
+            throw new NotSupportedException("This VSL version does not support Certificates");
         }
         internal override void HandlePacket03FinishHandshake(P03FinishHandshake p)
         {
-            //TODO: Implement Handler
+            switch (p.ConnectionType)
+            {
+                case ConnectionType.Compatible:
+                    parent.OnConnectionEstablished();
+                    break;
+                case ConnectionType.Redirect:
+                    throw new NotSupportedException("This VSL version does not support redirects");
+                case ConnectionType.NotCompatible:
+                    parent.CloseConnection("The specified server does not support this VSL/application version");
+                    break;
+            }
         }
         internal override void HandlePacket04ChangeIV(P04ChangeIV p)
         {

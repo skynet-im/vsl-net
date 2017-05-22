@@ -15,8 +15,6 @@ namespace VSL
     {
         // <fields
         internal bool ConnectionAvailable = false;
-        internal ushort ClientLatestProduct;
-        internal ushort ClientOldestProduct;
         internal NetworkChannel channel;
         internal NetworkManager manager;
         internal PacketHandler handler;
@@ -57,6 +55,7 @@ namespace VSL
         /// </summary>
         internal virtual void OnConnectionEstablished()
         {
+            ConnectionAvailable = true;
             ConnectionEstablished?.Invoke(this, new EventArgs());
         }
         /// <summary>
@@ -82,7 +81,11 @@ namespace VSL
         /// <param name="reason">Reason why the connection was closed</param>
         internal virtual void OnConnectionClosed(string reason)
         {
-            ConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(reason));
+            if (ConnectionAvailable)
+            {
+                ConnectionAvailable = false;
+                ConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(reason));
+            }
         }
         //  events>
         // <functions
@@ -94,23 +97,16 @@ namespace VSL
         /// <exception cref="ArgumentNullException"></exception>
         public async void SendPacket(byte id, byte[] content)
         {
-            if (content == null)
-                throw new ArgumentNullException("\"content\" must not be null");
+            if (content == null) throw new ArgumentNullException("\"content\" must not be null");
+            if (!ConnectionAvailable) throw new InvalidOperationException("You must not send a packet while there is no connection");
             await manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
         /// <summary>
-        /// Sends a packet to the remotehost
-        /// </summary>
-        /// <param name="packet"></param>
-        internal void SendPacket(Packet.IPacket packet)
-        {
-            SendPacket(packet.ID, packet.WritePacket());
-        }
-        /// <summary>
-        /// Closes the TCP Connection
+        /// Stops the network channel, closes the TCP Connection and raises the related event
         /// </summary>
         public void CloseConnection(string reason)
         {
+            OnConnectionClosed(reason);
             channel.CloseConnection(reason);
         }
         //  functions>

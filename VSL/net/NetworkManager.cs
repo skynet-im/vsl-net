@@ -70,7 +70,7 @@ namespace VSL
                     {
                         length = BitConverter.ToUInt32(await parent.channel.ReadAsync(4), 0);
                     }
-                    parent.handler.TryHandlePacket(id, await parent.channel.ReadAsync(length));
+                    parent.handler.HandleInternalPacket(id, await parent.channel.ReadAsync(length));
                 }
                 else
                 {
@@ -82,9 +82,17 @@ namespace VSL
             {
                 parent.ExceptionHandler.HandleArgumentOutOfRangeException(ex);
             }
+            catch (InvalidCastException ex) //PacketHandler
+            {
+                parent.ExceptionHandler.HandleInvalidCastException(ex);
+            }
             catch (NotImplementedException ex) //PacketHandler
             {
                 parent.ExceptionHandler.HandleNotImplementedException(ex);
+            }
+            catch (NotSupportedException ex) //PacketHandler
+            {
+                parent.ExceptionHandler.HandleNotSupportedException(ex);
             }
             catch (TimeoutException ex)
             {
@@ -114,7 +122,7 @@ namespace VSL
                         length = BitConverter.ToUInt32(plaintext.Take(4).ToArray(), 0);
                         plaintext = plaintext.Skip(4).ToArray();
                     }
-                    parent.handler.TryHandlePacket(id, plaintext.Take(Convert.ToInt32(length)).ToArray());
+                    parent.handler.HandleInternalPacket(id, plaintext.Take(Convert.ToInt32(length)).ToArray());
                 }
                 else
                 {
@@ -132,10 +140,17 @@ namespace VSL
                 parent.ExceptionHandler.HandleCryptographicException(ex);
                 return;
             }
-            catch (NotImplementedException ex) //Keys, PacketHandler
+            catch (InvalidCastException ex) //PacketHandler
+            {
+                parent.ExceptionHandler.HandleInvalidCastException(ex);
+            }
+            catch (NotImplementedException ex) //PacketHandler
             {
                 parent.ExceptionHandler.HandleNotImplementedException(ex);
-                return;
+            }
+            catch (NotSupportedException ex) //PacketHandler
+            {
+                parent.ExceptionHandler.HandleNotSupportedException(ex);
             }
             catch (TimeoutException ex)
             {
@@ -174,7 +189,7 @@ namespace VSL
                 byte[] content = plaintext.Skip(startIndex).ToArray(); // remove random bytes
                 if (success)
                 {
-                    parent.handler.TryHandlePacket(id, content);
+                    parent.handler.HandleInternalPacket(id, content);
                 }
                 else
                 {
@@ -189,9 +204,17 @@ namespace VSL
             {
                 parent.ExceptionHandler.HandleCryptographicException(ex);
             }
+            catch (InvalidCastException ex) //PacketHandler
+            {
+                parent.ExceptionHandler.HandleInvalidCastException(ex);
+            }
             catch (NotImplementedException ex) //PacketHandler
             {
                 parent.ExceptionHandler.HandleNotImplementedException(ex);
+            }
+            catch (NotSupportedException ex) //PacketHandler
+            {
+                parent.ExceptionHandler.HandleNotSupportedException(ex);
             }
             catch (TimeoutException ex)
             {
@@ -272,9 +295,9 @@ namespace VSL
         }
         internal abstract string PublicKey { get; }
         internal abstract string Keypair { get; }
-        internal abstract byte[] AesKey { get; }
-        internal abstract byte[] ReceiveIV { get; }
-        internal abstract byte[] SendIV { get; }
+        internal abstract byte[] AesKey { get; set; }
+        internal abstract byte[] ReceiveIV { get; set; }
+        internal abstract byte[] SendIV { get; set; }
         //  functions>
     }
 }

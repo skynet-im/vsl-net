@@ -17,10 +17,8 @@ namespace VSL
         new internal NetworkManagerServer manager;
         new internal PacketHandlerServer handler;
         internal string Keypair;
-        internal ushort ServerLatestProduct;
-        internal ushort ServerOldestProduct;
-        internal ushort ClientLatestVSL;
-        internal ushort ClientOldestVSL;
+        internal ushort LatestProduct;
+        internal ushort OldestProduct;
         //  fields>
         // <constructor
         /// <summary>
@@ -34,12 +32,12 @@ namespace VSL
         {
             InitializeComponent();
 
-            ServerLatestProduct = latestProduct;
-            ServerOldestProduct = oldestProduct;
+            LatestProduct = latestProduct;
+            OldestProduct = oldestProduct;
             Keypair = keypair;
             channel = new NetworkChannel(this, tcp);
             channel.Connect(tcp);
-            manager = new NetworkManagerServer(this);
+            manager = new NetworkManagerServer(this, keypair);
             base.manager = manager;
             handler = new PacketHandlerServer(this);
             base.handler = handler;

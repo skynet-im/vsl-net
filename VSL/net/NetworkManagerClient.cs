@@ -10,20 +10,15 @@ namespace VSL
     {
         new internal VSLClient parent;
 
-        internal NetworkManagerClient(VSLClient parent)
+        internal NetworkManagerClient(VSLClient parent, string publicKey)
         {
             this.parent = parent;
             base.parent = parent;
+            PublicKey = publicKey;
             InitializeComponent();
         }
 
-        internal override byte[] AesKey
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override byte[] AesKey { get; set; }
 
         internal override string Keypair
         {
@@ -33,28 +28,10 @@ namespace VSL
             }
         }
 
-        internal override string PublicKey
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override string PublicKey { get; }
 
-        internal override byte[] ReceiveIV
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override byte[] ReceiveIV { get; set; }
 
-        internal override byte[] SendIV
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override byte[] SendIV { get; set; }
     }
 }

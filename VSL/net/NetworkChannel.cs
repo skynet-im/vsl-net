@@ -233,11 +233,14 @@ namespace VSL
             queue.Enqueue(buf);
         }
 
+        /// <summary>
+        /// Stops the network channel and closes the TCP connection without raising the related event
+        /// </summary>
+        /// <param name="reason"></param>
         internal void CloseConnection(string reason)
         {
             StopTasks();
             tcp.Close();
-            parent.OnConnectionClosed(reason);
         }
         //  functions>
     }

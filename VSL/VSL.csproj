@@ -74,6 +74,7 @@
     <Compile Include="util\ExceptionHandler.cs" />
     <Compile Include="util\PacketBuffer.cs" />
     <Compile Include="util\Queue.cs" />
+    <Compile Include="util\VersionManager.cs" />
     <Compile Include="VSLClient.cs" />
     <Compile Include="VSLServer.cs" />
     <Compile Include="VSLSocket.cs" />
