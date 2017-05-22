@@ -16,11 +16,7 @@ namespace VSL
     internal class NetworkChannel
     {
         // <fields
-        internal byte[] AesKey; // AES key for the running connection
-        internal byte[] ReceiveIV; // The IV that will be used for the next decryption
-        internal byte[] SendIV;
         internal VSLSocket parent;
-
         private TcpClient tcp;
         private Queue cache;
         private ConcurrentQueue<byte[]> queue;
