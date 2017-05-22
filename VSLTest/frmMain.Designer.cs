@@ -28,13 +28,37 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.btnStartServer = new System.Windows.Forms.Button();
+            this.btnConnect = new System.Windows.Forms.Button();
             this.SuspendLayout();
+            // 
+            // btnStartServer
+            // 
+            this.btnStartServer.Location = new System.Drawing.Point(12, 12);
+            this.btnStartServer.Name = "btnStartServer";
+            this.btnStartServer.Size = new System.Drawing.Size(89, 23);
+            this.btnStartServer.TabIndex = 0;
+            this.btnStartServer.Text = "Server starten";
+            this.btnStartServer.UseVisualStyleBackColor = true;
+            this.btnStartServer.Click += new System.EventHandler(this.btnStartServer_Click);
+            // 
+            // btnConnect
+            // 
+            this.btnConnect.Location = new System.Drawing.Point(197, 12);
+            this.btnConnect.Name = "btnConnect";
+            this.btnConnect.Size = new System.Drawing.Size(75, 23);
+            this.btnConnect.TabIndex = 1;
+            this.btnConnect.Text = "Verbinden";
+            this.btnConnect.UseVisualStyleBackColor = true;
+            this.btnConnect.Click += new System.EventHandler(this.btnConnect_Click);
             // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.btnConnect);
+            this.Controls.Add(this.btnStartServer);
             this.Name = "frmMain";
             this.Text = "VSL test application";
             this.ResumeLayout(false);
@@ -42,6 +66,9 @@
         }
 
         #endregion
+
+        private System.Windows.Forms.Button btnStartServer;
+        private System.Windows.Forms.Button btnConnect;
     }
 }
 
