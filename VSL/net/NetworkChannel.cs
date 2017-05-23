@@ -92,7 +92,8 @@ namespace VSL
         /// </summary>
         private void StartTasks()
         {
-            Task lt = ListenerTask();
+            //Task lt = ListenerTask();
+            Thread lt = new Thread(() => ListenerThread()); lt.Start();
             Task wt = WorkerTask();
             Task st = SenderTask();
         }
@@ -117,7 +118,7 @@ namespace VSL
                 try
                 {
                     byte[] buf = new byte[_networkBufferSize];
-                    int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None);
+                    int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None); //Does not work asynchronously
                     if (len == 0)
                     {
                         await Task.Delay(10);
@@ -126,6 +127,31 @@ namespace VSL
                     cache.Enqeue(buf.Take(len).ToArray());
                 }
                 catch { }
+            }
+        }
+        /// <summary>
+        /// Receives bytes from the socket to the cache
+        /// </summary>
+        /// <returns></returns>
+        private void ListenerThread()
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try
+                {
+                    byte[] buf = new byte[_networkBufferSize];
+                    int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None); //Does not work asynchronously
+                    if (len == 0)
+                    {
+                        Thread.Sleep(10);
+                        continue;
+                    }
+                    cache.Enqeue(buf.Take(len).ToArray());
+                }
+                catch (SocketException ex)
+                {
+                    parent.ExceptionHandler.HandleSocketException(ex);
+                }
             }
         }
 
