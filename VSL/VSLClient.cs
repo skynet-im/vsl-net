@@ -56,7 +56,7 @@ namespace VSL
             base.handler = handler;
             //  initialize component>
             // <resolve hostname
-            IPAddress[] ips;
+            /*IPAddress[] ips;
             try
             {
                 ips = await Dns.GetHostAddressesAsync(address);
@@ -64,12 +64,13 @@ namespace VSL
             catch (Exception ex)
             {
                 throw new Exception("Could not resolve hostname " + address + ": " + ex);
-            }
+            }*/
             // resolve hostname>
 
             // <connect
             TcpClient tcp = new TcpClient();
-            bool couldConnect = false;
+            await tcp.ConnectAsync(address, port);
+            /*bool couldConnect = false;
             foreach (IPAddress ip in ips)
             {
                 try
@@ -82,7 +83,7 @@ namespace VSL
                 }
                 catch { }
             }
-            if (!couldConnect) throw new Exception("Could not connect to the specified host");
+            if (!couldConnect) throw new Exception("Could not connect to the specified host");*/
             // connect>
 
             // <key exchange
