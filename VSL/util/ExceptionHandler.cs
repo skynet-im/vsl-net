@@ -61,6 +61,11 @@ namespace VSL
             parent.CloseConnection("Timeout while waiting for more data");
             Console.WriteLine("Timeout while waiting for more data: " + ex.ToString());
         }
+        internal void HandleSocketException(System.Net.Sockets.SocketException ex)
+        {
+            parent.CloseConnection("Socket was closed");
+            Console.WriteLine("Socket was closed: " + ex.ToString());
+        }
         //  functions>
     }
 }

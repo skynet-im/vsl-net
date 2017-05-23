@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
@@ -34,6 +35,7 @@ namespace VSLTest
         private async Task ListenerTask()
         {
             TcpListener listener = new TcpListener(IPAddress.Any, 32771);
+            listener.Start();
             while (true)
             {
                 if (listener.Pending())
@@ -46,7 +48,13 @@ namespace VSLTest
         private async void btnConnect_Click(object sender, EventArgs e)
         {
             vslClient = new VSLClient(0, 0);
+            vslClient.ConnectionClosed += new EventHandler<ConnectionClosedEventArgs>(VSL_Close);
             await vslClient.ConnectAsync("localhost", 32771, publickey);
+        }
+
+        private void VSL_Close(object sender, ConnectionClosedEventArgs e)
+        {
+            MessageBox.Show("Connection closed");
         }
     }
 }
