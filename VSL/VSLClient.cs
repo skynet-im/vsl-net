@@ -48,13 +48,19 @@ namespace VSL
             if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException();
             if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException();
             //  check args>
+
+            TcpClient tcp = new TcpClient();
+            await tcp.ConnectAsync(address, port);
+
             // <initialize component
-            channel = new NetworkChannel(this);
+            channel = new NetworkChannel(this, tcp); // TWOMETER-CORRECT: Wie wäre es, wenn der NetworkChannel auch seinen TCP-Client kriegt? Dann kann er vlt. auch lesen ;-)
             manager = new NetworkManagerClient(this, serverKey);
             base.manager = manager;
             handler = new PacketHandlerClient(this);
             base.handler = handler;
             //  initialize component>
+
+
             // <resolve hostname
             /*IPAddress[] ips;
             try
@@ -68,8 +74,6 @@ namespace VSL
             // resolve hostname>
 
             // <connect
-            TcpClient tcp = new TcpClient();
-            await tcp.ConnectAsync(address, port);
             /*bool couldConnect = false;
             foreach (IPAddress ip in ips)
             {

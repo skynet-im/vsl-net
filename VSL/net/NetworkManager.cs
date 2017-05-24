@@ -27,7 +27,8 @@ namespace VSL
         {
             try
             {
-                CryptographicAlgorithm algorithm = (CryptographicAlgorithm)(await parent.channel.ReadAsync(1))[0];
+                byte b = (await parent.channel.ReadAsync(1))[0];              
+                CryptographicAlgorithm algorithm = (CryptographicAlgorithm)b;
                 switch (algorithm)
                 {
                     case CryptographicAlgorithm.None:
@@ -40,6 +41,7 @@ namespace VSL
                         await ReceivePacketAsync_AES_256();
                         break;
                 }
+                
             }
             catch (InvalidCastException ex) //Enum Parse
             {
@@ -116,7 +118,7 @@ namespace VSL
                     if (packet.Length.Type == Packet.PacketLength.LengthType.Constant)
                     {
                         length = packet.Length.Length;
-                    }
+                    } 
                     else if (packet.Length.Type == Packet.PacketLength.LengthType.UInt32)
                     {
                         length = BitConverter.ToUInt32(plaintext.Take(4).ToArray(), 0);
