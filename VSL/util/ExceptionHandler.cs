@@ -53,6 +53,7 @@ namespace VSL
         }
         internal void HandleNotSupportedException(NotSupportedException ex)
         {
+            // TWOMETER-CORRECT: Was ist denn ein "supported supported"
             parent.CloseConnection("Method is not supported supported by this VSL version -> invalid operation");
             Console.WriteLine("Method is not supported supported by this VSL version -> invalid operation: " + ex.ToString());
         }

@@ -39,7 +39,9 @@ namespace VSLTest
             while (true)
             {
                 if (listener.Pending())
+                {
                     vslServer = new VSLServer(await listener.AcceptTcpClientAsync(), 0, 0, keypair);
+                }
                 else
                     await Task.Delay(10);
             }
@@ -48,13 +50,20 @@ namespace VSLTest
         private async void btnConnect_Click(object sender, EventArgs e)
         {
             vslClient = new VSLClient(0, 0);
-            vslClient.ConnectionClosed += new EventHandler<ConnectionClosedEventArgs>(VSL_Close);
+            vslClient.ConnectionClosed += new EventHandler<ConnectionClosedEventArgs>(VSL_Close); // TWOMETER-CORRECT: Warum machst du das so kompliziert xD?
+            vslClient.ConnectionEstablished += VSL_Open;
             await vslClient.ConnectAsync("localhost", 32771, publickey);
+        }
+
+        private void VSL_Open(object sender, EventArgs e)
+        {
+            MessageBox.Show("Connection established");
         }
 
         private void VSL_Close(object sender, ConnectionClosedEventArgs e)
         {
             MessageBox.Show("Connection closed");
         }
+
     }
 }

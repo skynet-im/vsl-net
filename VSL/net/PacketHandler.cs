@@ -17,6 +17,11 @@ namespace VSL
         internal VSLSocket parent;
         //  fields>
 
+        internal PacketHandler()
+        {
+            InitializeComponent(); // TWOMETER-CORRECT: Vielleicht sollte man seine Packetliste auch initialisieren
+        }
+
         // <constructor
         /// <summary>
         /// Initializes all non-child-specific components
@@ -44,6 +49,7 @@ namespace VSL
                     return true;
                 }
             }
+
             packet = null;
             return false;
         }

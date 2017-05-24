@@ -191,7 +191,7 @@ namespace VSL
                     }
                     else
                     {
-                        Console.WriteLine("[VSL] Error at deqeuing the send queue in NetworkChannel.SenderTask");
+                        Console.WriteLine("[VSL] Error at dequeuing the send queue in NetworkChannel.SenderTask");
                     }
                 }
                 else

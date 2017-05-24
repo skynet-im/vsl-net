@@ -40,6 +40,8 @@ namespace VSL
                 parent.manager.AesKey = p.AesKey;
                 parent.manager.SendIV = p.ServerIV;
                 parent.manager.ReceiveIV = p.ClientIV;
+                // TWOMETER-CORRECT: Naja, auch wenn die Version OK ist, sollte man den Handshake beenden ;-)
+                await parent.manager.SendPacketAsync(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.Compatible));
             }
             else
                 await parent.manager.SendPacketAsync(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));
