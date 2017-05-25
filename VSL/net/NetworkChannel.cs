@@ -156,7 +156,7 @@ namespace VSL
                 }
                 else
                 {
-                    await Task.Delay(1000, ct); //Change to 10 before release
+                    await Task.Delay(10, ct);
                 }
             }
         }

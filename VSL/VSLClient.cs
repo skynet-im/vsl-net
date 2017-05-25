@@ -92,12 +92,15 @@ namespace VSL
 
             // <key exchange
             Task s = manager.SendPacketAsync(CryptographicAlgorithm.None, new Packet.P00Handshake(Packet.RequestType.DirectPublicKey));
-            Task<byte[]> key = Task.Run(() => Crypt.AES.GenerateKey());
-            Task<byte[]> civ = Task.Run(() => Crypt.AES.GenerateIV());
-            Task<byte[]> siv = Task.Run(() => Crypt.AES.GenerateIV());
-            manager.AesKey = await key;
-            manager.SendIV = await civ;
-            manager.ReceiveIV = await siv;
+            //Task<byte[]> key = Task.Run(() => Crypt.AES.GenerateKey());
+            //Task<byte[]> civ = Task.Run(() => Crypt.AES.GenerateIV());
+            //Task<byte[]> siv = Task.Run(() => Crypt.AES.GenerateIV());
+            //manager.AesKey = await key;
+            //manager.SendIV = await civ;
+            //manager.ReceiveIV = await siv;
+            manager.AesKey = Crypt.Util.GetBytes("91b67fffa84f93ef9f9881e543827c5e79da45d07d72363ed503b4c7366200af");
+            manager.SendIV = Crypt.Util.GetBytes("00000000000000000000000000000000");
+            manager.ReceiveIV = Crypt.Util.GetBytes("00000000000000000000000000000000");
             await s;
             await manager.SendPacketAsync(CryptographicAlgorithm.RSA_2048, new Packet.P01KeyExchange(manager.AesKey, manager.SendIV,
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct));
