@@ -18,6 +18,7 @@ namespace VSL
         {
             this.parent = parent;
             base.parent = parent;
+            InitializeComponent();
         }
         //  constructor>
 
@@ -36,6 +37,7 @@ namespace VSL
         }
         internal override void HandlePacket03FinishHandshake(P03FinishHandshake p)
         {
+            parent.Logger.d("handling packet 03: " + p.ConnectionType.ToString());
             switch (p.ConnectionType)
             {
                 case ConnectionType.Compatible:

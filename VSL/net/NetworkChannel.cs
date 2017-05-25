@@ -20,9 +20,13 @@ namespace VSL
         private TcpClient tcp;
         private Queue cache;
         private ConcurrentQueue<byte[]> queue;
+        private int _networkBufferSize = 65536;
+
+        private Thread listenerThread;
+        private Thread senderThread;
+        private bool threadsRunning = true;
         private CancellationTokenSource cts;
         private CancellationToken ct;
-        private int _networkBufferSize = 65536;
         //  fields>
 
         // <properties
@@ -92,10 +96,12 @@ namespace VSL
         /// </summary>
         private void StartTasks()
         {
-            //Task lt = ListenerTask();
-            Thread lt = new Thread(() => ListenerThread()); lt.Start();
+            listenerThread = new Thread(() => ListenerThread());
+            listenerThread.Start();
+            senderThread = new Thread(() => SenderThread());
+            senderThread.Start();
+
             Task wt = WorkerTask();
-            Task st = SenderTask();
         }
 
         /// <summary>
@@ -103,44 +109,25 @@ namespace VSL
         /// </summary>
         private void StopTasks()
         {
+            threadsRunning = false;
             if (!cts.IsCancellationRequested)
                 cts.Cancel();
+            listenerThread?.Abort();
+            senderThread?.Abort();
         }
 
         /// <summary>
         /// Receives bytes from the socket to the cache
         /// </summary>
         /// <returns></returns>
-        private async Task ListenerTask()
-        {
-            while (!ct.IsCancellationRequested)
-            {
-                try
-                {
-                    byte[] buf = new byte[_networkBufferSize];
-                    int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None); //Does not work asynchronously
-                    if (len == 0)
-                    {
-                        await Task.Delay(10);
-                        continue;
-                    }
-                    cache.Enqeue(buf.Take(len).ToArray());
-                }
-                catch { }
-            }
-        }
-        /// <summary>
-        /// Receives bytes from the socket to the cache
-        /// </summary>
-        /// <returns></returns>
         private void ListenerThread()
         {
-            while (!ct.IsCancellationRequested)
+            while (threadsRunning)
             {
                 try
                 {
                     byte[] buf = new byte[_networkBufferSize];
-                    int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None); //Does not work asynchronously
+                    int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None);
                     if (len == 0)
                     {
                         Thread.Sleep(10);
@@ -150,7 +137,7 @@ namespace VSL
                 }
                 catch (SocketException ex)
                 {
-                    parent.ExceptionHandler.HandleSocketException(ex);
+                    parent.ExceptionHandler.HandleException(ex, true);
                 }
             }
         }
@@ -165,11 +152,11 @@ namespace VSL
             {
                 if (cache.Length > 0)
                 {
-                    await parent.manager.OnDataReceiveAsync();
+                    parent.manager.OnDataReceive();
                 }
                 else
                 {
-                    await Task.Delay(10, ct);
+                    await Task.Delay(1000, ct); //Change to 10 before release
                 }
             }
         }
@@ -178,9 +165,9 @@ namespace VSL
         /// Sends pending data from the queue
         /// </summary>
         /// <returns></returns>
-        private async Task SenderTask()
+        private void SenderThread()
         {
-            while (!ct.IsCancellationRequested)
+            while (threadsRunning)
             {
                 if (queue.Count > 0)
                 {
@@ -196,7 +183,7 @@ namespace VSL
                 }
                 else
                 {
-                    await Task.Delay(10, ct);
+                    Thread.Sleep(10);
                 }
             }
         }
@@ -211,8 +198,8 @@ namespace VSL
             int cycle = 1;
             while (cache.Length < count)
             {
-                if (cycle >= 10) throw new TimeoutException();
-                await Task.Delay(10, ct);
+                if (cycle >= 10) throw new TimeoutException(); //Change cycles to 100 before release
+                await Task.Delay(50, ct);
                 cycle++;
             }
             byte[] buf = new byte[count];

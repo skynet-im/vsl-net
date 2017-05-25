@@ -53,7 +53,7 @@ namespace VSL
             await tcp.ConnectAsync(address, port);
 
             // <initialize component
-            channel = new NetworkChannel(this, tcp); // TWOMETER-CORRECT: Wie wäre es, wenn der NetworkChannel auch seinen TCP-Client kriegt? Dann kann er vlt. auch lesen ;-)
+            channel = new NetworkChannel(this, tcp);
             manager = new NetworkManagerClient(this, serverKey);
             base.manager = manager;
             handler = new PacketHandlerClient(this);

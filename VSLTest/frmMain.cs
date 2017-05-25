@@ -41,6 +41,8 @@ namespace VSLTest
                 if (listener.Pending())
                 {
                     vslServer = new VSLServer(await listener.AcceptTcpClientAsync(), 0, 0, keypair);
+                    vslServer.PacketReceived += vslServer_Received;
+                    vslServer.ConnectionClosed += VSL_Close;
                 }
                 else
                     await Task.Delay(10);
@@ -50,20 +52,38 @@ namespace VSLTest
         private async void btnConnect_Click(object sender, EventArgs e)
         {
             vslClient = new VSLClient(0, 0);
-            vslClient.ConnectionClosed += new EventHandler<ConnectionClosedEventArgs>(VSL_Close); // TWOMETER-CORRECT: Warum machst du das so kompliziert xD?
             vslClient.ConnectionEstablished += VSL_Open;
+            vslClient.ConnectionClosed += VSL_Close;
             await vslClient.ConnectAsync("localhost", 32771, publickey);
         }
 
         private void VSL_Open(object sender, EventArgs e)
         {
-            MessageBox.Show("Connection established");
+            btnConnect.Enabled = false;
         }
 
         private void VSL_Close(object sender, ConnectionClosedEventArgs e)
         {
-            MessageBox.Show("Connection closed");
+            if (sender == vslClient)
+            {
+                btnConnect.Enabled = true;
+                MessageBox.Show("[Client] Connection closed");
+            }
+            else if (sender == vslServer)
+                MessageBox.Show("[Server] Connection closed");
         }
 
+        private void btnSendPacket_Click(object sender, EventArgs e)
+        {
+            Random rnd = new Random();
+            byte[] b = new byte[16];
+            rnd.NextBytes(b);
+            vslClient.SendPacket(1, b);
+        }
+
+        private void vslServer_Received(object sender, PacketReceivedEventArgs e)
+        {
+            MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, VSL.Crypt.Util.ToHexString(e.Content)));
+        }
     }
 }
