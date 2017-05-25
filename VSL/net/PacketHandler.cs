@@ -16,12 +16,6 @@ namespace VSL
         internal List<IPacket> RegisteredPackets;
         internal VSLSocket parent;
         //  fields>
-
-        internal PacketHandler()
-        {
-            InitializeComponent(); // TWOMETER-CORRECT: Vielleicht sollte man seine Packetliste auch initialisieren
-        }
-
         // <constructor
         /// <summary>
         /// Initializes all non-child-specific components
@@ -37,7 +31,6 @@ namespace VSL
             };
         }
         //  constructor>
-
         // <functions
         internal bool TryGetPacket(byte id, out IPacket packet)
         {

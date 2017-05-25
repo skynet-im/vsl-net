@@ -19,6 +19,10 @@ namespace VSL
         internal NetworkManager manager;
         internal PacketHandler handler;
         internal ExceptionHandler ExceptionHandler;
+        /// <summary>
+        /// Configure necessary console output
+        /// </summary>
+        public Logger Logger;
         //  fields>
         // <constructor
         /// <summary>
@@ -27,6 +31,7 @@ namespace VSL
         internal void InitializeComponent()
         {
             ExceptionHandler = new ExceptionHandler(this);
+            Logger = new Logger(this);
         }
         //  constructor>
         // <properties

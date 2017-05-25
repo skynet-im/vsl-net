@@ -72,6 +72,7 @@
     <Compile Include="util\Crypt\RSA.cs" />
     <Compile Include="util\Crypt\Util.cs" />
     <Compile Include="util\ExceptionHandler.cs" />
+    <Compile Include="util\Logger.cs" />
     <Compile Include="util\PacketBuffer.cs" />
     <Compile Include="util\Queue.cs" />
     <Compile Include="util\VersionManager.cs" />
