@@ -24,7 +24,7 @@ namespace VSL
 
         private Thread listenerThread;
         private Thread senderThread;
-        private bool threadsRunning = true;
+        private bool threadsRunning = false;
         private CancellationTokenSource cts;
         private CancellationToken ct;
         //  fields>
@@ -96,12 +96,13 @@ namespace VSL
         /// </summary>
         private void StartTasks()
         {
+            if (threadsRunning) throw new InvalidOperationException("Tasks are already running.");
+            threadsRunning = true;
             listenerThread = new Thread(() => ListenerThread());
             listenerThread.Start();
             senderThread = new Thread(() => SenderThread());
             senderThread.Start();
-
-            Task wt = WorkerTask();
+            Task workerTask = WorkerTask();
         }
 
         /// <summary>
@@ -148,15 +149,15 @@ namespace VSL
         /// <returns></returns>
         private async Task WorkerTask()
         {
-            while (!ct.IsCancellationRequested)
+            while (threadsRunning)
             {
                 if (cache.Length > 0)
                 {
-                    parent.manager.OnDataReceive();
+                    await parent.manager.OnDataReceiveAsync();
                 }
                 else
                 {
-                    await Task.Delay(10, ct);
+                    await Task.Delay(10);
                 }
             }
         }
@@ -178,7 +179,7 @@ namespace VSL
                     }
                     else
                     {
-                        Console.WriteLine("[VSL] Error at dequeuing the send queue in NetworkChannel.SenderTask");
+                        parent.Logger.i("[VSL] Error at dequeuing the send queue in NetworkChannel.SenderTask");
                     }
                 }
                 else
@@ -198,23 +199,15 @@ namespace VSL
             int cycle = 1;
             while (cache.Length < count)
             {
-                if (cycle >= 10) throw new TimeoutException(); //Change cycles to 100 before release
+                if (cycle >= 1000) throw new TimeoutException();
                 await Task.Delay(50, ct);
                 cycle++;
             }
             byte[] buf = new byte[count];
             bool success = cache.Dequeue(out buf, count);
-            if (!success) throw new Exception("Error in the cache");
+            if (!success)
+                throw new Exception("Error in the cache");
             return buf;
-        }
-        /// <summary>
-        /// Reads data from the buffer
-        /// </summary>
-        /// <param name="count">count of bytes to read</param>
-        /// <returns></returns>
-        internal Task<byte[]> ReadAsync(uint count)
-        {
-            return ReadAsync(Convert.ToInt32(count));
         }
 
         /// <summary>
@@ -229,7 +222,7 @@ namespace VSL
             }
             catch (SocketException ex)
             {
-                Console.WriteLine("[VSL] SocketException in NetworkChannel.SendRaw(): " + ex.ToString());
+                parent.ExceptionHandler.HandleException(ex, true);
             }
         }
 

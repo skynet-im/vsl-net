@@ -31,6 +31,7 @@
             this.btnStartServer = new System.Windows.Forms.Button();
             this.btnConnect = new System.Windows.Forms.Button();
             this.btnSendPacket = new System.Windows.Forms.Button();
+            this.btnTest = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnStartServer
@@ -63,11 +64,22 @@
             this.btnSendPacket.UseVisualStyleBackColor = true;
             this.btnSendPacket.Click += new System.EventHandler(this.btnSendPacket_Click);
             // 
+            // btnTest
+            // 
+            this.btnTest.Location = new System.Drawing.Point(197, 70);
+            this.btnTest.Name = "btnTest";
+            this.btnTest.Size = new System.Drawing.Size(75, 23);
+            this.btnTest.TabIndex = 3;
+            this.btnTest.Text = "Testen";
+            this.btnTest.UseVisualStyleBackColor = true;
+            this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.btnTest);
             this.Controls.Add(this.btnSendPacket);
             this.Controls.Add(this.btnConnect);
             this.Controls.Add(this.btnStartServer);
@@ -82,6 +94,7 @@
         private System.Windows.Forms.Button btnStartServer;
         private System.Windows.Forms.Button btnConnect;
         private System.Windows.Forms.Button btnSendPacket;
+        private System.Windows.Forms.Button btnTest;
     }
 }
 
