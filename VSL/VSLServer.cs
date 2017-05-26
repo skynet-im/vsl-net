@@ -36,7 +36,6 @@ namespace VSL
             OldestProduct = oldestProduct;
             Keypair = keypair;
             channel = new NetworkChannel(this, tcp);
-            channel.Connect(tcp);
             manager = new NetworkManagerServer(this, keypair);
             base.manager = manager;
             handler = new PacketHandlerServer(this);
