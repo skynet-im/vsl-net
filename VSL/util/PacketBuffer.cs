@@ -156,6 +156,16 @@ namespace VSL
             WriteByteRaw(BitConverter.GetBytes(l));
         }
         //   long>
+        //  <ulong
+        public ulong ReadULong()
+        {
+            return BitConverter.ToUInt64(ReadByteRaw(8), 0);
+        }
+        public void WriteULong(ulong l)
+        {
+            WriteByteRaw(BitConverter.GetBytes(l));
+        }
+        //   ulong>
         //  <date
         public DateTime ReadDate()
         {

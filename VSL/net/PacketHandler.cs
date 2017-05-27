@@ -69,12 +69,16 @@ namespace VSL
             }
         }
 
-        internal abstract void HandlePacket00Handshake(P00Handshake p);
-        internal abstract void HandlePacket01KeyExchange(P01KeyExchange p);
-        internal abstract void HandlePacket02Certificate(P02Certificate p);
-        internal abstract void HandlePacket03FinishHandshake(P03FinishHandshake p);
-        internal abstract void HandlePacket04ChangeIV(P04ChangeIV p);
-        internal abstract void HandlePacket05KeepAlive(P05KeepAlive p);
+        internal abstract void HandleP00Handshake(P00Handshake p);
+        internal abstract void HandleP01KeyExchange(P01KeyExchange p);
+        internal abstract void HandleP02Certificate(P02Certificate p);
+        internal abstract void HandleP03FinishHandshake(P03FinishHandshake p);
+        internal abstract void HandleP04ChangeIV(P04ChangeIV p);
+        internal abstract void HandleP05KeepAlive(P05KeepAlive p);
+        internal abstract void HandleP06Accepted(P06Accepted p);
+        internal abstract void HandleP07OpenFileTransfer(P07OpenFileTransfer p);
+        internal abstract void HandleP08FileHeader(P08FileHeader p);
+        internal abstract void HandleP09FileDataBlock(P09FileDataBlock p);
         //  functions>
     }
 }

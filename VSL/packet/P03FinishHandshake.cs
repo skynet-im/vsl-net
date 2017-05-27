@@ -27,7 +27,7 @@ namespace VSL.Packet
 
         public byte ID { get; } = 3;
 
-        public PacketLength Length { get; } = new VariableLength();
+        public PacketLength PacketLength { get; } = new VariableLength();
         
         public IPacket CreatePacket(byte[] buf)
         {
@@ -38,7 +38,7 @@ namespace VSL.Packet
 
         public void HandlePacket(PacketHandler handler)
         {
-            handler.HandlePacket03FinishHandshake(this);
+            handler.HandleP03FinishHandshake(this);
         }
 
         public void ReadPacket(byte[] buf)

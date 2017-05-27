@@ -66,11 +66,11 @@ namespace VSL
                 if (success)
                 {
                     uint length = 0;
-                    if (packet.Length.Type == Packet.PacketLength.LengthType.Constant)
+                    if (packet.PacketLength.Type == Packet.PacketLength.LengthType.Constant)
                     {
-                        length = packet.Length.Length;
+                        length = packet.PacketLength.Length;
                     }
-                    else if (packet.Length.Type == Packet.PacketLength.LengthType.UInt32)
+                    else if (packet.PacketLength.Type == Packet.PacketLength.LengthType.UInt32)
                     {
                         length = BitConverter.ToUInt32(await parent.channel.ReadAsync(4), 0);
                     }
@@ -116,11 +116,11 @@ namespace VSL
                 if (success)
                 {
                     uint length = 0;
-                    if (packet.Length.Type == Packet.PacketLength.LengthType.Constant)
+                    if (packet.PacketLength.Type == Packet.PacketLength.LengthType.Constant)
                     {
-                        length = packet.Length.Length;
+                        length = packet.PacketLength.Length;
                     }
-                    else if (packet.Length.Type == Packet.PacketLength.LengthType.UInt32)
+                    else if (packet.PacketLength.Type == Packet.PacketLength.LengthType.UInt32)
                     {
                         length = BitConverter.ToUInt32(plaintext.Take(4).ToArray(), 0);
                         plaintext = plaintext.Skip(4).ToArray();
@@ -168,9 +168,9 @@ namespace VSL
                 Packet.IPacket packet;
                 bool success = parent.handler.TryGetPacket(id, out packet);
                 uint length = 0;
-                if (success && packet.Length.Type == Packet.PacketLength.LengthType.Constant)
+                if (success && packet.PacketLength.Type == Packet.PacketLength.LengthType.Constant)
                 {
-                    length = packet.Length.Length;
+                    length = packet.PacketLength.Length;
                 }
                 else
                 {
@@ -227,7 +227,7 @@ namespace VSL
         {
             byte[] head = new byte[1] { packet.ID };
             byte[] content = packet.WritePacket();
-            if (packet.Length.Type == Packet.PacketLength.LengthType.UInt32)
+            if (packet.PacketLength.Type == Packet.PacketLength.LengthType.UInt32)
                 head = head.Concat(BitConverter.GetBytes(Convert.ToUInt32(content.Length))).ToArray();
             return SendPacketAsync(alg, head, content);
         }

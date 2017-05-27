@@ -3,39 +3,40 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VSL.Packet;
 
 namespace VSL.Packet
 {
-    internal class P05KeepAlive : IPacket
+    internal class P06Accepted : IPacket
     {
-        internal P05KeepAlive()
+        internal P06Accepted()
         {
 
         }
 
-        public byte ID { get; } = 4;
+        public byte ID { get; } = 6;
 
-        public PacketLength PacketLength { get; } = new ConstantLength(0);
+        public PacketLength PacketLength { get; } = new ConstantLength(3);
 
         public IPacket CreatePacket(byte[] buf)
         {
-            return new P05KeepAlive();
+            P06Accepted packet = new P06Accepted();
+            packet.ReadPacket(buf);
+            return packet;
         }
 
         public void HandlePacket(PacketHandler handler)
         {
-            handler.HandleP05KeepAlive(this);
+            throw new NotImplementedException();
         }
 
         public void ReadPacket(byte[] buf)
         {
-            
+            throw new NotImplementedException();
         }
 
         public byte[] WritePacket()
         {
-            return new byte[0];
+            throw new NotImplementedException();
         }
     }
 }
