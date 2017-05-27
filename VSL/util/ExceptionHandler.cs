@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace VSL
@@ -12,19 +13,29 @@ namespace VSL
         // <fields
         internal VSLSocket parent;
         private ConcurrentQueue<Exception> queue;
+        private CancellationTokenSource cts;
+        private CancellationToken ct;
         //  fields>
         // <constructor
         internal ExceptionHandler(VSLSocket parent)
         {
             this.parent = parent;
             queue = new ConcurrentQueue<Exception>();
+            cts = new CancellationTokenSource();
+            ct = cts.Token;
             Task et = ExceptionThrower();
         }
         //  constructor>
         // <functions
+        internal void StopTasks()
+        {
+            if (!cts.IsCancellationRequested)
+                cts.Cancel();
+        }
+
         private async Task ExceptionThrower()
         {
-            while (true)
+            while (!ct.IsCancellationRequested)
             {
                 if (queue.Count > 0)
                 {
@@ -37,7 +48,7 @@ namespace VSL
                     }
                 }
                 else
-                    await Task.Delay(10);
+                    await Task.Delay(10, ct);
             }
         }
 
