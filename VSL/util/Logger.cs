@@ -11,6 +11,19 @@ namespace VSL
     /// </summary>
     public class Logger
     {
+        /// <summary>
+        /// Gets or sets a value indicating whether debug messages are printed in the console.
+        /// </summary>
+        public bool DebugMessages { get; set; } = false;
+        /// <summary>
+        /// Gets or sets a value indicating whether exception messages are printed in the console.
+        /// </summary>
+        public bool ExceptionMessages { get; set; } = false;
+        /// <summary>
+        /// Gets or sets a value indicating whether information messages are printed in the console.
+        /// </summary>
+        public bool InfoMessages { get; set; } = false;
+
         private VSLSocket parent;
         internal Logger(VSLSocket parent)
         {
@@ -21,21 +34,24 @@ namespace VSL
         /// </summary>
         internal void d(string s)
         {
-            Console.WriteLine("[VSL Debug] " + s);
+            if (DebugMessages)
+                Console.WriteLine("[VSL Debug] " + s);
         }
         /// <summary>
         /// Prints an exception message
         /// </summary>
         internal void e(string s)
         {
-            Console.WriteLine("[VSL Exception] " + s);
+            if (ExceptionMessages)
+                Console.WriteLine("[VSL Exception] " + s);
         }
         /// <summary>
         /// Prints an information message
         /// </summary>
         internal void i(string s)
         {
-            Console.WriteLine("[VSL Info] " + s);
+            if (InfoMessages)
+                Console.WriteLine("[VSL Info] " + s);
         }
     }
 }

@@ -70,7 +70,7 @@
             this.btnTest.Name = "btnTest";
             this.btnTest.Size = new System.Drawing.Size(75, 23);
             this.btnTest.TabIndex = 3;
-            this.btnTest.Text = "Testen";
+            this.btnTest.Text = "Trennen";
             this.btnTest.UseVisualStyleBackColor = true;
             this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
             // 

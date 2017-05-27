@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
-using VSL.Crypt;
 
 namespace VSLTest
 {
@@ -87,94 +86,9 @@ namespace VSLTest
             MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, VSL.Crypt.Util.ToHexString(e.Content)));
         }
 
-        private async void btnTest_Click(object sender, EventArgs e)
+        private void btnTest_Click(object sender, EventArgs e)
         {
-            Random rnd = new Random();
-            for (int i = 1; i <= 128; i++)
-            {
-                byte[] buf = new byte[i];
-                rnd.NextBytes(buf);
-                await SendPacketAsync(2, buf);
-                if (!Util.ByteArraysEqual(await ReceivePacket_AES_256(), buf)) MessageBox.Show("Failed Packet with length " + i);
-            }
-        }
-
-        private byte[] Read(int count)
-        {
-            byte[] buf = buffer.Take(count).ToArray();
-            buffer = buffer.Skip(count).ToArray();
-            return buf;
-        }
-
-        private void Send(byte[] buf)
-        {
-            buffer = buffer.Concat(buf).ToArray();
-        }
-
-        private byte[] AesKey { get; } = Util.GetBytes("91b67fffa84f93ef9f9881e543827c5e79da45d07d72363ed503b4c7366200af");
-        private byte[] SendIV { get; } = Util.GetBytes("00000000000000000000000000000000");
-        private byte[] ReceiveIV { get; } = Util.GetBytes("00000000000000000000000000000000");
-
-        private async Task<byte[]> ReceivePacket_AES_256()
-        {
-            byte[] ciphertext = Read(16); //TimeoutException
-            Console.WriteLine("receiving AES packet:" + Util.ToHexString(ciphertext));
-            byte[] plaintext = await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV); //CryptographicException
-            Console.WriteLine("decrypted packet: " + Util.ToHexString(plaintext));
-            byte id = plaintext.Take(1).ToArray()[0];
-            plaintext = plaintext.Skip(1).ToArray();
-            uint length = BitConverter.ToUInt32(plaintext.Take(4).ToArray(), 0);
-            plaintext = plaintext.Skip(4).ToArray();
-            Console.WriteLine("AES Packet length=" + length);
-            if (length > plaintext.Length - 2) // 2 random bytes in the header for more security
-            {
-                int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
-                Console.WriteLine("AES Packet pending length=" + pendingLength);
-                int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
-                Console.WriteLine("AES Packet pending blocks=" + pendingBlocks);
-                ciphertext = Read(pendingBlocks * 16);
-                Console.WriteLine("AES Packet next ciphertext =" + Util.ToHexString(ciphertext));
-                plaintext = plaintext.Concat(await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV)).ToArray();
-            }
-            int startIndex = Convert.ToInt32(plaintext.Length - length);
-            byte[] content = plaintext.Skip(startIndex).ToArray(); // remove random bytes
-            return content;
-        }
-        private Task SendPacketAsync(byte id, byte[] content)
-        {
-            byte[] head = new byte[1] { id };
-            head = head.Concat(BitConverter.GetBytes(Convert.ToUInt32(content.Length))).ToArray();
-            return SendPacketAsync_AES_256(head, content);
-        }
-        private async Task SendPacketAsync_AES_256(byte[] head, byte[] content)
-        {
-            int blocks;
-            int saltLength;
-            if (head.Length + 2 + content.Length < 16)
-            {
-                blocks = 1;
-                saltLength = 15 - head.Length - content.Length;
-            }
-            else
-            {
-                blocks = Convert.ToInt32(Math.Ceiling((head.Length + 4 + content.Length) / 16d)); //at least 2 random bytes in the header block
-                saltLength = blocks * 16 - head.Length - content.Length - 2; //first blocks only 15 bytes (padding)
-            }
-            Console.WriteLine("salt length: " + Convert.ToString(saltLength));
-            byte[] salt = new byte[saltLength];
-            Random random = new Random();
-            random.NextBytes(salt);
-            byte[] plaintext = Util.ConnectBytesPA(head, salt, content);
-            Console.WriteLine("sending AES packet: " + Util.ToHexString(plaintext));
-            byte[] headBlock = await AES.EncryptAsync(plaintext.Take(15).ToArray(), AesKey, SendIV);
-            byte[] tailBlock = new byte[0];
-            if (plaintext.Length > 15)
-            {
-                plaintext = plaintext.Skip(15).ToArray();
-                tailBlock = await AES.EncryptAsync(plaintext, AesKey, SendIV);
-            }
-            Console.WriteLine("encrypted packet: " + Util.ToHexString(Util.ConnectBytesPA(headBlock, tailBlock)));
-            Send(Util.ConnectBytesPA(headBlock, tailBlock));
+            vslClient.CloseConnection("The client disconnected");
         }
     }
 }

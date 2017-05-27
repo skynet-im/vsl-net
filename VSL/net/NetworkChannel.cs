@@ -121,25 +121,33 @@ namespace VSL
         /// Receives bytes from the socket to the cache
         /// </summary>
         /// <returns></returns>
-        private void ListenerThread()
+        private async void ListenerThread()
         {
-            while (threadsRunning)
+            try
             {
-                try
+                while (true)
                 {
                     byte[] buf = new byte[_networkBufferSize];
                     int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None);
                     if (len == 0)
                     {
-                        Thread.Sleep(10);
-                        continue;
+                        await Task.Delay(10, ct);
+                        if (threadsRunning)
+                            continue;
+                        else
+                            return;
                     }
                     cache.Enqeue(buf.Take(len).ToArray());
+                    Console.WriteLine(string.Format("received {0} bytes", len));
                 }
-                catch (SocketException ex)
-                {
-                    parent.ExceptionHandler.HandleException(ex, true);
-                }
+            }
+            catch (SocketException ex)
+            {
+                parent.ExceptionHandler.HandleException(ex, true);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
             }
         }
 
@@ -157,7 +165,7 @@ namespace VSL
                 }
                 else
                 {
-                    await Task.Delay(10);
+                    await Task.Delay(10, ct);
                 }
             }
         }
@@ -166,9 +174,9 @@ namespace VSL
         /// Sends pending data from the queue
         /// </summary>
         /// <returns></returns>
-        private void SenderThread()
+        private async void SenderThread()
         {
-            while (threadsRunning)
+            while (true)
             {
                 if (queue.Count > 0)
                 {
@@ -184,7 +192,16 @@ namespace VSL
                 }
                 else
                 {
-                    Thread.Sleep(10);
+                    try
+                    {
+                        await Task.Delay(10, ct);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        return;
+                    }
+                    if (!threadsRunning)
+                        return;
                 }
             }
         }
