@@ -35,7 +35,7 @@ namespace VSL.Packet
 
         public byte ID { get; } = 1;
 
-        public PacketLength Length { get; } = new ConstantLength(72);
+        public PacketLength PacketLength { get; } = new ConstantLength(72);
 
         public IPacket CreatePacket(byte[] buf)
         {
@@ -46,7 +46,7 @@ namespace VSL.Packet
 
         public void HandlePacket(PacketHandler handler)
         {
-            handler.HandlePacket01KeyExchange(this);
+            handler.HandleP01KeyExchange(this);
         }
 
         public void ReadPacket(byte[] buf)

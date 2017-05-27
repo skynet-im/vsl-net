@@ -18,7 +18,7 @@ namespace VSL.Packet
         /// <summary>
         /// Returns the length characteristics of the packet
         /// </summary>
-        PacketLength Length { get; }
+        PacketLength PacketLength { get; }
         /// <summary>
         /// Creates a new packet and reads the data
         /// </summary>
@@ -33,8 +33,8 @@ namespace VSL.Packet
         /// <summary>
         /// Reads the data from the byte array
         /// </summary>
-        /// <param name="buf">packet content</param>
-        void ReadPacket(byte[] buf);
+        /// <param name="data">packet content</param>
+        void ReadPacket(byte[] data);
         /// <summary>
         /// Writes the data to a byte array
         /// </summary>

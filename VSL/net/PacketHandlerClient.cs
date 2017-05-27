@@ -23,19 +23,19 @@ namespace VSL
         //  constructor>
 
         // <functions
-        internal override void HandlePacket00Handshake(P00Handshake p)
+        internal override void HandleP00Handshake(P00Handshake p)
         {
             throw new NotImplementedException();
         }
-        internal override void HandlePacket01KeyExchange(P01KeyExchange p)
+        internal override void HandleP01KeyExchange(P01KeyExchange p)
         {
             throw new NotImplementedException();
         }
-        internal override void HandlePacket02Certificate(P02Certificate p)
+        internal override void HandleP02Certificate(P02Certificate p)
         {
             throw new NotSupportedException("This VSL version does not support Certificates");
         }
-        internal override void HandlePacket03FinishHandshake(P03FinishHandshake p)
+        internal override void HandleP03FinishHandshake(P03FinishHandshake p)
         {
             parent.Logger.d("handling packet 03: " + p.ConnectionType.ToString());
             switch (p.ConnectionType)
@@ -50,11 +50,11 @@ namespace VSL
                     break;
             }
         }
-        internal override void HandlePacket04ChangeIV(P04ChangeIV p)
+        internal override void HandleP04ChangeIV(P04ChangeIV p)
         {
             throw new NotImplementedException();
         }
-        internal override void HandlePacket05KeepAlive(P05KeepAlive p)
+        internal override void HandleP05KeepAlive(P05KeepAlive p)
         {
             throw new NotImplementedException();
         }
