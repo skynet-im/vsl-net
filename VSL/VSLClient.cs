@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using VSL.FileTransfer;
 
 namespace VSL
 {
@@ -16,6 +17,10 @@ namespace VSL
         // <fields
         new internal NetworkManagerClient manager;
         new internal PacketHandlerClient handler;
+        /// <summary>
+        /// Access file transfer functions.
+        /// </summary>
+        new public FileTransferClient FileTransfer;
         internal ushort LatestProduct;
         internal ushort OldestProduct;
         //  fields>
@@ -58,6 +63,8 @@ namespace VSL
             base.manager = manager;
             handler = new PacketHandlerClient(this);
             base.handler = handler;
+            FileTransfer = new FileTransferClient(this);
+            base.FileTransfer = FileTransfer;
             //  initialize component>
 
 

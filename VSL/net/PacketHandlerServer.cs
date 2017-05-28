@@ -63,6 +63,22 @@ namespace VSL
         {
             throw new NotSupportedException("This VSL version does not support keep alive packets");
         }
+        internal override void HandleP06Accepted(P06Accepted p)
+        {
+            throw new NotImplementedException();
+        }
+        internal override void HandleP07OpenFileTransfer(P07OpenFileTransfer p)
+        {
+            throw new NotImplementedException();
+        }
+        internal override void HandleP08FileHeader(P08FileHeader p)
+        {
+            throw new NotImplementedException();
+        }
+        internal override void HandleP09FileDataBlock(P09FileDataBlock p)
+        {
+            throw new NotImplementedException();
+        }
         //  functions>
     }
 }
