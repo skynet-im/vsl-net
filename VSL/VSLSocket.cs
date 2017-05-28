@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using VSL.FileTransfer;
 
 namespace VSL
 {
@@ -19,15 +20,19 @@ namespace VSL
         internal NetworkChannel channel;
         internal NetworkManager manager;
         internal PacketHandler handler;
+        /// <summary>
+        /// Access file transfer functions.
+        /// </summary>
+        public FileTransferSocket FileTransfer;
         internal ExceptionHandler ExceptionHandler;
         /// <summary>
-        /// Configure necessary console output
+        /// Configure necessary console output.
         /// </summary>
         public Logger Logger;
         //  fields>
         // <constructor
         /// <summary>
-        /// Initializes all non-child-specific components
+        /// Initializes all non-child-specific components.
         /// </summary>
         internal void InitializeComponent()
         {

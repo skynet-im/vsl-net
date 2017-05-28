@@ -4,12 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VSL.packet
+namespace VSL.Packet
 {
-    internal enum StreamMode : byte
+    internal enum ProblemCategory : byte
     {
-        GetHeader,
-        GetFile,
-        UploadFile
+        None
     }
 }

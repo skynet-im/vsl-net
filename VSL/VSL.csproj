@@ -50,6 +50,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events.cs" />
+    <Compile Include="FileTransfer\Events.cs" />
+    <Compile Include="FileTransfer\FileTransferServer.cs" />
+    <Compile Include="FileTransfer\FileTransferSocket.cs" />
+    <Compile Include="FileTransfer\FileTransferClient.cs" />
     <Compile Include="Net\CryptographicAlgorithm.cs" />
     <Compile Include="Net\NetworkManager.cs" />
     <Compile Include="Net\NetworkManagerServer.cs" />
@@ -69,17 +73,18 @@
     <Compile Include="Packet\P08FileHeader.cs" />
     <Compile Include="Packet\P09FileDataBlock.cs" />
     <Compile Include="Packet\PacketLength.cs" />
+    <Compile Include="Packet\ProblemCategory.cs" />
     <Compile Include="Packet\RequestType.cs" />
     <Compile Include="Packet\IPacket.cs" />
     <Compile Include="Packet\P00Handshake.cs" />
-    <Compile Include="Packet\StreamMode.cs" />
+    <Compile Include="FileTransfer\StreamMode.cs" />
     <Compile Include="Util\Constants.cs" />
     <Compile Include="Util\Crypt\AES.cs" />
     <Compile Include="Util\Crypt\Hash.cs" />
     <Compile Include="Util\Crypt\RSA.cs" />
     <Compile Include="Util\Crypt\Util.cs" />
     <Compile Include="Util\ExceptionHandler.cs" />
-    <Compile Include="Util\Identifier.cs" />
+    <Compile Include="FileTransfer\Identifier.cs" />
     <Compile Include="Util\Logger.cs" />
     <Compile Include="Util\PacketBuffer.cs" />
     <Compile Include="Util\Queue.cs" />
