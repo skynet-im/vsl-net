@@ -19,6 +19,7 @@ namespace VSL.FileTransfer
         {
             this.parent = parent;
             base.parent = parent;
+            InitializeComponent();
         }
         //  constructor>
     }
