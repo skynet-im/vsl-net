@@ -74,7 +74,7 @@ namespace VSL
         /// </summary>
         public event EventHandler<PacketReceivedEventArgs> PacketReceived;
         /// <summary>
-        /// Raises the PacketReceived event and inverts the packet id
+        /// Raises the PacketReceived event and inverts the packet id.
         /// </summary>
         /// <param name="id">Packet ID</param>
         /// <param name="content">Packet content</param>

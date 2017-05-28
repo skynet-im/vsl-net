@@ -23,6 +23,7 @@ namespace VSL
         }
         //  constructor>
         // <functions
+        #region receive
         internal async Task OnDataReceiveAsync()
         {
             try
@@ -217,11 +218,17 @@ namespace VSL
                 parent.ExceptionHandler.HandleException(ex, true);
             }
         }
+        #endregion receive
+        #region send
         internal Task SendPacketAsync(byte id, byte[] content)
         {
             byte[] head = new byte[1] { id };
             head = head.Concat(BitConverter.GetBytes(Convert.ToUInt32(content.Length))).ToArray();
             return SendPacketAsync(CryptographicAlgorithm.AES_256, head, content);
+        }
+        internal Task SendPacketAsync(Packet.IPacket packet)
+        {
+            return SendPacketAsync(CryptographicAlgorithm.AES_256, packet);
         }
         internal Task SendPacketAsync(CryptographicAlgorithm alg, Packet.IPacket packet)
         {
@@ -301,6 +308,7 @@ namespace VSL
                 parent.ExceptionHandler.HandleException(ex);
             }
         }
+        #endregion send
         internal abstract string PublicKey { get; }
         internal abstract string Keypair { get; }
         internal abstract byte[] AesKey { get; set; }
