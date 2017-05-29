@@ -50,7 +50,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events.cs" />
-    <Compile Include="FileTransfer\Events.cs" />
     <Compile Include="FileTransfer\FileTransferServer.cs" />
     <Compile Include="FileTransfer\FileTransferSocket.cs" />
     <Compile Include="FileTransfer\FileTransferClient.cs" />
