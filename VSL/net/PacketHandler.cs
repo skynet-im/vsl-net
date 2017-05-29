@@ -75,7 +75,13 @@ namespace VSL
         internal abstract void HandleP03FinishHandshake(P03FinishHandshake p);
         internal abstract void HandleP04ChangeIV(P04ChangeIV p);
         internal abstract void HandleP05KeepAlive(P05KeepAlive p);
-        internal abstract void HandleP06Accepted(P06Accepted p);
+        internal virtual void HandleP06Accepted(P06Accepted p)
+        {
+            if (p.RelatedPacket > 5 && p.RelatedPacket < 10)
+                parent.FileTransfer.OnAccepted(p);
+            else
+                throw new InvalidOperationException("Could not resume related packet");
+        }
         internal abstract void HandleP07OpenFileTransfer(P07OpenFileTransfer p);
         internal abstract void HandleP08FileHeader(P08FileHeader p);
         internal abstract void HandleP09FileDataBlock(P09FileDataBlock p);

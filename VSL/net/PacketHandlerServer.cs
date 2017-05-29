@@ -65,19 +65,22 @@ namespace VSL
         }
         internal override void HandleP06Accepted(P06Accepted p)
         {
-            throw new NotImplementedException();
+            base.HandleP06Accepted(p);
         }
         internal override void HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
-            throw new NotImplementedException();
+            parent.FileTransfer.OnFileTransferRequested(p.Identifier, p.StreamMode);
         }
         internal override void HandleP08FileHeader(P08FileHeader p)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(); //
         }
         internal override void HandleP09FileDataBlock(P09FileDataBlock p)
         {
-            throw new NotImplementedException();
+            if (parent.FileTransfer.ReceivingFile)
+                parent.FileTransfer.OnDataBlockReceived(p);
+            else
+                throw new InvalidOperationException("No active file transfer");
         }
         //  functions>
     }

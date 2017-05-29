@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ namespace VSL.Packet
     {
         internal string Name;
         internal ulong Length;
-        internal uint Attributes;
+        internal FileAttributes Attributes;
         internal DateTime CreationTime;
         internal DateTime LastAccessTime;
         internal DateTime LastWriteTime;
@@ -22,7 +23,7 @@ namespace VSL.Packet
 
         }
 
-        public P08FileHeader(string name, ulong length, uint attributes, DateTime creationTime, DateTime lastAccessTime, DateTime lastWriteTime, byte[] thumbnail, byte[] sha256)
+        public P08FileHeader(string name, ulong length, FileAttributes attributes, DateTime creationTime, DateTime lastAccessTime, DateTime lastWriteTime, byte[] thumbnail, byte[] sha256)
         {
             Name = name;
             Length = length;
@@ -55,7 +56,7 @@ namespace VSL.Packet
             PacketBuffer buf = new PacketBuffer(data);
             Name = buf.ReadString();
             Length = buf.ReadULong();
-            Attributes = buf.ReadUInt();
+            Attributes = (FileAttributes)buf.ReadUInt();
             CreationTime = buf.ReadDate();
             LastAccessTime = buf.ReadDate();
             LastWriteTime = buf.ReadDate();
@@ -68,7 +69,7 @@ namespace VSL.Packet
             PacketBuffer buf = new PacketBuffer();
             buf.WriteString(Name);
             buf.WriteULong(Length);
-            buf.WriteUInt(Attributes);
+            buf.WriteUInt((uint)Attributes);
             buf.WriteDate(CreationTime);
             buf.WriteDate(LastAccessTime);
             buf.WriteDate(LastWriteTime);

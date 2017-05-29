@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Packet;
 
 namespace VSL.FileTransfer
 {
@@ -27,26 +28,56 @@ namespace VSL.FileTransfer
         /// <summary>
         /// The FileTransferRequested event occurs when the client has requested a VSL file transfer.
         /// </summary>
-        public event EventHandler<FileTransferRequestedEventArgs> FileTransferRequested;
+        public event EventHandler FileTransferRequested;
         /// <summary>
         /// Raises the OnFileTransferRequested event.
         /// </summary>
-        internal void OnFileTransferRequested()
+        internal void OnFileTransferRequested(Identifier id, StreamMode mode)
         {
-            FileTransferRequested?.Invoke(this, new FileTransferRequestedEventArgs(this));
+            ID = id;
+            Mode = mode;
+            FileTransferRequested?.Invoke(this, new EventArgs());
         }
         //  events>
         // <functions
-        internal async void AcceptFileTransfer(string path)
+        /// <summary>
+        /// Accepts a pending VSL file transfer request.
+        /// </summary>
+        public async void Accept()
         {
-            if (string.IsNullOrEmpty(path))
-                await parent.manager.SendPacketAsync(new Packet.P06Accepted(false, 7, Packet.ProblemCategory.None));
-            else if (!File.Exists(path))
-                throw new FileNotFoundException("The file for the VSL file transfer could not be found @" + path);
+            if (string.IsNullOrEmpty(Path))
+                throw new ArgumentNullException("The specified Path must not be null");
+            else if (!File.Exists(Path))
+                throw new FileNotFoundException("The file for the VSL file transfer could not be found @" + Path);
             else
             {
-
+                await parent.manager.SendPacketAsync(new P06Accepted(true, 7, ProblemCategory.None));
+                switch (Mode)
+                {
+                    case StreamMode.GetHeader:
+                        await parent.manager.SendPacketAsync(GetHeaderPacket(Path));
+                        break;
+                    case StreamMode.GetFile:
+                        await parent.manager.SendPacketAsync(GetHeaderPacket(Path));
+                        break;
+                    case StreamMode.UploadFile:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException("Invalid StreamMode");
+                }
             }
+        }
+        /// <summary>
+        /// Denies a pending VSL file transfer request.
+        /// </summary>
+        public async void Deny()
+        {
+            await parent.manager.SendPacketAsync(new P06Accepted(false, 7, ProblemCategory.None));
+            Reset();
+        }
+        internal override void Reset()
+        {
+            base.Reset();
         }
         //  functions>
     }

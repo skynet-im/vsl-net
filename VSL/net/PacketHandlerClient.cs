@@ -60,7 +60,7 @@ namespace VSL
         }
         internal override void HandleP06Accepted(P06Accepted p)
         {
-            throw new NotImplementedException();
+            base.HandleP06Accepted(p);
         }
         internal override void HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
