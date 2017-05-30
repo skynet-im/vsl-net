@@ -73,7 +73,7 @@ namespace VSL
         }
         internal override void HandleP08FileHeader(P08FileHeader p)
         {
-            throw new NotImplementedException(); //
+            parent.FileTransfer.OnHeaderReceived(p);
         }
         internal override void HandleP09FileDataBlock(P09FileDataBlock p)
         {

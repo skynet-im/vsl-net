@@ -47,7 +47,7 @@ namespace VSL.FileTransfer
         {
             if (string.IsNullOrEmpty(Path))
                 throw new ArgumentNullException("The specified Path must not be null");
-            else if (!File.Exists(Path))
+            else if (Mode != StreamMode.UploadFile && !File.Exists(Path))
                 throw new FileNotFoundException("The file for the VSL file transfer could not be found @" + Path);
             else
             {
@@ -61,6 +61,7 @@ namespace VSL.FileTransfer
                         SendFile();
                         break;
                     case StreamMode.UploadFile:
+                        ReceiveFile();
                         break;
                     default:
                         throw new ArgumentOutOfRangeException("Invalid StreamMode");

@@ -56,18 +56,38 @@ namespace VSL.FileTransfer
         // <functions
         internal P08FileHeader GetHeaderPacket(string path)
         {
-            FileInfo fi = new FileInfo(path);
-            return new P08FileHeader(fi.FullName, Convert.ToUInt64(fi.Length), fi.Attributes, fi.CreationTime, fi.LastAccessTime, fi.LastWriteTime, new byte[0], new byte[0]);
+            try
+            {
+                FileInfo fi = new FileInfo(path);
+                return new P08FileHeader(fi.Name, Convert.ToUInt64(fi.Length), fi.Attributes, fi.CreationTime, fi.LastAccessTime, fi.LastWriteTime, new byte[0], new byte[0]);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                return null;
+            }
         }
         internal void SetHeaderPacket(string path, P08FileHeader packet)
         {
-            string newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path), packet.Name);
-            File.Move(path, newPath);
-            FileInfo fi = new FileInfo(newPath);
-            fi.Attributes = packet.Attributes;
-            fi.CreationTime = packet.CreationTime;
-            fi.LastAccessTime = packet.LastAccessTime;
-            fi.LastWriteTime = packet.LastWriteTime;
+            string newPath = "";
+            try
+            {
+                newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path), packet.Name);
+                File.Move(path, newPath);
+                FileInfo fi = new FileInfo(newPath);
+                fi.Attributes = packet.Attributes;
+                fi.CreationTime = packet.CreationTime;
+                fi.LastAccessTime = packet.LastAccessTime;
+                fi.LastWriteTime = packet.LastWriteTime;
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine(string.Format("Source={0}, Target={1}, Exception{2}", path, newPath, ex));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
         #region receive
         internal void ReceiveFile()
@@ -84,6 +104,13 @@ namespace VSL.FileTransfer
         }
         internal async void OnDataBlockReceived(P09FileDataBlock packet)
         {
+            if (stream == null)
+                Console.WriteLine("Waiting for stream to be initialized");
+            while (stream == null)
+            {
+                await Task.Delay(100);
+            }
+            Console.WriteLine("Stream initialized");
             Task r = parent.manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
             Task w = stream.WriteAsync(packet.DataBlock, 0, packet.DataBlock.Length);
             await r;
@@ -95,6 +122,7 @@ namespace VSL.FileTransfer
                 SetHeaderPacket(Path, header);
                 ReceivingFile = false;
                 OnFileTransferFinished();
+                Reset();
             }
         }
         #endregion
@@ -103,7 +131,14 @@ namespace VSL.FileTransfer
             SendingFile = true;
             header = GetHeaderPacket(Path);
             Task t = parent.manager.SendPacketAsync(header);
-            stream = new FileStream(Path, FileMode.Open);
+            try
+            {
+                stream = new FileStream(Path, FileMode.Open);
+            }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.PrintException(ex);
+            }
             await t;
         }
         internal virtual async void OnAccepted(P06Accepted p)
@@ -116,9 +151,11 @@ namespace VSL.FileTransfer
                 if (count == 0)
                 {
                     stream.Close();
+                    OnFileTransferFinished();
                     Reset();
                 }
-                await parent.manager.SendPacketAsync(new P09FileDataBlock(startPos, buf.Take(count).ToArray()));
+                else
+                    await parent.manager.SendPacketAsync(new P09FileDataBlock(startPos, buf.Take(count).ToArray()));
             }
         }
         internal async void Cancel()
