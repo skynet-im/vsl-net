@@ -75,7 +75,7 @@ namespace VSL.FileTransfer
             ReceivingFile = true;
             stream = new FileStream(Path, FileMode.Create);
         }
-        internal async void OnHeaderReceived(P08FileHeader packet)
+        internal virtual async void OnHeaderReceived(P08FileHeader packet)
         {
             Task t = parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
             length = Convert.ToInt64(packet.Length);
