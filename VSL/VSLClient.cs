@@ -36,6 +36,9 @@ namespace VSL
 
             LatestProduct = latestProduct;
             OldestProduct = oldestProduct;
+
+            FileTransfer = new FileTransferClient(this);
+            base.FileTransfer = FileTransfer;
         }
         // constructor>
         // <functions
@@ -63,8 +66,6 @@ namespace VSL
             base.manager = manager;
             handler = new PacketHandlerClient(this);
             base.handler = handler;
-            FileTransfer = new FileTransferClient(this);
-            base.FileTransfer = FileTransfer;
             //  initialize component>
 
 

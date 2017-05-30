@@ -26,8 +26,14 @@ namespace VSL
             {
                 new P00Handshake(),
                 new P01KeyExchange(),
+                //new P02Certificate(),
                 new P03FinishHandshake(),
-                new P04ChangeIV()
+                new P04ChangeIV(),
+                //new P05KeepAlive(),
+                new P06Accepted(),
+                new P07OpenFileTransfer(),
+                new P08FileHeader(),
+                new P09FileDataBlock()
             };
         }
         //  constructor>

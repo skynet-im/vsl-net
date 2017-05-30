@@ -46,7 +46,10 @@ namespace VSL.FileTransfer
         /// <param name="mode">StreamMode for the VSL file request.</param>
         public async void RequestFile(Identifier id, StreamMode mode)
         {
-            await parent.manager.SendPacketAsync(new P07OpenFileTransfer(id, mode));
+            Task t = parent.manager.SendPacketAsync(new P07OpenFileTransfer(id, mode));
+            ID = id;
+            Mode = mode;
+            await t;
         }
         internal override void OnAccepted(P06Accepted p)
         {
@@ -73,6 +76,7 @@ namespace VSL.FileTransfer
         }
         internal void ResumeRequest()
         {
+            Console.WriteLine(Mode.ToString());
             switch (Mode)
             {
                 case StreamMode.GetHeader:

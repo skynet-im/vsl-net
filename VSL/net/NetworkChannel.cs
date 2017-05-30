@@ -138,7 +138,6 @@ namespace VSL
                             return;
                     }
                     cache.Enqeue(buf.Take(len).ToArray());
-                    Console.WriteLine(string.Format("received {0} bytes", len));
                 }
             }
             catch (SocketException ex)
