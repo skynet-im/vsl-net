@@ -58,7 +58,7 @@ namespace VSL.FileTransfer
                         await parent.manager.SendPacketAsync(GetHeaderPacket(Path));
                         break;
                     case StreamMode.GetFile:
-                        await parent.manager.SendPacketAsync(GetHeaderPacket(Path));
+                        SendFile();
                         break;
                     case StreamMode.UploadFile:
                         break;
