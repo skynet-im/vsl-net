@@ -76,7 +76,7 @@ namespace VSL.FileTransfer
         }
         internal void ResumeRequest()
         {
-            Console.WriteLine(Mode.ToString());
+            parent.Logger.d("Starting file transfer with Mode " + Mode.ToString());
             switch (Mode)
             {
                 case StreamMode.GetHeader:

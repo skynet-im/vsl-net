@@ -56,16 +56,8 @@ namespace VSL.FileTransfer
         // <functions
         internal P08FileHeader GetHeaderPacket(string path)
         {
-            try
-            {
                 FileInfo fi = new FileInfo(path);
                 return new P08FileHeader(fi.Name, Convert.ToUInt64(fi.Length), fi.Attributes, fi.CreationTime, fi.LastAccessTime, fi.LastWriteTime, new byte[0], new byte[0]);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                return null;
-            }
         }
         internal void SetHeaderPacket(string path, P08FileHeader packet)
         {
@@ -80,13 +72,13 @@ namespace VSL.FileTransfer
                 fi.LastAccessTime = packet.LastAccessTime;
                 fi.LastWriteTime = packet.LastWriteTime;
             }
-            catch (IOException ex)
-            {
-                Console.WriteLine(string.Format("Source={0}, Target={1}, Exception{2}", path, newPath, ex));
-            }
+            //catch (IOException ex)
+            //{
+            //    Console.WriteLine(string.Format("Source={0}, Target={1}, Exception{2}", path, newPath, ex));
+            //}
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                parent.ExceptionHandler.PrintException(ex);
             }
         }
         #region receive
@@ -105,12 +97,12 @@ namespace VSL.FileTransfer
         internal async void OnDataBlockReceived(P09FileDataBlock packet)
         {
             if (stream == null)
-                Console.WriteLine("Waiting for stream to be initialized");
+                parent.Logger.d("Waiting for stream to be initialized");
             while (stream == null)
             {
                 await Task.Delay(100);
             }
-            Console.WriteLine("Stream initialized");
+            parent.Logger.d("Stream initialized");
             Task r = parent.manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
             Task w = stream.WriteAsync(packet.DataBlock, 0, packet.DataBlock.Length);
             await r;
