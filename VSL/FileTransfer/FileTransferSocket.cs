@@ -52,6 +52,17 @@ namespace VSL.FileTransfer
         {
             FileTransferFinished?.Invoke(this, new EventArgs());
         }
+        /// <summary>
+        /// The FileTransferProgress event occurs when the progress of a running file transfer has changed.
+        /// </summary>
+        public event EventHandler<FileTransferProgressEventArgs> FileTransferProgress;
+        /// <summary>
+        /// Raises the FileTransferProgressEvent.
+        /// </summary>
+        internal void OnFileTransferProgress()
+        {
+            FileTransferProgress?.Invoke(this, new FileTransferProgressEventArgs());
+        }
         //  events>
         // <functions
         internal P08FileHeader GetHeaderPacket(string path)
