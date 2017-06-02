@@ -38,7 +38,7 @@
             // 
             this.btnStartServer.Location = new System.Drawing.Point(12, 12);
             this.btnStartServer.Name = "btnStartServer";
-            this.btnStartServer.Size = new System.Drawing.Size(89, 23);
+            this.btnStartServer.Size = new System.Drawing.Size(99, 23);
             this.btnStartServer.TabIndex = 0;
             this.btnStartServer.Text = "Server starten";
             this.btnStartServer.UseVisualStyleBackColor = true;

@@ -32,7 +32,7 @@ namespace VSL
             if (!cts.IsCancellationRequested)
                 cts.Cancel();
         }
-
+        
         private async Task ExceptionThrower()
         {
             while (!ct.IsCancellationRequested)
@@ -57,15 +57,20 @@ namespace VSL
         /// </summary>
         /// <param name="ex">Exception to print.</param>
         /// <param name="invoke">Redirects exceptions thrown by background threads to the UI thread.</param>
-        internal void HandleException(Exception ex, bool invoke = false)
+        internal void CloseConnection(Exception ex, bool invoke = false)
         {
-            if (!invoke)
+            //if (!invoke)
+            //{
+            //    parent.CloseConnection(ex.Message);
+            //    PrintException(ex);
+            //}
+            //else
+            //    queue.Enqueue(ex);
+            Action<string> myDelegate = new Action<string>(delegate (string message)
             {
-                parent.CloseConnection(ex.Message);
-                PrintException(ex);
-            }
-            else
-                queue.Enqueue(ex);
+                parent.CloseConnection(message);
+            });
+            myDelegate.Invoke(ex.Message);
         }
 
         /// <summary>

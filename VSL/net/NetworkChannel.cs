@@ -142,7 +142,7 @@ namespace VSL
             }
             catch (SocketException ex)
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (TaskCanceledException)
             {
@@ -238,7 +238,7 @@ namespace VSL
             }
             catch (SocketException ex)
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
         }
 
