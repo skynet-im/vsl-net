@@ -48,12 +48,12 @@ namespace VSL
             }
             catch (InvalidOperationException ex)
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
                 return;
             }
             catch (TimeoutException ex)
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
                 return;
             }
         }
@@ -84,23 +84,23 @@ namespace VSL
             }
             catch (ArgumentOutOfRangeException ex) //PacketBuffer
             {
-                parent.ExceptionHandler.HandleException(ex);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (InvalidOperationException ex)
             {
-                parent.ExceptionHandler.HandleException(ex);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (NotImplementedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.HandleException(ex);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (NotSupportedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.HandleException(ex);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (TimeoutException ex)
             {
-                parent.ExceptionHandler.HandleException(ex);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
         }
         private async Task ReceivePacketAsync_RSA_2048()
@@ -135,27 +135,27 @@ namespace VSL
             }
             catch (ArgumentOutOfRangeException ex) //PacketBuffer
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (System.Security.Cryptography.CryptographicException ex)
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (InvalidOperationException ex) //PacketHandler
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (NotImplementedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (NotSupportedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (TimeoutException ex)
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
         }
         private async Task ReceivePacketAsync_AES_256()
@@ -199,23 +199,23 @@ namespace VSL
             }
             catch (ArgumentOutOfRangeException ex) //PacketBuffer
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (System.Security.Cryptography.CryptographicException ex)
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (NotImplementedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (NotSupportedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
             catch (TimeoutException ex)
             {
-                parent.ExceptionHandler.HandleException(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex, true);
             }
         }
         #endregion receive
@@ -266,11 +266,11 @@ namespace VSL
             }
             catch (System.Security.Cryptography.CryptographicException ex) //Invalid key
             {
-                parent.ExceptionHandler.HandleException(ex);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (NotImplementedException ex) //Keys
             {
-                parent.ExceptionHandler.HandleException(ex);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
         }
         private async Task SendPacketAsync_AES_256(byte[] head, byte[] content)
@@ -305,7 +305,7 @@ namespace VSL
             }
             catch (System.Security.Cryptography.CryptographicException ex) //Invalid key/iv
             {
-                parent.ExceptionHandler.HandleException(ex);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
         }
         #endregion send

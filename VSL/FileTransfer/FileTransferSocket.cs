@@ -30,7 +30,7 @@ namespace VSL.FileTransfer
         /// </summary>
         public string Path;
         private FileStream stream;
-        private long received;
+        private long transfered;
         private long length;
         private P08FileHeader header;
         //  fields>
@@ -61,7 +61,7 @@ namespace VSL.FileTransfer
         /// </summary>
         internal void OnFileTransferProgress()
         {
-            FileTransferProgress?.Invoke(this, new FileTransferProgressEventArgs());
+            FileTransferProgress?.Invoke(this, new FileTransferProgressEventArgs(transfered, length));
         }
         //  events>
         // <functions
@@ -118,8 +118,8 @@ namespace VSL.FileTransfer
             Task w = stream.WriteAsync(packet.DataBlock, 0, packet.DataBlock.Length);
             await r;
             await w;
-            received += packet.DataBlock.Length;
-            if (received == length)
+            transfered += packet.DataBlock.Length;
+            if (transfered == length)
             {
                 stream.Close();
                 SetHeaderPacket(Path, header);
@@ -158,7 +158,11 @@ namespace VSL.FileTransfer
                     Reset();
                 }
                 else
-                    await parent.manager.SendPacketAsync(new P09FileDataBlock(startPos, buf.Take(count).ToArray()));
+                {
+                    Task t = parent.manager.SendPacketAsync(new P09FileDataBlock(startPos, buf.Take(count).ToArray()));
+                    transfered += count;
+                    await t;
+                }
             }
         }
         internal async void Cancel()
@@ -175,7 +179,7 @@ namespace VSL.FileTransfer
             ID = null;
             Path = null;
             stream = null;
-            received = 0;
+            transfered = 0;
             length = 0;
             header = null;
         }
