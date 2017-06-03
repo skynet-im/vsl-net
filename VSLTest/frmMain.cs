@@ -8,10 +8,10 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
+using VSL.FileTransfer;
 
 namespace VSLTest
 {
@@ -77,6 +77,7 @@ namespace VSLTest
                 vslClient.Logger.InfoMessages = true;
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
+                vslClient.FileTransfer.FileTransferProgress += vslClient_FTProgress;
                 vslClient.FileTransfer.FileTransferFinished += vslClient_FTFinished;
                 await vslClient.ConnectAsync("localhost", 32771, publickey);
                 btnConnect.Enabled = false;
@@ -121,7 +122,7 @@ namespace VSLTest
 
         private void vslServer_FTRequest(object sender, EventArgs e)
         {
-            if (vslServer.FileTransfer.Mode != VSL.FileTransfer.StreamMode.UploadFile)
+            if (vslServer.FileTransfer.Mode != StreamMode.UploadFile)
             {
                 using (OpenFileDialog fd = new OpenFileDialog())
                 {
@@ -146,8 +147,13 @@ namespace VSLTest
                 fd.ShowDialog();
                 vslClient.FileTransfer.Path = fd.FileName;
             }
-            vslClient.FileTransfer.RequestFile(new VSL.FileTransfer.Identifier(0), VSL.FileTransfer.StreamMode.UploadFile);
+            vslClient.FileTransfer.RequestFile(new Identifier(0), StreamMode.UploadFile);
             btnSendFile.Enabled = false;
+        }
+
+        private void vslClient_FTProgress(object sender, FileTransferProgressEventArgs e)
+        {
+            pbFileTransfer.Value = Convert.ToInt32(e.Percentage * 100);
         }
 
         private void vslClient_FTFinished(object sender, EventArgs e)

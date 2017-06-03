@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace VSL
 {
-    internal class ExceptionHandler
+    internal class ExceptionHandler:IDisposable
     {
         // <fields
         internal VSLSocket parent;
-        private ConcurrentQueue<Exception> queue;
+        private ConcurrentQueue<Action> queue;
         private CancellationTokenSource cts;
         private CancellationToken ct;
         //  fields>
@@ -20,10 +20,10 @@ namespace VSL
         internal ExceptionHandler(VSLSocket parent)
         {
             this.parent = parent;
-            queue = new ConcurrentQueue<Exception>();
+            queue = new ConcurrentQueue<Action>();
             cts = new CancellationTokenSource();
             ct = cts.Token;
-            Task et = ExceptionThrower();
+            Task et = MainThreadInvoker();
         }
         //  constructor>
         // <functions
@@ -32,19 +32,18 @@ namespace VSL
             if (!cts.IsCancellationRequested)
                 cts.Cancel();
         }
-        
-        private async Task ExceptionThrower()
+
+        private async Task MainThreadInvoker()
         {
             while (!ct.IsCancellationRequested)
             {
                 if (queue.Count > 0)
                 {
-                    Exception ex;
-                    bool success = queue.TryDequeue(out ex);
+                    Action work;
+                    bool success = queue.TryDequeue(out work);
                     if (success)
                     {
-                        parent.CloseConnection(ex.Message);
-                        PrintException(ex);
+                        work.Invoke();
                     }
                 }
                 else
@@ -56,21 +55,27 @@ namespace VSL
         /// Handles an Exception by closing the connection and releasing all associated resources.
         /// </summary>
         /// <param name="ex">Exception to print.</param>
-        /// <param name="invoke">Redirects exceptions thrown by background threads to the UI thread.</param>
-        internal void CloseConnection(Exception ex, bool invoke = false)
+        /// 
+        internal void CloseConnection(Exception ex)
         {
-            //if (!invoke)
-            //{
-            //    parent.CloseConnection(ex.Message);
-            //    PrintException(ex);
-            //}
-            //else
-            //    queue.Enqueue(ex);
-            Action<string> myDelegate = new Action<string>(delegate (string message)
+            Action myDelegate = new Action(delegate
             {
-                parent.CloseConnection(message);
+                PrintException(ex);
+                parent.CloseConnection(ex.Message);
             });
-            myDelegate.Invoke(ex.Message);
+            queue.Enqueue(myDelegate);
+        }
+
+        /// <summary>
+        /// Handles an Exception by cancelling the current file transfer and releasing all associated resources.
+        /// </summary>
+        /// <param name="ex"></param>
+        internal void CancelFileTransfer(Exception ex)
+        {
+            Action myDelegate = new Action(delegate
+            {
+                PrintException(ex);
+            });
         }
 
         /// <summary>
@@ -80,6 +85,42 @@ namespace VSL
         {
             parent.Logger.e(ex.ToString());
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    cts.Dispose();
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~ExceptionHandler() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
         //  functions>
     }
 }
