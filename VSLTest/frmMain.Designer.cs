@@ -32,6 +32,7 @@
             this.btnConnect = new System.Windows.Forms.Button();
             this.btnSendPacket = new System.Windows.Forms.Button();
             this.btnSendFile = new System.Windows.Forms.Button();
+            this.pbFileTransfer = new System.Windows.Forms.ProgressBar();
             this.SuspendLayout();
             // 
             // btnStartServer
@@ -75,11 +76,19 @@
             this.btnSendFile.UseVisualStyleBackColor = true;
             this.btnSendFile.Click += new System.EventHandler(this.btnSendFile_Click);
             // 
+            // pbFileTransfer
+            // 
+            this.pbFileTransfer.Location = new System.Drawing.Point(12, 226);
+            this.pbFileTransfer.Name = "pbFileTransfer";
+            this.pbFileTransfer.Size = new System.Drawing.Size(260, 23);
+            this.pbFileTransfer.TabIndex = 4;
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.pbFileTransfer);
             this.Controls.Add(this.btnSendFile);
             this.Controls.Add(this.btnSendPacket);
             this.Controls.Add(this.btnConnect);
@@ -96,6 +105,7 @@
         private System.Windows.Forms.Button btnConnect;
         private System.Windows.Forms.Button btnSendPacket;
         private System.Windows.Forms.Button btnSendFile;
+        private System.Windows.Forms.ProgressBar pbFileTransfer;
     }
 }
 

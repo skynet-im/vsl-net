@@ -48,12 +48,12 @@ namespace VSL
             }
             catch (InvalidOperationException ex)
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
                 return;
             }
             catch (TimeoutException ex)
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
                 return;
             }
         }
@@ -135,27 +135,27 @@ namespace VSL
             }
             catch (ArgumentOutOfRangeException ex) //PacketBuffer
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (System.Security.Cryptography.CryptographicException ex)
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (InvalidOperationException ex) //PacketHandler
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (NotImplementedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (NotSupportedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (TimeoutException ex)
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
         }
         private async Task ReceivePacketAsync_AES_256()
@@ -199,23 +199,23 @@ namespace VSL
             }
             catch (ArgumentOutOfRangeException ex) //PacketBuffer
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (System.Security.Cryptography.CryptographicException ex)
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (NotImplementedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (NotSupportedException ex) //PacketHandler
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (TimeoutException ex)
             {
-                parent.ExceptionHandler.CloseConnection(ex, true);
+                parent.ExceptionHandler.CloseConnection(ex);
             }
         }
         #endregion receive

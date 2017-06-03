@@ -31,15 +31,11 @@ namespace VSL.Crypt
                 aes.Key = key;
                 aes.IV = iv;
                 ICryptoTransform encryptor = aes.CreateEncryptor();
-                using (System.IO.MemoryStream msCiphertext = new System.IO.MemoryStream())
-                {
-                    using (CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write))
-                    {
-                        csEncrypt.Write(b, 0, b.Length);
-                        csEncrypt.Close();
-                    }
-                    ciphertext = msCiphertext.ToArray();
-                }
+                System.IO.MemoryStream msCiphertext = new System.IO.MemoryStream();
+                CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write);
+                csEncrypt.Write(b, 0, b.Length);
+                csEncrypt.Close();
+                ciphertext = msCiphertext.ToArray();
             }
             return ciphertext;
         }
@@ -92,15 +88,11 @@ namespace VSL.Crypt
                 aes.Key = key;
                 aes.IV = iv;
                 ICryptoTransform decryptor = aes.CreateDecryptor();
-                using (System.IO.MemoryStream msPlaintext = new System.IO.MemoryStream())
-                {
-                    using (CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write))
-                    {
-                        csDecrypt.Write(b, 0, b.Length);
-                        csDecrypt.Close();
-                    }
-                    plaintext = msPlaintext.ToArray();
-                }
+                System.IO.MemoryStream msPlaintext = new System.IO.MemoryStream();
+                CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write);
+                csDecrypt.Write(b, 0, b.Length);
+                csDecrypt.Close();
+                plaintext = msPlaintext.ToArray();
             }
             return plaintext;
         }
@@ -134,7 +126,6 @@ namespace VSL.Crypt
             }
             return plaintext;
         }
-
         /// <summary>
         /// Generates a new 256 bit AES key
         /// </summary>

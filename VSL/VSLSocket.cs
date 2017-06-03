@@ -13,7 +13,7 @@ namespace VSL
     /// <summary>
     /// The base class for VSL implementations
     /// </summary>
-    public abstract class VSLSocket
+    public abstract class VSLSocket:IDisposable
     {
         // <fields
         internal bool ConnectionAvailable = false;
@@ -113,14 +113,60 @@ namespace VSL
             await manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
         /// <summary>
-        /// Stops the network channel, closes the TCP Connection and raises the related event
+        /// Closes the TCP Connection, raises the related event and releases all associated resources. Instead of calling this method, ensure that the stream is properly disposed.
         /// </summary>
         public void CloseConnection(string reason)
         {
             OnConnectionClosed(reason);
-            channel.CloseConnection(reason);
+            channel.CloseConnection();
             ExceptionHandler.StopTasks();
+            Dispose();
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        /// <param name="disposing">Specify whether managed objects should be disposed.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    channel.Dispose();
+                    ExceptionHandler.Dispose();
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~VSLSocket() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
         //  functions>
     }
 }

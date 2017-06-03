@@ -11,7 +11,7 @@ namespace VSL.FileTransfer
     /// <summary>
     /// The base class for file transfer implementations.
     /// </summary>
-    public abstract class FileTransferSocket
+    public abstract class FileTransferSocket:IDisposable
     {
         // <fields
         internal VSLSocket parent;
@@ -61,14 +61,14 @@ namespace VSL.FileTransfer
         /// </summary>
         internal void OnFileTransferProgress()
         {
-            FileTransferProgress?.Invoke(this, new FileTransferProgressEventArgs(transfered, length));
+            FileTransferProgress?.Invoke(this, new FileTransferProgressEventArgs(transfered, Mode != StreamMode.GetHeader ? length : 0));
         }
         //  events>
         // <functions
         internal P08FileHeader GetHeaderPacket(string path)
         {
-                FileInfo fi = new FileInfo(path);
-                return new P08FileHeader(fi.Name, Convert.ToUInt64(fi.Length), fi.Attributes, fi.CreationTime, fi.LastAccessTime, fi.LastWriteTime, new byte[0], new byte[0]);
+            FileInfo fi = new FileInfo(path);
+            return new P08FileHeader(fi.Name, Convert.ToUInt64(fi.Length), fi.Attributes, fi.CreationTime, fi.LastAccessTime, fi.LastWriteTime, new byte[0], new byte[0]);
         }
         internal void SetHeaderPacket(string path, P08FileHeader packet)
         {
@@ -103,6 +103,7 @@ namespace VSL.FileTransfer
             Task t = parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
             length = Convert.ToInt64(packet.Length);
             header = packet;
+            OnFileTransferProgress();
             await t;
         }
         internal async void OnDataBlockReceived(P09FileDataBlock packet)
@@ -116,6 +117,7 @@ namespace VSL.FileTransfer
             parent.Logger.d("Stream initialized");
             Task r = parent.manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
             Task w = stream.WriteAsync(packet.DataBlock, 0, packet.DataBlock.Length);
+            OnFileTransferProgress();
             await r;
             await w;
             transfered += packet.DataBlock.Length;
@@ -129,10 +131,12 @@ namespace VSL.FileTransfer
             }
         }
         #endregion
+        #region send
         internal async void SendFile()
         {
             SendingFile = true;
             header = GetHeaderPacket(Path);
+            length = Convert.ToInt64(header.Length);
             Task t = parent.manager.SendPacketAsync(header);
             try
             {
@@ -140,8 +144,9 @@ namespace VSL.FileTransfer
             }
             catch (Exception ex)
             {
-                parent.ExceptionHandler.PrintException(ex);
+                parent.ExceptionHandler.CancelFileTransfer(ex);
             }
+            OnFileTransferProgress();
             await t;
         }
         internal virtual async void OnAccepted(P06Accepted p)
@@ -161,10 +166,12 @@ namespace VSL.FileTransfer
                 {
                     Task t = parent.manager.SendPacketAsync(new P09FileDataBlock(startPos, buf.Take(count).ToArray()));
                     transfered += count;
+                    OnFileTransferProgress();
                     await t;
                 }
             }
         }
+        #endregion
         internal async void Cancel()
         {
             if (!ReceivingFile)
@@ -183,6 +190,50 @@ namespace VSL.FileTransfer
             length = 0;
             header = null;
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        /// <param name="disposing">Specify whether managed objects should be disposed.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    stream.Dispose();
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~FileTransferSocket() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
         //  functions>
     }
 }
