@@ -23,15 +23,13 @@ namespace VSL.Packet
             ServerIV = serverIV;
         }
 
-        public byte ID { get; } = 4;
+        public byte PacketID { get; } = 4;
 
         public PacketLength PacketLength { get; } = new ConstantLength(32);
 
-        public IPacket CreatePacket(byte[] buf)
+        public IPacket New()
         {
-            P04ChangeIV packet = new P04ChangeIV();
-            packet.ReadPacket(buf);
-            return packet;
+            return new P04ChangeIV();
         }
 
         public void HandlePacket(PacketHandler handler)
@@ -39,19 +37,16 @@ namespace VSL.Packet
             handler.HandleP04ChangeIV(this);
         }
 
-        public void ReadPacket(byte[] buf)
+        public void ReadPacket(PacketBuffer buf)
         {
-            PacketBuffer reader = new PacketBuffer(buf);
-            ClientIV = reader.ReadByteArray(16);
-            ServerIV = reader.ReadByteArray(16);
+            ClientIV = buf.ReadByteArray(16);
+            ServerIV = buf.ReadByteArray(16);
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
-            PacketBuffer writer = new PacketBuffer();
-            writer.WriteByteArray(ClientIV, false);
-            writer.WriteByteArray(ServerIV, false);
-            return writer.ToArray();
+            buf.WriteByteArray(ClientIV, false);
+            buf.WriteByteArray(ServerIV, false);
         }
     }
 }

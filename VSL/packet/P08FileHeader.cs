@@ -35,15 +35,13 @@ namespace VSL.Packet
             SHA256 = sha256;
         }
 
-        public byte ID { get; } = 8;
+        public byte PacketID { get; } = 8;
 
         public PacketLength PacketLength { get; } = new VariableLength();
 
-        public IPacket CreatePacket(byte[] buf)
+        public IPacket New()
         {
-            P08FileHeader packet = new P08FileHeader();
-            packet.ReadPacket(buf);
-            return packet;
+            return new P08FileHeader();
         }
 
         public void HandlePacket(PacketHandler handler)
@@ -51,9 +49,8 @@ namespace VSL.Packet
             handler.HandleP08FileHeader(this);
         }
 
-        public void ReadPacket(byte[] data)
+        public void ReadPacket(PacketBuffer buf)
         {
-            PacketBuffer buf = new PacketBuffer(data);
             Name = buf.ReadString();
             Length = buf.ReadULong();
             Attributes = (FileAttributes)buf.ReadUInt();
@@ -64,9 +61,8 @@ namespace VSL.Packet
             SHA256 = buf.ReadByteArray(32);
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
-            PacketBuffer buf = new PacketBuffer();
             buf.WriteString(Name);
             buf.WriteULong(Length);
             buf.WriteUInt((uint)Attributes);
@@ -75,7 +71,6 @@ namespace VSL.Packet
             buf.WriteDate(LastWriteTime);
             buf.WriteByteArray(Thumbnail);
             buf.WriteByteArray(SHA256, false);
-            return buf.ToArray();
         }
     }
 }

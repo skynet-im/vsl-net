@@ -12,33 +12,32 @@ namespace VSL.Packet
     internal interface IPacket
     {
         /// <summary>
-        /// Returns the packet ID
+        /// Returns the packet ID.
         /// </summary>
-        byte ID { get; }
+        byte PacketID { get; }
         /// <summary>
-        /// Returns the length characteristics of the packet
+        /// Returns the length characteristics of the packet.
         /// </summary>
         PacketLength PacketLength { get; }
         /// <summary>
-        /// Creates a new packet and reads the data
+        /// Creates a new packet of the specified instance.
         /// </summary>
-        /// <param name="buf">Packet content</param>
         /// <returns></returns>
-        IPacket CreatePacket(byte[] buf);
+        IPacket New();
         /// <summary>
-        /// Forwards the packet to the handler
+        /// Forwards the packet to the handler.
         /// </summary>
-        /// <param name="handler">The responsible packet handler</param>
+        /// <param name="handler">The responsible packet handler.</param>
         void HandlePacket(PacketHandler handler);
         /// <summary>
-        /// Reads the data from the byte array
+        /// Reads the data from a PacketBuffer.
         /// </summary>
-        /// <param name="data">packet content</param>
-        void ReadPacket(byte[] data);
+        /// <param name="buf">PacketBuffer to read the packet content.</param>
+        void ReadPacket(PacketBuffer buf);
         /// <summary>
-        /// Writes the data to a byte array
+        /// Writes the data to a PacketBuffer.
         /// </summary>
-        /// <returns></returns>
-        byte[] WritePacket();
+        /// <param name="buf">PacketBuffer to write the packet content.</param>
+        void WritePacket(PacketBuffer buf);
     }
 }

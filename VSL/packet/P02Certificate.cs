@@ -14,11 +14,11 @@ namespace VSL.Packet
 
         }
 
-        public byte ID { get; } = 2;
+        public byte PacketID { get; } = 2;
 
         public PacketLength PacketLength { get; } = new VariableLength();
 
-        public IPacket CreatePacket(byte[] buf)
+        public IPacket New()
         {
             throw new NotImplementedException();
         }
@@ -28,12 +28,12 @@ namespace VSL.Packet
             throw new NotImplementedException();
         }
 
-        public void ReadPacket(byte[] buf)
+        public void ReadPacket(PacketBuffer buf)
         {
             throw new NotImplementedException();
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
             throw new NotImplementedException();
         }

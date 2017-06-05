@@ -23,15 +23,13 @@ namespace VSL.Packet
             StreamMode = streamMode;
         }
 
-        public byte ID { get; } = 7;
+        public byte PacketID { get; } = 7;
 
         public PacketLength PacketLength { get; } = new VariableLength();
 
-        public IPacket CreatePacket(byte[] buf)
+        public IPacket New()
         {
-            P07OpenFileTransfer packet = new P07OpenFileTransfer();
-            packet.ReadPacket(buf);
-            return packet;
+            return new P07OpenFileTransfer();
         }
 
         public void HandlePacket(PacketHandler handler)
@@ -39,19 +37,16 @@ namespace VSL.Packet
             handler.HandleP07OpenFileTransfer(this);
         }
 
-        public void ReadPacket(byte[] data)
+        public void ReadPacket(PacketBuffer buf)
         {
-            PacketBuffer buf = new PacketBuffer(data);
-            Identifier = FileTransfer.Identifier.FromBinary(buf);
+            Identifier = Identifier.FromBinary(buf);
             StreamMode = (StreamMode)buf.ReadByte();
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
-            PacketBuffer buf = new PacketBuffer();
             Identifier.ToBinary(buf);
             buf.WriteByte((byte)StreamMode);
-            return buf.ToArray();
         }
     }
 }

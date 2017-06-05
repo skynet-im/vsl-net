@@ -46,6 +46,7 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="b">two-dimensional byte array to connect</param>
         /// <returns></returns>
+        [Obsolete("Util.ConncectBytes is deprecated. To get better efficiency, do this process in your own code.", false)]
         public static byte[] ConnectBytes(byte[][] b)
         {
             byte[] buf = new byte[0];
@@ -60,6 +61,7 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="b">byte arrays to connect</param>
         /// <returns></returns>
+        [Obsolete("Util.ConncectBytesPA is deprecated. To get better efficiency, do this process in your own code.", false)]
         public static byte[] ConnectBytesPA(params byte[][] b)
         {
             return ConnectBytes(b);

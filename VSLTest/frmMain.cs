@@ -54,9 +54,9 @@ namespace VSLTest
                 if (listener.Pending())
                 {
                     vslServer = new VSLServer(await listener.AcceptTcpClientAsync(), 0, 0, keypair);
-                    vslServer.Logger.DebugMessages = true;
-                    vslServer.Logger.ExceptionMessages = true;
-                    vslServer.Logger.InfoMessages = true;
+                    //vslServer.Logger.DebugMessages = true;
+                    //vslServer.Logger.ExceptionMessages = true;
+                    //vslServer.Logger.InfoMessages = true;
                     vslServer.PacketReceived += vslServer_Received;
                     vslServer.ConnectionClosed += VSL_Close;
                     vslServer.FileTransfer.FileTransferRequested += vslServer_FTRequest;
@@ -72,9 +72,9 @@ namespace VSLTest
             if (!clientConnected)
             {
                 vslClient = new VSLClient(0, 0);
-                vslClient.Logger.DebugMessages = true;
-                vslClient.Logger.ExceptionMessages = true;
-                vslClient.Logger.InfoMessages = true;
+                //vslClient.Logger.DebugMessages = true;
+                //vslClient.Logger.ExceptionMessages = true;
+                //vslClient.Logger.InfoMessages = true;
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
                 vslClient.FileTransfer.FileTransferProgress += vslClient_FTProgress;
@@ -159,6 +159,13 @@ namespace VSLTest
         private void vslClient_FTFinished(object sender, EventArgs e)
         {
             btnSendFile.Enabled = true;
+        }
+
+        private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            vslClient.ConnectionClosed -= VSL_Close;
+            vslServer?.CloseConnection("");
+            vslClient?.CloseConnection("");
         }
     }
 }

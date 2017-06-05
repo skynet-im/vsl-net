@@ -25,15 +25,13 @@ namespace VSL.Packet
             Port = port;
         }
 
-        public byte ID { get; } = 3;
+        public byte PacketID { get; } = 3;
 
         public PacketLength PacketLength { get; } = new VariableLength();
-        
-        public IPacket CreatePacket(byte[] buf)
+
+        public IPacket New()
         {
-            P03FinishHandshake packet = new P03FinishHandshake();
-            packet.ReadPacket(buf);
-            return packet;
+            return new P03FinishHandshake();
         }
 
         public void HandlePacket(PacketHandler handler)
@@ -41,27 +39,24 @@ namespace VSL.Packet
             handler.HandleP03FinishHandshake(this);
         }
 
-        public void ReadPacket(byte[] buf)
+        public void ReadPacket(PacketBuffer buf)
         {
-            PacketBuffer reader = new PacketBuffer(buf);
-            ConnectionType = (ConnectionType)reader.ReadByte();
+            ConnectionType = (ConnectionType)buf.ReadByte();
             if (ConnectionType == ConnectionType.Redirect)
             {
-                Address = reader.ReadString();
-                Port = reader.ReadUShort();
+                Address = buf.ReadString();
+                Port = buf.ReadUShort();
             }
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
-            PacketBuffer writer = new PacketBuffer();
-            writer.WriteByte((byte)ConnectionType);
+            buf.WriteByte((byte)ConnectionType);
             if (ConnectionType == ConnectionType.Redirect)
             {
-                writer.WriteString(Address);
-                writer.WriteUShort(Port);
+                buf.WriteString(Address);
+                buf.WriteUShort(Port);
             }
-            return writer.ToArray();
         }
     }
 }

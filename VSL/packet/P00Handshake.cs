@@ -21,15 +21,13 @@ namespace VSL.Packet
             RequestType = requestType;
         }
 
-        public byte ID { get; } = 0;
+        public byte PacketID { get; } = 0;
 
         public PacketLength PacketLength { get; } = new ConstantLength(1);
 
-        public IPacket CreatePacket(byte[] buf)
+        public IPacket New()
         {
-            P00Handshake packet = new P00Handshake();
-            packet.ReadPacket(buf);
-            return packet;
+            return new P00Handshake();
         }
 
         public void HandlePacket(PacketHandler handler)
@@ -37,17 +35,14 @@ namespace VSL.Packet
             handler.HandleP00Handshake(this);
         }
 
-        public void ReadPacket(byte[] buf)
+        public void ReadPacket(PacketBuffer buf)
         {
-            PacketBuffer reader = new PacketBuffer(buf);
-            RequestType = (RequestType)reader.ReadByte();
+            RequestType = (RequestType)buf.ReadByte();
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
-            PacketBuffer writer = new PacketBuffer();
-            writer.WriteByte((byte)RequestType);
-            return writer.ToArray();
+            buf.WriteByte((byte)RequestType);
         }
     }
 }

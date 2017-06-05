@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace VSL
 {
-    internal class ExceptionHandler:IDisposable
+    internal class ExceptionHandler : IDisposable
     {
         // <fields
         internal VSLSocket parent;
@@ -75,7 +75,9 @@ namespace VSL
             Action myDelegate = new Action(delegate
             {
                 PrintException(ex);
+                parent.FileTransfer.Cancel();
             });
+            queue.Enqueue(myDelegate);
         }
 
         /// <summary>

@@ -14,11 +14,11 @@ namespace VSL.Packet
 
         }
 
-        public byte ID { get; } = 4;
+        public byte PacketID { get; } = 4;
 
         public PacketLength PacketLength { get; } = new ConstantLength(0);
 
-        public IPacket CreatePacket(byte[] buf)
+        public IPacket New()
         {
             return new P05KeepAlive();
         }
@@ -28,14 +28,14 @@ namespace VSL.Packet
             handler.HandleP05KeepAlive(this);
         }
 
-        public void ReadPacket(byte[] buf)
+        public void ReadPacket(PacketBuffer buf)
         {
             
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
-            return new byte[0];
+            
         }
     }
 }

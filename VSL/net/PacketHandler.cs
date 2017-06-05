@@ -42,7 +42,7 @@ namespace VSL
         {
             foreach (IPacket p in RegisteredPackets)
             {
-                if (id == p.ID)
+                if (id == p.PacketID)
                 {
                     packet = p;
                     return true;
@@ -66,9 +66,12 @@ namespace VSL
         {
             foreach (IPacket p in RegisteredPackets)
             {
-                if (id == p.ID)
+                if (id == p.PacketID)
                 {
-                    IPacket packet = p.CreatePacket(content);
+                    IPacket packet = p.New();
+                    PacketBuffer buf = new PacketBuffer(content);
+                    packet.ReadPacket(buf);
+                    buf.Dispose();
                     packet.HandlePacket(this);
                     return;
                 }

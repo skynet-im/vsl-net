@@ -33,15 +33,13 @@ namespace VSL.Packet
             OldestProduct = oldestProduct;
         }
 
-        public byte ID { get; } = 1;
+        public byte PacketID { get; } = 1;
 
         public PacketLength PacketLength { get; } = new ConstantLength(72);
 
-        public IPacket CreatePacket(byte[] buf)
+        public IPacket New()
         {
-            P01KeyExchange packet = new P01KeyExchange();
-            packet.ReadPacket(buf);
-            return packet;
+            return new P01KeyExchange();
         }
 
         public void HandlePacket(PacketHandler handler)
@@ -49,29 +47,26 @@ namespace VSL.Packet
             handler.HandleP01KeyExchange(this);
         }
 
-        public void ReadPacket(byte[] buf)
+        public void ReadPacket(PacketBuffer buf)
         {
-            PacketBuffer reader = new PacketBuffer(buf);
-            AesKey = reader.ReadByteArray(32);
-            ClientIV = reader.ReadByteArray(16);
-            ServerIV = reader.ReadByteArray(16);
-            LatestVSL = reader.ReadUShort();
-            OldestVSL = reader.ReadUShort();
-            LatestProduct = reader.ReadUShort();
-            OldestProduct = reader.ReadUShort();
+            AesKey = buf.ReadByteArray(32);
+            ClientIV = buf.ReadByteArray(16);
+            ServerIV = buf.ReadByteArray(16);
+            LatestVSL = buf.ReadUShort();
+            OldestVSL = buf.ReadUShort();
+            LatestProduct = buf.ReadUShort();
+            OldestProduct = buf.ReadUShort();
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
-            PacketBuffer writer = new PacketBuffer();
-            writer.WriteByteArray(AesKey, false);
-            writer.WriteByteArray(ClientIV, false);
-            writer.WriteByteArray(ServerIV, false);
-            writer.WriteUShort(LatestVSL);
-            writer.WriteUShort(OldestVSL);
-            writer.WriteUShort(LatestProduct);
-            writer.WriteUShort(OldestProduct);
-            return writer.ToArray();
+            buf.WriteByteArray(AesKey, false);
+            buf.WriteByteArray(ClientIV, false);
+            buf.WriteByteArray(ServerIV, false);
+            buf.WriteUShort(LatestVSL);
+            buf.WriteUShort(OldestVSL);
+            buf.WriteUShort(LatestProduct);
+            buf.WriteUShort(OldestProduct);
         }
     }
 }

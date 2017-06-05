@@ -138,6 +138,7 @@ namespace VSL
                             return;
                     }
                     cache.Enqeue(buf.Take(len).ToArray());
+                    buf = null;
                 }
             }
             catch (SocketException ex)
@@ -235,6 +236,7 @@ namespace VSL
             try
             {
                 tcp.Client.Send(buf);
+                buf = null;
             }
             catch (SocketException ex)
             {
