@@ -95,6 +95,7 @@
             this.Controls.Add(this.btnStartServer);
             this.Name = "frmMain";
             this.Text = "VSL test application";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
             this.ResumeLayout(false);
 
         }

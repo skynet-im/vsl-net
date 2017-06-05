@@ -82,6 +82,7 @@ namespace VSL
                         int missing = count - buffer.Length;
                         buffer = buffer.Concat(buf.Take(missing)).ToArray();
                         cache = buf.Skip(missing).ToArray();
+                        break;
                     }
                     else
                     {

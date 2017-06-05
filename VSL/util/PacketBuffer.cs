@@ -19,7 +19,7 @@ namespace VSL
         //  fields>
         // <constructor
         /// <summary>
-        /// Initializes a new instance of the PacketBuffer class
+        /// Initializes a new instance of the PacketBuffer class.
         /// </summary>
         public PacketBuffer()
         {
@@ -27,7 +27,7 @@ namespace VSL
             encoding = new UTF8Encoding();
         }
         /// <summary>
-        /// Initializes a new instance of the PacketBuffer class
+        /// Initializes a new instance of the PacketBuffer class.
         /// </summary>
         /// <param name="buffer">byte array to initialize</param>
         public PacketBuffer(byte[] buffer)
@@ -36,7 +36,47 @@ namespace VSL
             encoding = new UTF8Encoding();
         }
         //  constructor>
+        // <properties
+        /// <summary>
+        /// Gets the length of the underlying MemoryStream in bytes.
+        /// </summary>
+        public int Length
+        {
+            get
+            {
+                return Convert.ToInt32(baseStream.Length);
+            }
+        }
+        /// <summary>
+        /// Gets the current position within the underlying MemoryStream.
+        /// </summary>
+        public int Position
+        {
+            get
+            {
+                return Convert.ToInt32(baseStream.Position);
+            }
+        }
+        /// <summary>
+        /// Gets the count of pending bytes in the underlying MemoryStream.
+        /// </summary>
+        public int Pending
+        {
+            get
+            {
+                return Convert.ToInt32(baseStream.Length - baseStream.Position);
+            }
+        }
+        //  properties>
         // <functions
+        /// <summary>
+        /// Returns the content of the underlying MemoryStream as a byte array.
+        /// </summary>
+        /// <returns></returns>
+        public byte[] ToArray()
+        {
+            return baseStream.ToArray();
+        }
         /// <summary>
         /// Reads a byte array from the buffer
         /// </summary>
@@ -55,14 +95,6 @@ namespace VSL
         private void WriteByteRaw(byte[] b)
         {
             baseStream.Write(b, 0, b.Length);
-        }
-        /// <summary>
-        /// Returns the content of the underlying MemoryStream as a byte array
-        /// </summary>
-        /// <returns></returns>
-        public byte[] ToArray()
-        {
-            return baseStream.ToArray();
         }
         //  <byte
 #pragma warning disable CS1591 //Disables "Missing XML comment..."
@@ -92,7 +124,8 @@ namespace VSL
         /// <param name="autosize">True to write a uint for length, otherwise false</param>
         public void WriteByteArray(byte[] b, bool autosize = true)
         {
-            if (autosize) WriteUInt(Convert.ToUInt32(b.Length));
+            if (autosize)
+                WriteUInt(Convert.ToUInt32(b.Length));
             WriteByteRaw(b);
         }
         //   byte array>
@@ -189,6 +222,7 @@ namespace VSL
             WriteByteRaw(buf);
         }
 #pragma warning restore CS1591
+        //   string>
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
@@ -232,7 +266,6 @@ namespace VSL
             // GC.SuppressFinalize(this);
         }
         #endregion
-        //   string>
         //  functions>
     }
 }

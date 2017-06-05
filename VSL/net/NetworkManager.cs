@@ -196,6 +196,8 @@ namespace VSL
                 {
                     parent.OnPacketReceived(id, content);
                 }
+                ciphertext = null;
+                plaintext = null;
             }
             catch (ArgumentOutOfRangeException ex) //PacketBuffer
             {
@@ -232,8 +234,11 @@ namespace VSL
         }
         internal Task SendPacketAsync(CryptographicAlgorithm alg, Packet.IPacket packet)
         {
-            byte[] head = new byte[1] { packet.ID };
-            byte[] content = packet.WritePacket();
+            byte[] head = new byte[1] { packet.PacketID };
+            PacketBuffer buf = new PacketBuffer();
+            packet.WritePacket(buf);
+            byte[] content = buf.ToArray();
+            buf.Dispose();
             if (packet.PacketLength.Type == Packet.PacketLength.LengthType.UInt32)
                 head = head.Concat(BitConverter.GetBytes(Convert.ToUInt32(content.Length))).ToArray();
             return SendPacketAsync(alg, head, content);
@@ -255,14 +260,16 @@ namespace VSL
         }
         private void SendPacket_Plaintext(byte[] head, byte[] content)
         {
-            parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.None }, head, content));
+            parent.channel.SendAsync((new byte[1] { (byte)CryptographicAlgorithm.None }).Concat(head).Concat(content).ToArray());
         }
         private async Task SendPacketAsync_RSA_2048(byte[] head, byte[] content)
         {
             try
             {
-                byte[] ciphertext = await RSA.EncryptAsync(Util.ConnectBytesPA(head, content), PublicKey);
-                parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.RSA_2048 }, ciphertext));
+                byte[] ciphertext = await RSA.EncryptAsync(head.Concat(content).ToArray(), PublicKey);
+                parent.channel.SendAsync((new byte[1] { (byte)CryptographicAlgorithm.RSA_2048 }).Concat(ciphertext).ToArray());
+                head = null;
+                content = null;
             }
             catch (System.Security.Cryptography.CryptographicException ex) //Invalid key
             {
@@ -292,7 +299,7 @@ namespace VSL
                 byte[] salt = new byte[saltLength];
                 Random random = new Random();
                 random.NextBytes(salt);
-                byte[] plaintext = Util.ConnectBytesPA(head, salt, content);
+                byte[] plaintext = head.Concat(salt).Concat(content).ToArray();
                 byte[] headBlock = await AES.EncryptAsync(plaintext.Take(15).ToArray(), AesKey, SendIV);
                 byte[] tailBlock = new byte[0];
                 if (plaintext.Length > 15)
@@ -300,8 +307,13 @@ namespace VSL
                     plaintext = plaintext.Skip(15).ToArray();
                     tailBlock = await AES.EncryptAsync(plaintext, AesKey, SendIV);
                 }
-                parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock));
+                parent.channel.SendAsync((new byte[1] { (byte)CryptographicAlgorithm.AES_256 }).Concat(headBlock).Concat(tailBlock).ToArray());
                 parent.Logger.d(string.Format("Sent AES packet with native ID {0} and {1}bytes length", head[0], content.Length));
+                head = null;
+                content = null;
+                plaintext = null;
+                headBlock = null;
+                tailBlock = null;
             }
             catch (System.Security.Cryptography.CryptographicException ex) //Invalid key/iv
             {

@@ -22,15 +22,13 @@ namespace VSL.Packet
             DataBlock = dataBlock;
         }
 
-        public byte ID { get; } = 9;
+        public byte PacketID { get; } = 9;
 
         public PacketLength PacketLength { get; } = new VariableLength();
 
-        public IPacket CreatePacket(byte[] buf)
+        public IPacket New()
         {
-            P09FileDataBlock packet = new P09FileDataBlock();
-            packet.ReadPacket(buf);
-            return packet;
+            return new P09FileDataBlock();
         }
 
         public void HandlePacket(PacketHandler handler)
@@ -38,19 +36,16 @@ namespace VSL.Packet
             handler.HandleP09FileDataBlock(this);
         }
 
-        public void ReadPacket(byte[] buf)
+        public void ReadPacket(PacketBuffer buf)
         {
-            PacketBuffer reader = new PacketBuffer(buf);
-            StartPosition = reader.ReadULong();
-            DataBlock = reader.ReadByteArray(buf.Length - 8);
+            StartPosition = buf.ReadULong();
+            DataBlock = buf.ReadByteArray(buf.Pending);
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
-            PacketBuffer writer = new PacketBuffer();
-            writer.WriteULong(StartPosition);
-            writer.WriteByteArray(DataBlock, false);
-            return writer.ToArray();
+            buf.WriteULong(StartPosition);
+            buf.WriteByteArray(DataBlock, false);
         }
     }
 }

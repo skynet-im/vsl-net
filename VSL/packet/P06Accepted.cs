@@ -24,15 +24,13 @@ namespace VSL.Packet
             ProblemCategory = problemCategory;
         }
 
-        public byte ID { get; } = 6;
+        public byte PacketID { get; } = 6;
 
         public PacketLength PacketLength { get; } = new ConstantLength(3);
 
-        public IPacket CreatePacket(byte[] buf)
+        public IPacket New()
         {
-            P06Accepted packet = new P06Accepted();
-            packet.ReadPacket(buf);
-            return packet;
+            return new P06Accepted();
         }
 
         public void HandlePacket(PacketHandler handler)
@@ -40,21 +38,18 @@ namespace VSL.Packet
             handler.HandleP06Accepted(this);
         }
 
-        public void ReadPacket(byte[] data)
+        public void ReadPacket(PacketBuffer buf)
         {
-            PacketBuffer buf = new PacketBuffer(data);
             Accepted = buf.ReadBool();
             RelatedPacket = buf.ReadByte();
             ProblemCategory = (ProblemCategory)buf.ReadByte();
         }
 
-        public byte[] WritePacket()
+        public void WritePacket(PacketBuffer buf)
         {
-            PacketBuffer buf = new PacketBuffer();
             buf.WriteBool(Accepted);
             buf.WriteByte(RelatedPacket);
             buf.WriteByte((byte)ProblemCategory);
-            return buf.ToArray();
         }
     }
 }
