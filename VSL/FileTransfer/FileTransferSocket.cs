@@ -11,7 +11,7 @@ namespace VSL.FileTransfer
     /// <summary>
     /// The base class for file transfer implementations.
     /// </summary>
-    public abstract class FileTransferSocket:IDisposable
+    public abstract class FileTransferSocket : IDisposable
     {
         // <fields
         internal VSLSocket parent;
