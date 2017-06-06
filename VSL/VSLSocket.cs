@@ -42,9 +42,24 @@ namespace VSL
         //  constructor>
         // <properties
         /// <summary>
-        /// Gets or sets the size of the second receive buffer
+        /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
         /// </summary>
+        [Obsolete("VSLSocket.NetworkBufferSize is deprecated, please use VSLSocket.ReceiveBufferSize instead.", false)]
         public int NetworkBufferSize
+        {
+            get
+            {
+                return ReceiveBufferSize;
+            }
+            set
+            {
+                ReceiveBufferSize = value;
+            }
+        }
+        /// <summary>
+        /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
+        /// </summary>
+        public virtual int ReceiveBufferSize
         {
             get
             {

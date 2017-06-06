@@ -13,14 +13,14 @@ namespace VSL
     /// <summary>
     /// Responsible for the network communication
     /// </summary>
-    internal class NetworkChannel:IDisposable
+    internal class NetworkChannel : IDisposable
     {
         // <fields
         internal VSLSocket parent;
         private TcpClient tcp;
         private Queue cache;
         private ConcurrentQueue<byte[]> queue;
-        private int _networkBufferSize = 65536;
+        private int _networkBufferSize = Constants.ReceiveBufferSize;
 
         private Thread listenerThread;
         private Thread senderThread;

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using VSL.FileTransfer;
+using VSL.Packet;
 
 namespace VSL
 {
@@ -23,6 +24,7 @@ namespace VSL
         new public FileTransferClient FileTransfer;
         internal ushort LatestProduct;
         internal ushort OldestProduct;
+        private int _networkBufferSize = Constants.ReceiveBufferSize;
         //  fields>
         // <constructor
         /// <summary>
@@ -40,7 +42,28 @@ namespace VSL
             FileTransfer = new FileTransferClient(this);
             base.FileTransfer = FileTransfer;
         }
-        // constructor>
+        //  constructor>
+        // <properties
+        /// <summary>
+        /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
+        /// </summary>
+        public override int ReceiveBufferSize
+        {
+            get
+            {
+                if (channel != null)
+                    return base.ReceiveBufferSize;
+                else
+                    return _networkBufferSize;
+            }
+            set
+            {
+                _networkBufferSize = value;
+                if (channel != null)
+                    base.ReceiveBufferSize = value;
+            }
+        }
+        //  properties>
         // <functions
         /// <summary>
         /// Connects the TCP Client asynchronously
@@ -99,7 +122,7 @@ namespace VSL
             // connect>
 
             // <key exchange
-            Task s = manager.SendPacketAsync(CryptographicAlgorithm.None, new Packet.P00Handshake(Packet.RequestType.DirectPublicKey));
+            Task s = manager.SendPacketAsync(CryptographicAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey));
             Task<byte[]> key = Task.Run(() => Crypt.AES.GenerateKey());
             Task<byte[]> civ = Task.Run(() => Crypt.AES.GenerateIV());
             Task<byte[]> siv = Task.Run(() => Crypt.AES.GenerateIV());
@@ -107,7 +130,7 @@ namespace VSL
             manager.SendIV = await civ;
             manager.ReceiveIV = await siv;
             await s;
-            await manager.SendPacketAsync(CryptographicAlgorithm.RSA_2048, new Packet.P01KeyExchange(manager.AesKey, manager.SendIV,
+            await manager.SendPacketAsync(CryptographicAlgorithm.RSA_2048, new P01KeyExchange(manager.AesKey, manager.SendIV,
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct));
             //  key exchange>
         }
