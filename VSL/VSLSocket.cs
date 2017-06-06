@@ -13,7 +13,7 @@ namespace VSL
     /// <summary>
     /// The base class for VSL implementations
     /// </summary>
-    public abstract class VSLSocket:IDisposable
+    public abstract class VSLSocket : IDisposable
     {
         // <fields
         internal bool ConnectionAvailable = false;
