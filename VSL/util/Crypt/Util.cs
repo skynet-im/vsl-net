@@ -98,6 +98,19 @@ namespace VSL.Crypt
             Array.Copy(b, final, count);
             return final;
         }
+        /// <summary>
+        /// Takes the specified count of bytes from a byte array. This function was designed to run more efficient than IEnumerable.Take(int).ToArray().
+        /// </summary>
+        /// <param name="b">Source byte array.</param>
+        /// <param name="count">Number of bytes to take.</param>
+        /// <param name="startIndex">Index in the source byte array where taking starts.</param>
+        /// <returns></returns>
+        public static byte[] TakeBytes(byte[] b, int count, int startIndex)
+        {
+            byte[] final = new byte[count];
+            Array.Copy(b, startIndex, final, 0, count);
+            return final;
+        }
 
         /// <summary>
         /// Determines whether two byte arrays are equal.

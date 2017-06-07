@@ -107,11 +107,10 @@ namespace VSL
         {
             try
             {
-                string keypair = Keypair;
+                int index = 1;
                 byte[] ciphertext = await parent.channel.ReadAsync(256);
-                byte[] plaintext = await Task.Run(() => RSA.DecryptBlock(ciphertext, keypair));
+                byte[] plaintext = await Task.Run(() => RSA.DecryptBlock(ciphertext, Keypair));
                 byte id = plaintext[0];
-                plaintext = Util.SkipBytes(plaintext, 1);
                 Packet.IPacket packet;
                 bool success = parent.handler.TryGetPacket(id, out packet);
                 if (success)
@@ -123,10 +122,10 @@ namespace VSL
                     }
                     else if (packet.PacketLength.Type == Packet.PacketLength.LengthType.UInt32)
                     {
-                        length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4), 0);
-                        plaintext = Util.SkipBytes(plaintext, 4);
+                        length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
+                        index += 4;
                     }
-                    parent.handler.HandleInternalPacket(id, plaintext.Take(Convert.ToInt32(length)).ToArray());
+                    parent.handler.HandleInternalPacket(id, Util.TakeBytes(plaintext, Convert.ToInt32(length), index));
                 }
                 else
                 {
@@ -162,10 +161,10 @@ namespace VSL
         {
             try
             {
+                int index = 1;
                 byte[] ciphertext = await parent.channel.ReadAsync(16); //TimeoutException
                 byte[] plaintext = await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV); //CryptographicException
                 byte id = plaintext[0];
-                plaintext = plaintext.Skip(1).ToArray();
                 Packet.IPacket packet;
                 bool success = parent.handler.TryGetPacket(id, out packet);
                 uint length = 0;
@@ -175,18 +174,19 @@ namespace VSL
                 }
                 else
                 {
-                    length = BitConverter.ToUInt32(plaintext.Take(4).ToArray(), 0);
-                    plaintext = plaintext.Skip(4).ToArray();
+                    length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
+                    index += 4;
                 }
-                if (length > plaintext.Length - 2) // 2 random bytes in the header for more security
+                plaintext = Util.SkipBytes(plaintext, index);
+                if (length > plaintext.Length - 2) // 2 random bytes
                 {
                     int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
                     int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
                     ciphertext = await parent.channel.ReadAsync(pendingBlocks * 16);
-                    plaintext = plaintext.Concat(await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV)).ToArray();
+                    plaintext = Util.ConnectBytesPA(plaintext, await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV));
                 }
                 int startIndex = Convert.ToInt32(plaintext.Length - length);
-                byte[] content = plaintext.Skip(startIndex).ToArray(); // remove random bytes
+                byte[] content = Util.SkipBytes(plaintext, startIndex); // remove random bytes
                 parent.Logger.d(string.Format("Received AES packet with native ID {0} and {1}bytes length.", id, content.Length));
                 if (success)
                 {
@@ -281,31 +281,30 @@ namespace VSL
         {
             try
             {
-                int blocks;
+                int blocks = 1;
                 int saltLength;
-                if (head.Length + 2 + content.Length < 16)
+                if (head.Length + 2 + content.Length < 16) // 2 random bytes
                 {
-                    blocks = 1;
-                    saltLength = 15 - head.Length - content.Length;
+                    saltLength = 15 - head.Length - content.Length; // padding
                 }
                 else
                 {
-                    blocks = Convert.ToInt32(Math.Ceiling((head.Length + 4 + content.Length) / 16d)); //at least 2 random bytes in the header block
-                    saltLength = blocks * 16 - head.Length - content.Length - 2; //first blocks only 15 bytes (padding)
+                    blocks = Convert.ToInt32(Math.Ceiling((head.Length + 4 + content.Length) / 16d)); // 2 random bytes + 2x padding
+                    saltLength = blocks * 16 - head.Length - content.Length - 2; // padding
                 }
                 byte[] salt = new byte[saltLength];
                 Random random = new Random();
                 random.NextBytes(salt);
-                byte[] plaintext = head.Concat(salt).Concat(content).ToArray();
-                byte[] headBlock = await AES.EncryptAsync(plaintext.Take(15).ToArray(), AesKey, SendIV);
+                byte[] plaintext = Util.ConnectBytesPA(head, salt, content);
+                byte[] headBlock = await AES.EncryptAsync(Util.TakeBytes(plaintext, 15), AesKey, SendIV);
                 byte[] tailBlock = new byte[0];
                 if (plaintext.Length > 15)
                 {
-                    plaintext = plaintext.Skip(15).ToArray();
+                    plaintext = Util.SkipBytes(plaintext, 15);
                     tailBlock = await AES.EncryptAsync(plaintext, AesKey, SendIV);
                 }
                 parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock));
-                parent.Logger.d(string.Format("Sent AES packet with native ID {0} and {1}bytes length", head[0], content.Length));
+                parent.Logger.d(string.Format("Sent AES packet with native ID {0} and {1}bytes length ({2} AES blocks)", head[0], content.Length, blocks));
                 head = null;
                 content = null;
                 plaintext = null;

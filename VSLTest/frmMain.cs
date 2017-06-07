@@ -110,14 +110,17 @@ namespace VSLTest
         private void btnSendPacket_Click(object sender, EventArgs e)
         {
             Random rnd = new Random();
-            byte[] b = new byte[128];
+            byte[] b = new byte[65536]; // Ab 64k crasht es --> Queue funktioniert nicht.
             rnd.NextBytes(b);
             vslClient.SendPacket(1, b);
         }
 
         private void vslServer_Received(object sender, PacketReceivedEventArgs e)
         {
-            MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, VSL.Crypt.Util.ToHexString(e.Content)));
+            if (e.Content.Length > 1024)
+                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, e.Content.Length));
+            else
+                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, VSL.Crypt.Util.ToHexString(e.Content)));
         }
 
         private void vslServer_FTRequest(object sender, EventArgs e)
@@ -163,7 +166,8 @@ namespace VSLTest
 
         private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
-            vslClient.ConnectionClosed -= VSL_Close;
+            if (vslClient != null)
+                vslClient.ConnectionClosed -= VSL_Close;
             vslServer?.CloseConnection("");
             vslClient?.CloseConnection("");
         }
