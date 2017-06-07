@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using static VSL.Crypt.Util;
 
 namespace VSL
 {
@@ -12,7 +13,7 @@ namespace VSL
     /// </summary>
     public class Queue
     {
-        // v4 © 2017 Daniel Lerch
+        // © 2017 Daniel Lerch
         // <fields
         private ConcurrentQueue<byte[]> queue;
         private byte[] cache;
@@ -58,35 +59,40 @@ namespace VSL
         /// <returns></returns>
         public bool Dequeue(out byte[] target, int count)
         {
-            byte[] buffer = new byte[0] { };
+            byte[] buffer = new byte[count];
+            int done = 0;
             if (cache?.Length > 0)
             {
                 if (count < cache.Length)
                 {
-                    buffer = cache.Take(count).ToArray();
-                    cache = cache.Skip(count).ToArray();
+                    Array.Copy(cache, buffer, count);
+                    done = count;
+                    cache = SkipBytes(cache, count);
                 }
                 else
                 {
-                    buffer = cache;
+                    Array.Copy(cache, buffer, cache.Length);
+                    done = cache.Length;
                     cache = null;
                 }
             }
-            while (buffer.Length < count)
+            while (done < count)
             {
                 byte[] buf;
                 if (queue.TryDequeue(out buf))
                 {
                     if (count < buf.Length)
                     {
-                        int missing = count - buffer.Length;
-                        buffer = buffer.Concat(buf.Take(missing)).ToArray();
-                        cache = buf.Skip(missing).ToArray();
+                        int missing = count - done;
+                        Array.Copy(buf, buffer, missing);
+                        cache = SkipBytes(buf, missing);
+                        done += missing;
                         break;
                     }
                     else
                     {
-                        buffer = buffer.Concat(buf).ToArray();
+                        Array.Copy(buf, buffer, buf.Length);
+                        done += buf.Length;
                     }
                 }
                 else
