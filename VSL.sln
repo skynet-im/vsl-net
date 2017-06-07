@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSL", "VSL\VSL.csproj", "{F
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSLTest", "VSLTest\VSLTest.csproj", "{F1D1356A-9E8B-4E82-B155-0400D1D30B0B}"
 EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "CryptTest", "CryptTest\CryptTest.vbproj", "{B7A28CF0-0B85-47A2-8466-1A43AC7881EB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,12 +23,16 @@ Global
 		{F1D1356A-9E8B-4E82-B155-0400D1D30B0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F1D1356A-9E8B-4E82-B155-0400D1D30B0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F1D1356A-9E8B-4E82-B155-0400D1D30B0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7A28CF0-0B85-47A2-8466-1A43AC7881EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7A28CF0-0B85-47A2-8466-1A43AC7881EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7A28CF0-0B85-47A2-8466-1A43AC7881EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7A28CF0-0B85-47A2-8466-1A43AC7881EB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 3
+		SccNumberOfProjects = 4
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = https://vectordata.visualstudio.com/
 		SccLocalPath0 = .
@@ -36,5 +42,8 @@ Global
 		SccProjectUniqueName2 = VSLTest\\VSLTest.csproj
 		SccProjectName2 = VSLTest
 		SccLocalPath2 = VSLTest
+		SccProjectUniqueName3 = CryptTest\\CryptTest.vbproj
+		SccProjectName3 = CryptTest
+		SccLocalPath3 = CryptTest
 	EndGlobalSection
 EndGlobal

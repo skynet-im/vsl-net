@@ -81,17 +81,17 @@ namespace VSL
                 byte[] buf;
                 if (queue.TryDequeue(out buf))
                 {
-                    if (count < buf.Length)
+                    int missing = count - done;
+                    if (missing < buf.Length)
                     {
-                        int missing = count - done;
-                        Array.Copy(buf, buffer, missing);
+                        Array.Copy(buf, 0, buffer, done, missing);
                         cache = SkipBytes(buf, missing);
                         done += missing;
                         break;
                     }
                     else
                     {
-                        Array.Copy(buf, buffer, buf.Length);
+                        Array.Copy(buf, 0, buffer, done, buf.Length);
                         done += buf.Length;
                     }
                 }
