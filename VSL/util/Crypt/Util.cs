@@ -46,25 +46,57 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="b">two-dimensional byte array to connect</param>
         /// <returns></returns>
-        [Obsolete("Util.ConncectBytes is deprecated. To get better efficiency, do this process in your own code.", false)]
         public static byte[] ConnectBytes(byte[][] b)
         {
-            byte[] buf = new byte[0];
-            foreach (byte[] ba in b)
+            int n = 0;
+            for (int i = 0; i < b.Length; i++)
             {
-                buf = buf.Concat(ba).ToArray();
+                n += b[i].Length;
             }
-            return buf;
+            byte[] final = new byte[n];
+            n = 0;
+            for (int i = 0; i < b.Length; i++)
+            {
+                byte[] c = b[i];
+                Array.Copy(c, 0, final, n, c.Length);
+                n += c.Length;
+            }
+            return final;
         }
         /// <summary>
         /// Connects multiple byte arrays to one
         /// </summary>
         /// <param name="b">byte arrays to connect</param>
         /// <returns></returns>
-        [Obsolete("Util.ConncectBytesPA is deprecated. To get better efficiency, do this process in your own code.", false)]
         public static byte[] ConnectBytesPA(params byte[][] b)
         {
             return ConnectBytes(b);
+        }
+
+        /// <summary>
+        /// Skips the specified count of bytes at the front of a byte array. This function was designed to run more efficient than IEnumerable.Skip(int).ToArray().
+        /// </summary>
+        /// <param name="b">Source byte array.</param>
+        /// <param name="count">Number of bytes to skip.</param>
+        /// <returns></returns>
+        public static byte[] SkipBytes(byte[] b, int count)
+        {
+            byte[] final = new byte[b.Length - count];
+            Array.Copy(b, count, final, 0, final.Length);
+            return final;
+        }
+
+        /// <summary>
+        /// Takes the specified count of bytes from the front of a byte array. This function was designed to run more efficient than IEnumerable.Take(int).ToArray().
+        /// </summary>
+        /// <param name="b">Source byte array.</param>
+        /// <param name="count">Number of bytes to take.</param>
+        /// <returns></returns>
+        public static byte[] TakeBytes(byte[] b, int count)
+        {
+            byte[] final = new byte[count];
+            Array.Copy(b, final, count);
+            return final;
         }
 
         /// <summary>
@@ -107,13 +139,13 @@ namespace VSL.Crypt
         public static byte[] GetBytes(string hexadecimal)
         {
             if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
-            List<byte> l = new List<byte>();
-            for (int i = 0; i < hexadecimal.Length - 1; i += 2)
+            byte[] final = new byte[hexadecimal.Length / 2];
+            for (int i = 0; i < final.Length - 1; i++)
             {
-                string hx = Convert.ToString(hexadecimal[i]) + Convert.ToString(hexadecimal[i + 1]);
-                l.Add(Convert.ToByte(hx, 16));
+                string hx = Convert.ToString(hexadecimal[i * 2]) + Convert.ToString(hexadecimal[i * 2 + 1]);
+                final[i] = Convert.ToByte(hx, 16);
             }
-            return l.ToArray();
+            return final;
         }
     }
 }
