@@ -153,7 +153,7 @@ namespace VSL.Crypt
         {
             if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
             byte[] final = new byte[hexadecimal.Length / 2];
-            for (int i = 0; i < final.Length - 1; i++)
+            for (int i = 0; i < final.Length; i++)
             {
                 string hx = Convert.ToString(hexadecimal[i * 2]) + Convert.ToString(hexadecimal[i * 2 + 1]);
                 final[i] = Convert.ToByte(hx, 16);
