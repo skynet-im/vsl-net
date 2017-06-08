@@ -84,11 +84,22 @@ Public Class frmMain
 #End Region
 #Region "ECDH"
     Private Sub btnECDHAliceGenParams_Click(sender As Object, e As EventArgs) Handles btnECDHAliceGenParams.Click
-        'tbECDHAlice.Text = Util.GetHexString(ECDH.GeneratePrivateKey())
-        Dim a As String
-        Dim b As String
-        ECDH.Deserialize(a, b)
-        MsgBox(a & b)
+        Dim prv As Byte() = {}
+        Dim pub As Byte() = {}
+        ECDH.GenerateKey(prv, pub)
+        tbECDHAlice.Text = Util.ToHexString(prv)
+        tbECDHAlicePub.Text = Util.ToHexString(pub)
+    End Sub
+    Private Sub btnECDHBobGenParams_Click(sender As Object, e As EventArgs) Handles btnECDHBobGenParams.Click
+        Dim prv As Byte() = {}
+        Dim pub As Byte() = {}
+        ECDH.GenerateKey(prv, pub)
+        tbECDHBob.Text = Util.ToHexString(prv)
+        tbECDHBobPub.Text = Util.ToHexString(pub)
+    End Sub
+    Private Sub btnECDHCreateKey_Click(sender As Object, e As EventArgs) Handles btnECDHCreateKey.Click
+        tbECDHAliceKey.Text = Util.ToHexString(ECDH.DeriveKey(Util.GetBytes(tbECDHAlice.Text), Util.GetBytes(tbECDHBobPub.Text)))
+        tbECDHBobKey.Text = Util.ToHexString(ECDH.DeriveKey(Util.GetBytes(tbECDHBob.Text), Util.GetBytes(tbECDHAlicePub.Text)))
     End Sub
 #End Region
 #Region "Test"
@@ -101,7 +112,7 @@ Public Class frmMain
     End Sub
 #End Region
 End Class
-Public Class ECDH
+Public Class ECDH_Old
     Public Shared Function GeneratePrivateKey() As String
         Dim privateKey As String
         Using ecdh As New Security.Cryptography.ECDiffieHellmanCng(256)
