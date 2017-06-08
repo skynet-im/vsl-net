@@ -36,15 +36,15 @@ Public Class frmMain
         Dim enc As New Text.UTF8Encoding
         Dim ct As Byte() = Util.GetBytes(tbAesCipherText.Text)
         Dim pt As Byte() = Await AES.DecryptAsync(ct, Util.GetBytes(tbAesKey.Text), If(String.IsNullOrEmpty(tbAesIV.Text), Nothing, Util.GetBytes(tbAesIV.Text)))
-        'tbAesPlainText.Text = enc.GetString(pt)
-        tbAesPlainText.Text = Util.ToHexString(pt)
+        tbAesPlainText.Text = enc.GetString(pt)
+        'tbAesPlainText.Text = Util.ToHexString(pt)
         tbAesCipherText.Text = ""
     End Sub
 
     Private Async Sub btnAesEncrypt_Click(sender As Object, e As EventArgs) Handles btnAesEncrypt.Click
         Dim enc As New Text.UTF8Encoding
-        'Dim pt As Byte() = enc.GetBytes(tbAesPlainText.Text)
-        Dim pt As Byte() = Util.GetBytes(tbAesPlainText.Text)
+        Dim pt As Byte() = enc.GetBytes(tbAesPlainText.Text)
+        'Dim pt As Byte() = Util.GetBytes(tbAesPlainText.Text)
         Dim ct As Byte() = Await AES.EncryptAsync(pt, Util.GetBytes(tbAesKey.Text), If(String.IsNullOrEmpty(tbAesIV.Text), Nothing, Util.GetBytes(tbAesIV.Text)))
         tbAesCipherText.Text = Util.ToHexString(ct)
         tbAesPlainText.Text = ""
@@ -84,6 +84,7 @@ Public Class frmMain
 #End Region
 #Region "ECDH"
     Private Sub btnECDHAliceGenParams_Click(sender As Object, e As EventArgs) Handles btnECDHAliceGenParams.Click
+        'ECDH_Old.Test()
         Dim prv As Byte() = {}
         Dim pub As Byte() = {}
         ECDH.GenerateKey(prv, pub)
@@ -129,6 +130,14 @@ Public Class ECDH_Old
             ecdh.HashAlgorithm = Security.Cryptography.CngAlgorithm.Sha256
             ecdhxml = Util.ToHexString(ecdh.Key.Export(Security.Cryptography.CngKeyBlobFormat.EccPrivateBlob))
             publickey = ecdh.PublicKey.ToXmlString()
+        End Using
+    End Sub
+    Public Shared Sub Test()
+        Using ecdh As New Security.Cryptography.ECDiffieHellmanCng()
+            ecdh.KeyDerivationFunction = Security.Cryptography.ECDiffieHellmanKeyDerivationFunction.Hash
+            ecdh.HashAlgorithm = Security.Cryptography.CngAlgorithm.Sha256
+            Dim k As Security.Cryptography.CngKey = ecdh.Key
+            MsgBox(k.ToString())
         End Using
     End Sub
 End Class

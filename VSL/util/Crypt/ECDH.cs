@@ -22,15 +22,10 @@ namespace VSL.Crypt
         {
             CngKeyCreationParameters param = new CngKeyCreationParameters();
             param.ExportPolicy = CngExportPolicies.AllowPlaintextExport;
-            using (CngKey key = CngKey.Create(CngAlgorithm.ECDiffieHellmanP256, null, param))
+            using (CngKey key = CngKey.Create(CngAlgorithm.ECDiffieHellmanP521, null, param))
             {
-                using (ECDiffieHellmanCng ecdh = new ECDiffieHellmanCng(key))
-                {
-                    ecdh.KeyDerivationFunction = ECDiffieHellmanKeyDerivationFunction.Hash;
-                    ecdh.HashAlgorithm = CngAlgorithm.Sha256;
-                    privateKey = ecdh.Key.Export(CngKeyBlobFormat.EccPrivateBlob);
-                    publicKey = ecdh.PublicKey.ToByteArray();
-                }
+                privateKey = key.Export(CngKeyBlobFormat.EccPrivateBlob);
+                publicKey = key.Export(CngKeyBlobFormat.EccPublicBlob);
             }
         }
 
@@ -49,7 +44,10 @@ namespace VSL.Crypt
                 {
                     ecdh.KeyDerivationFunction = ECDiffieHellmanKeyDerivationFunction.Hash;
                     ecdh.HashAlgorithm = CngAlgorithm.Sha256;
-                    final = ecdh.DeriveKeyMaterial(ECDiffieHellmanCngPublicKey.FromByteArray(publicKey, CngKeyBlobFormat.EccPublicBlob));
+                    using (ECDiffieHellmanPublicKey pub = ECDiffieHellmanCngPublicKey.FromByteArray(publicKey, CngKeyBlobFormat.EccPublicBlob))
+                    {
+                        final = ecdh.DeriveKeyMaterial(pub);
+                    }
                 }
             }
             return final;
