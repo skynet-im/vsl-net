@@ -60,8 +60,12 @@ Partial Class frmMain
         Me.tbShaPlainText = New System.Windows.Forms.TextBox()
         Me.Label6 = New System.Windows.Forms.Label()
         Me.tpECDH = New System.Windows.Forms.TabPage()
+        Me.Label16 = New System.Windows.Forms.Label()
+        Me.tbECDHBobPub = New System.Windows.Forms.TextBox()
+        Me.Label15 = New System.Windows.Forms.Label()
+        Me.tbECDHAlicePub = New System.Windows.Forms.TextBox()
         Me.btnECDHCreateKey = New System.Windows.Forms.Button()
-        Me.tbECDHKey = New System.Windows.Forms.TextBox()
+        Me.tbECDHAliceKey = New System.Windows.Forms.TextBox()
         Me.Label13 = New System.Windows.Forms.Label()
         Me.btnECDHBobGenParams = New System.Windows.Forms.Button()
         Me.btnECDHAliceGenParams = New System.Windows.Forms.Button()
@@ -72,6 +76,7 @@ Partial Class frmMain
         Me.tpTest = New System.Windows.Forms.TabPage()
         Me.pbTest = New System.Windows.Forms.ProgressBar()
         Me.btnTestStart = New System.Windows.Forms.Button()
+        Me.tbECDHBobKey = New System.Windows.Forms.TextBox()
         Me.mainTabControl.SuspendLayout()
         Me.tpRSA.SuspendLayout()
         Me.tpAES.SuspendLayout()
@@ -443,8 +448,13 @@ Partial Class frmMain
         '
         'tpECDH
         '
+        Me.tpECDH.Controls.Add(Me.tbECDHBobKey)
+        Me.tpECDH.Controls.Add(Me.Label16)
+        Me.tpECDH.Controls.Add(Me.tbECDHBobPub)
+        Me.tpECDH.Controls.Add(Me.Label15)
+        Me.tpECDH.Controls.Add(Me.tbECDHAlicePub)
         Me.tpECDH.Controls.Add(Me.btnECDHCreateKey)
-        Me.tpECDH.Controls.Add(Me.tbECDHKey)
+        Me.tpECDH.Controls.Add(Me.tbECDHAliceKey)
         Me.tpECDH.Controls.Add(Me.Label13)
         Me.tpECDH.Controls.Add(Me.btnECDHBobGenParams)
         Me.tpECDH.Controls.Add(Me.btnECDHAliceGenParams)
@@ -460,26 +470,58 @@ Partial Class frmMain
         Me.tpECDH.Text = "ECDH"
         Me.tpECDH.UseVisualStyleBackColor = True
         '
+        'Label16
+        '
+        Me.Label16.AutoSize = True
+        Me.Label16.Location = New System.Drawing.Point(18, 115)
+        Me.Label16.Name = "Label16"
+        Me.Label16.Size = New System.Drawing.Size(36, 13)
+        Me.Label16.TabIndex = 12
+        Me.Label16.Text = "Public"
+        '
+        'tbECDHBobPub
+        '
+        Me.tbECDHBobPub.Location = New System.Drawing.Point(69, 112)
+        Me.tbECDHBobPub.Name = "tbECDHBobPub"
+        Me.tbECDHBobPub.Size = New System.Drawing.Size(100, 20)
+        Me.tbECDHBobPub.TabIndex = 11
+        '
+        'Label15
+        '
+        Me.Label15.AutoSize = True
+        Me.Label15.Location = New System.Drawing.Point(18, 46)
+        Me.Label15.Name = "Label15"
+        Me.Label15.Size = New System.Drawing.Size(36, 13)
+        Me.Label15.TabIndex = 10
+        Me.Label15.Text = "Public"
+        '
+        'tbECDHAlicePub
+        '
+        Me.tbECDHAlicePub.Location = New System.Drawing.Point(69, 43)
+        Me.tbECDHAlicePub.Name = "tbECDHAlicePub"
+        Me.tbECDHAlicePub.Size = New System.Drawing.Size(100, 20)
+        Me.tbECDHAlicePub.TabIndex = 9
+        '
         'btnECDHCreateKey
         '
-        Me.btnECDHCreateKey.Location = New System.Drawing.Point(175, 81)
+        Me.btnECDHCreateKey.Location = New System.Drawing.Point(175, 149)
         Me.btnECDHCreateKey.Name = "btnECDHCreateKey"
         Me.btnECDHCreateKey.Size = New System.Drawing.Size(106, 23)
         Me.btnECDHCreateKey.TabIndex = 8
         Me.btnECDHCreateKey.Text = "Create Key"
         Me.btnECDHCreateKey.UseVisualStyleBackColor = True
         '
-        'tbECDHKey
+        'tbECDHAliceKey
         '
-        Me.tbECDHKey.Location = New System.Drawing.Point(69, 83)
-        Me.tbECDHKey.Name = "tbECDHKey"
-        Me.tbECDHKey.Size = New System.Drawing.Size(100, 20)
-        Me.tbECDHKey.TabIndex = 7
+        Me.tbECDHAliceKey.Location = New System.Drawing.Point(69, 151)
+        Me.tbECDHAliceKey.Name = "tbECDHAliceKey"
+        Me.tbECDHAliceKey.Size = New System.Drawing.Size(100, 20)
+        Me.tbECDHAliceKey.TabIndex = 7
         '
         'Label13
         '
         Me.Label13.AutoSize = True
-        Me.Label13.Location = New System.Drawing.Point(18, 86)
+        Me.Label13.Location = New System.Drawing.Point(18, 154)
         Me.Label13.Name = "Label13"
         Me.Label13.Size = New System.Drawing.Size(25, 13)
         Me.Label13.TabIndex = 6
@@ -487,7 +529,7 @@ Partial Class frmMain
         '
         'btnECDHBobGenParams
         '
-        Me.btnECDHBobGenParams.Location = New System.Drawing.Point(175, 38)
+        Me.btnECDHBobGenParams.Location = New System.Drawing.Point(175, 81)
         Me.btnECDHBobGenParams.Name = "btnECDHBobGenParams"
         Me.btnECDHBobGenParams.Size = New System.Drawing.Size(106, 23)
         Me.btnECDHBobGenParams.TabIndex = 5
@@ -506,7 +548,7 @@ Partial Class frmMain
         'Label12
         '
         Me.Label12.AutoSize = True
-        Me.Label12.Location = New System.Drawing.Point(18, 43)
+        Me.Label12.Location = New System.Drawing.Point(18, 86)
         Me.Label12.Name = "Label12"
         Me.Label12.Size = New System.Drawing.Size(26, 13)
         Me.Label12.TabIndex = 3
@@ -514,7 +556,7 @@ Partial Class frmMain
         '
         'tbECDHBob
         '
-        Me.tbECDHBob.Location = New System.Drawing.Point(69, 40)
+        Me.tbECDHBob.Location = New System.Drawing.Point(69, 83)
         Me.tbECDHBob.Name = "tbECDHBob"
         Me.tbECDHBob.Size = New System.Drawing.Size(100, 20)
         Me.tbECDHBob.TabIndex = 2
@@ -562,6 +604,13 @@ Partial Class frmMain
         Me.btnTestStart.TabIndex = 0
         Me.btnTestStart.Text = "Start"
         Me.btnTestStart.UseVisualStyleBackColor = True
+        '
+        'tbECDHBobKey
+        '
+        Me.tbECDHBobKey.Location = New System.Drawing.Point(69, 177)
+        Me.tbECDHBobKey.Name = "tbECDHBobKey"
+        Me.tbECDHBobKey.Size = New System.Drawing.Size(100, 20)
+        Me.tbECDHBobKey.TabIndex = 13
         '
         'frmMain
         '
@@ -627,7 +676,7 @@ Partial Class frmMain
     Friend WithEvents btnTestStart As Button
     Friend WithEvents tpECDH As TabPage
     Friend WithEvents btnECDHCreateKey As Button
-    Friend WithEvents tbECDHKey As TextBox
+    Friend WithEvents tbECDHAliceKey As TextBox
     Friend WithEvents Label13 As Label
     Friend WithEvents btnECDHBobGenParams As Button
     Friend WithEvents btnECDHAliceGenParams As Button
@@ -638,4 +687,9 @@ Partial Class frmMain
     Friend WithEvents btnAesGenerateIV As Button
     Friend WithEvents tbAesIV As TextBox
     Friend WithEvents Label14 As Label
+    Friend WithEvents Label16 As Label
+    Friend WithEvents tbECDHBobPub As TextBox
+    Friend WithEvents Label15 As Label
+    Friend WithEvents tbECDHAlicePub As TextBox
+    Friend WithEvents tbECDHBobKey As TextBox
 End Class
