@@ -183,8 +183,8 @@ namespace VSL.FileTransfer
                 Reset();
             }
         }
-        #endregion
-        #region send
+#endregion
+#region send
         internal async void SendFile()
         {
             sendingFile = true;
@@ -231,7 +231,7 @@ namespace VSL.FileTransfer
                 }
             }
         }
-        #endregion
+#endregion
         internal async void Cancel()
         {
             if (!receivingFile)
@@ -252,7 +252,7 @@ namespace VSL.FileTransfer
             header = null;
         }
 
-        #region IDisposable Support
+#region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
         /// <summary>
@@ -294,7 +294,7 @@ namespace VSL.FileTransfer
             // TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-        #endregion
+#endregion
         //  functions>
     }
 }

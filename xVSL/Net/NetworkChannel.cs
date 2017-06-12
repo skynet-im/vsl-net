@@ -22,6 +22,8 @@ namespace VSL
         private ConcurrentQueue<byte[]> queue;
         private int _networkBufferSize = Constants.ReceiveBufferSize;
 
+        private Thread listenerThread;
+        private Thread senderThread;
         private bool threadsRunning = false;
         private CancellationTokenSource cts;
         private CancellationToken ct;
@@ -96,9 +98,11 @@ namespace VSL
         {
             if (threadsRunning) throw new InvalidOperationException("Tasks are already running.");
             threadsRunning = true;
-            Task listenerTask = ListenerTask();
+            listenerThread = new Thread(() => ListenerThread());
+            listenerThread.Start();
+            senderThread = new Thread(() => SenderThread());
+            senderThread.Start();
             Task workerTask = WorkerTask();
-            Task senderTask = SenderTask();
         }
 
         /// <summary>
@@ -109,23 +113,29 @@ namespace VSL
             threadsRunning = false;
             if (!cts.IsCancellationRequested)
                 cts.Cancel();
+            listenerThread?.Abort();
+            senderThread?.Abort();
         }
 
         /// <summary>
         /// Receives bytes from the socket to the cache
         /// </summary>
         /// <returns></returns>
-        private async Task ListenerTask()
+        private async void ListenerThread()
         {
             try
             {
-                while (!ct.IsCancellationRequested)
+                while (true)
                 {
                     byte[] buf = new byte[_networkBufferSize];
-                    int len = await ReceiveAsync(buf, _networkBufferSize, SocketFlags.None);
+                    int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None);
                     if (len == 0)
                     {
                         await Task.Delay(10, ct);
+                        if (threadsRunning)
+                            continue;
+                        else
+                            return;
                     }
                     cache.Enqeue(buf.Take(len).ToArray());
                     buf = null;
@@ -140,43 +150,6 @@ namespace VSL
                 return;
             }
         }
-        //<#Xamarin
-        private async Task<int> ReceiveAsync(byte[] buffer, int size, SocketFlags socketFlags)
-        {
-            ReceiveResult r = await Task.Run(() => ReceiveBlocking(size, socketFlags));
-            if (r.Buffer == null)
-                throw r.Exception;
-            buffer = r.Buffer;
-            return r.Length;
-        }
-
-        private ReceiveResult ReceiveBlocking(int size, SocketFlags socketFlags)
-        {
-            try
-            {
-                byte[] buf = new byte[size];
-                int length = tcp.Client.Receive(buf, size, socketFlags);
-                return new ReceiveResult(length, buf, null);
-            }
-            catch (Exception ex)
-            {
-                return new ReceiveResult(0, null, ex);
-            }
-        }
-
-        private struct ReceiveResult
-        {
-            internal int Length;
-            internal byte[] Buffer;
-            internal Exception Exception;
-            internal ReceiveResult(int length, byte[] buffer, Exception ex)
-            {
-                Length = length;
-                Buffer = buffer;
-                Exception = ex;
-            }
-        }
-        // #Xamarin>
 
         /// <summary>
         /// Compounds packets from the received data
@@ -201,16 +174,16 @@ namespace VSL
         /// Sends pending data from the queue
         /// </summary>
         /// <returns></returns>
-        private async Task SenderTask()
+        private async void SenderThread()
         {
-            while (!ct.IsCancellationRequested)
+            while (true)
             {
                 if (queue.Count > 0)
                 {
                     byte[] buf = new byte[0];
                     if (queue.TryDequeue(out buf))
                     {
-                        await Task.Run(() => SendRaw(buf));
+                        SendRaw(buf);
                     }
                     else
                     {
@@ -286,7 +259,7 @@ namespace VSL
         internal void CloseConnection()
         {
             StopTasks();
-            tcp.Dispose();
+            tcp.Close();
         }
 
         #region IDisposable Support
