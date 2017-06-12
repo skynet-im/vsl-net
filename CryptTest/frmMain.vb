@@ -104,12 +104,17 @@ Public Class frmMain
     End Sub
 #End Region
 #Region "Test"
-    Private Async Sub btnTestStart_Click(sender As Object, e As EventArgs) Handles btnTestStart.Click
-        Dim key As String = Await Task.Run(Function() RSA.GenerateKeyPair())
-        For i As Integer = 0 To 10000
-            Await RSA.EncryptAsync({223, 25, 84}, key)
-            pbTest.Value = CInt(i / 100)
-        Next
+    Private Sub btnTestStart_Click(sender As Object, e As EventArgs) Handles btnTestStart.Click
+        Dim ran As New Random()
+        Dim b(15) As Byte
+        ran.NextBytes(b)
+        Dim c As Byte() = Security.Cryptography.ProtectedData.Protect(b, Nothing, Security.Cryptography.DataProtectionScope.CurrentUser)
+        MsgBox(c.Length)
+        'Dim key As String = Await Task.Run(Function() RSA.GenerateKeyPair())
+        'For i As Integer = 0 To 10000
+        '    Await RSA.EncryptAsync({223, 25, 84}, key)
+        '    pbTest.Value = CInt(i / 100)
+        'Next
     End Sub
 #End Region
 End Class
