@@ -47,7 +47,7 @@
             // 
             // btnConnect
             // 
-            this.btnConnect.Location = new System.Drawing.Point(197, 12);
+            this.btnConnect.Location = new System.Drawing.Point(197, 116);
             this.btnConnect.Name = "btnConnect";
             this.btnConnect.Size = new System.Drawing.Size(75, 23);
             this.btnConnect.TabIndex = 1;
@@ -57,7 +57,7 @@
             // 
             // btnSendPacket
             // 
-            this.btnSendPacket.Location = new System.Drawing.Point(197, 41);
+            this.btnSendPacket.Location = new System.Drawing.Point(197, 145);
             this.btnSendPacket.Name = "btnSendPacket";
             this.btnSendPacket.Size = new System.Drawing.Size(75, 23);
             this.btnSendPacket.TabIndex = 2;
@@ -68,7 +68,7 @@
             // btnSendFile
             // 
             this.btnSendFile.Enabled = false;
-            this.btnSendFile.Location = new System.Drawing.Point(183, 70);
+            this.btnSendFile.Location = new System.Drawing.Point(46, 65);
             this.btnSendFile.Name = "btnSendFile";
             this.btnSendFile.Size = new System.Drawing.Size(89, 23);
             this.btnSendFile.TabIndex = 3;
