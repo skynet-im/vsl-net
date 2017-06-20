@@ -110,7 +110,7 @@ namespace VSL
             if (ConnectionAvailable)
             {
                 ConnectionAvailable = false;
-                ConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(reason));
+                ConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes));
             }
         }
         //  events>

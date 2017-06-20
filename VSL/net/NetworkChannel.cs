@@ -27,6 +27,8 @@ namespace VSL
         private bool threadsRunning = false;
         private CancellationTokenSource cts;
         private CancellationToken ct;
+        internal long SentBytes;
+        internal long ReceivedBytes;
         //  fields>
 
         // <properties
@@ -138,6 +140,7 @@ namespace VSL
                             return;
                     }
                     cache.Enqeue(buf.Take(len).ToArray());
+                    ReceivedBytes += len;
                     buf = null;
                 }
             }
@@ -236,6 +239,7 @@ namespace VSL
             try
             {
                 tcp.Client.Send(buf);
+                SentBytes += buf.Length;
                 buf = null;
             }
             catch (SocketException ex)
