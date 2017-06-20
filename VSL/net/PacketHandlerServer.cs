@@ -42,6 +42,7 @@ namespace VSL
                 parent.manager.SendIV = p.ServerIV;
                 parent.manager.ReceiveIV = p.ClientIV;
                 await parent.manager.SendPacketAsync(CryptographicAlgorithm.AES_256, new P03FinishHandshake(ConnectionType.Compatible));
+                parent.OnConnectionEstablished();
             }
             else
                 await parent.manager.SendPacketAsync(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));

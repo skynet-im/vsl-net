@@ -36,16 +36,28 @@ namespace VSL
     public class ConnectionClosedEventArgs : EventArgs
     {
         /// <summary>
-        /// Initializes a new instance of the ConnectionClosedEventArgs class
+        /// Initializes a new instance of the ConnectionClosedEventArgs class.
         /// </summary>
-        /// <param name="reason">Reason for connection interruption</param>
-        public ConnectionClosedEventArgs(string reason)
+        /// <param name="reason">Reason for connection interruption.</param>
+        /// <param name="receivedBytes">Count of received bytes of this session.</param>
+        /// <param name="sentBytes">Count of sent bytes of this session.</param>
+        public ConnectionClosedEventArgs(string reason, long receivedBytes, long sentBytes)
         {
             Reason = reason;
+            ReceivedBytes = receivedBytes;
+            SentBytes = sentBytes;
         }
         /// <summary>
-        /// Gets the reason why the connection was interrupted
+        /// Gets the reason why the connection was interrupted.
         /// </summary>
         public string Reason { get; }
+        /// <summary>
+        /// Gets the count of received bytes of this session.
+        /// </summary>
+        public long ReceivedBytes { get; }
+        /// <summary>
+        /// Gets the count of sent bytes of this session.
+        /// </summary>
+        public long SentBytes { get; }
     }
 }
