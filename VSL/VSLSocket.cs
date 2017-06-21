@@ -44,32 +44,21 @@ namespace VSL
         /// <summary>
         /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
         /// </summary>
-        [Obsolete("VSLSocket.NetworkBufferSize is deprecated, please use VSLSocket.ReceiveBufferSize instead.", false)]
-        public int NetworkBufferSize
-        {
-            get
-            {
-                return ReceiveBufferSize;
-            }
-            set
-            {
-                ReceiveBufferSize = value;
-            }
-        }
-        /// <summary>
-        /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
-        /// </summary>
         public virtual int ReceiveBufferSize
         {
             get
             {
-                return channel.NetworkBufferSize;
+                return channel.ReceiveBufferSize;
             }
             set
             {
-                channel.NetworkBufferSize = value;
+                channel.ReceiveBufferSize = value;
             }
         }
+        /// <summary>
+        /// Gets or sets the sleep time background threads while waiting for work.
+        /// </summary>
+        public int SleepTime { get; set; } = Constants.SleepTime;
         //  properties>
         // <events
         /// <summary>

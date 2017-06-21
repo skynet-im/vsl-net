@@ -20,27 +20,30 @@ namespace VSL
         private TcpClient tcp;
         private Queue cache;
         private ConcurrentQueue<byte[]> queue;
-        private int _networkBufferSize = Constants.ReceiveBufferSize;
+        private int _receiveBufferSize = Constants.ReceiveBufferSize;
 
         private Thread listenerThread;
         private Thread senderThread;
         private bool threadsRunning = false;
         private CancellationTokenSource cts;
         private CancellationToken ct;
-        internal long SentBytes;
+        //  <stats
         internal long ReceivedBytes;
+        internal long SentBytes;
+        private long probablySentLength;
+        //   stats>
         //  fields>
 
         // <properties
-        internal int NetworkBufferSize
+        internal int ReceiveBufferSize
         {
             get
             {
-                return _networkBufferSize;
+                return _receiveBufferSize;
             }
             set
             {
-                _networkBufferSize = value;
+                _receiveBufferSize = value;
                 if (tcp != null) tcp.Client.ReceiveBufferSize = value;
             }
         }
@@ -65,7 +68,7 @@ namespace VSL
         {
             this.parent = parent;
             this.tcp = tcp;
-            this.tcp.ReceiveBufferSize = _networkBufferSize;
+            this.tcp.ReceiveBufferSize = _receiveBufferSize;
             InitializeComponent();
             StartTasks();
         }
@@ -89,7 +92,7 @@ namespace VSL
         internal void Connect(TcpClient tcp)
         {
             this.tcp = tcp;
-            this.tcp.ReceiveBufferSize = _networkBufferSize;
+            this.tcp.ReceiveBufferSize = _receiveBufferSize;
             StartTasks();
         }
 
@@ -127,17 +130,15 @@ namespace VSL
         {
             try
             {
-                while (true)
+                while (!ct.IsCancellationRequested)
                 {
-                    byte[] buf = new byte[_networkBufferSize];
-                    int len = tcp.Client.Receive(buf, _networkBufferSize, SocketFlags.None);
+                    byte[] buf = new byte[_receiveBufferSize];
+                    int len = tcp.Client.Receive(buf, _receiveBufferSize, SocketFlags.None);
+                    SentBytes = probablySentLength; // Analytics, Socket.Send() does not throw any Exception without connection
                     if (len == 0)
                     {
-                        await Task.Delay(10, ct);
-                        if (threadsRunning)
-                            continue;
-                        else
-                            return;
+                        await Task.Delay(parent.SleepTime, ct);
+                        continue;
                     }
                     cache.Enqeue(buf.Take(len).ToArray());
                     ReceivedBytes += len;
@@ -160,7 +161,7 @@ namespace VSL
         /// <returns></returns>
         private async Task WorkerTask()
         {
-            while (threadsRunning)
+            while (!ct.IsCancellationRequested)
             {
                 if (cache.Length > 0)
                 {
@@ -168,7 +169,14 @@ namespace VSL
                 }
                 else
                 {
-                    await Task.Delay(10, ct);
+                    try
+                    {
+                        await Task.Delay(parent.SleepTime, ct);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        return;
+                    }
                 }
             }
         }
@@ -179,7 +187,7 @@ namespace VSL
         /// <returns></returns>
         private async void SenderThread()
         {
-            while (true)
+            while (!ct.IsCancellationRequested)
             {
                 if (queue.Count > 0)
                 {
@@ -197,14 +205,12 @@ namespace VSL
                 {
                     try
                     {
-                        await Task.Delay(10, ct);
+                        await Task.Delay(parent.SleepTime, ct);
                     }
                     catch (TaskCanceledException)
                     {
                         return;
                     }
-                    if (!threadsRunning)
-                        return;
                 }
             }
         }
@@ -238,8 +244,7 @@ namespace VSL
         {
             try
             {
-                tcp.Client.Send(buf);
-                SentBytes += buf.Length;
+                probablySentLength += tcp.Client.Send(buf);
                 buf = null;
             }
             catch (SocketException ex)

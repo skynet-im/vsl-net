@@ -47,7 +47,7 @@ namespace VSL
                     }
                 }
                 else
-                    await Task.Delay(10, ct);
+                    await Task.Delay(parent.SleepTime, ct);
             }
         }
 
