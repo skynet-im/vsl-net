@@ -56,7 +56,7 @@ namespace VSL
             get
             {
                 if (channel != null)
-                    return channel.NetworkBufferSize;
+                    return channel.ReceiveBufferSize;
                 else
                     return _networkBufferSize;
             }
@@ -64,9 +64,13 @@ namespace VSL
             {
                 _networkBufferSize = value;
                 if (channel != null)
-                    channel.NetworkBufferSize = value;
+                    channel.ReceiveBufferSize = value;
             }
         }
+        /// <summary>
+        /// Gets or sets the sleep time background threads while waiting for work.
+        /// </summary>
+        public int SleepTime { get; set; } = Constants.SleepTime;
         //  properties>
         // <events
         /// <summary>

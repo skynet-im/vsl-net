@@ -14,7 +14,7 @@ namespace VSL
         /// <summary>
         /// The installed version of VSL.
         /// </summary>
-        public const string ProductVersion = "1.1.9.0";
+        public const string ProductVersion = "1.1.12.0";
         /// <summary>
         /// The installed version as ushort.
         /// </summary>
@@ -27,5 +27,9 @@ namespace VSL
         /// The default size of the receive buffer of the Socket.
         /// </summary>
         public const int ReceiveBufferSize = 65536;
+        /// <summary>
+        /// The default sleep time for background threads while waiting for work.
+        /// </summary>
+        public const int SleepTime = 10;
     }
 }
