@@ -85,7 +85,7 @@ namespace VSL
         /// </summary>
         internal void PrintException(Exception ex)
         {
-            parent.Logger.e(ex.ToString());
+            parent.Logger.E(ex.ToString());
         }
 
         #region IDisposable Support

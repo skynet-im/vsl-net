@@ -198,7 +198,7 @@ namespace VSL
                     }
                     else
                     {
-                        parent.Logger.i("[VSL] Error at dequeuing the send queue in NetworkChannel.SenderTask");
+                        parent.Logger.I("Error at dequeuing the send queue in NetworkChannel.SenderTask");
                     }
                 }
                 else
