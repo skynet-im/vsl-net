@@ -16,7 +16,7 @@ namespace VSL
         /// </summary>
         /// <param name="id">Packet ID</param>
         /// <param name="content">Packet content</param>
-        public PacketReceivedEventArgs(byte id, byte[] content)
+        internal PacketReceivedEventArgs(byte id, byte[] content)
         {
             ID = id;
             Content = content;
@@ -41,7 +41,7 @@ namespace VSL
         /// <param name="reason">Reason for connection interruption.</param>
         /// <param name="receivedBytes">Count of received bytes of this session.</param>
         /// <param name="sentBytes">Count of sent bytes of this session.</param>
-        public ConnectionClosedEventArgs(string reason, long receivedBytes, long sentBytes)
+        internal ConnectionClosedEventArgs(string reason, long receivedBytes, long sentBytes)
         {
             Reason = reason;
             ReceivedBytes = receivedBytes;
@@ -59,5 +59,29 @@ namespace VSL
         /// Gets the count of sent bytes of this session.
         /// </summary>
         public long SentBytes { get; }
+    }
+    /// <summary>
+    /// Event data for a VSL log.
+    /// </summary>
+    public class LoggedMessageEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Initializes a new instance of the LoggedMessageEventArgs class.
+        /// </summary>
+        /// <param name="type">Type of the log message.</param>
+        /// <param name="text">Text of the log message.</param>
+        internal LoggedMessageEventArgs(Logger.LogType type, string text)
+        {
+            Type = type;
+            Text = text;
+        }
+        /// <summary>
+        /// Gets the type of the related log message.
+        /// </summary>
+        public Logger.LogType Type { get; }
+        /// <summary>
+        /// Gets the text of the related log message.
+        /// </summary>
+        public string Text { get; }
     }
 }

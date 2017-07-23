@@ -40,7 +40,7 @@ namespace VSL
             Logger = new Logger(this);
         }
         //  constructor>
-        // <properties
+#region properties
         /// <summary>
         /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
         /// </summary>
@@ -59,7 +59,15 @@ namespace VSL
         /// Gets or sets the sleep time background threads while waiting for work.
         /// </summary>
         public int SleepTime { get; set; } = Constants.SleepTime;
-        //  properties>
+        /// <summary>
+        /// Gets the total count of bytes, received in this session until now.
+        /// </summary>
+        public long ReceivedBytes => channel.ReceivedBytes;
+        /// <summary>
+        /// Gets the total count of bytes, sent in this session until now.
+        /// </summary>
+        public long SentBytes => channel.SentBytes;
+#endregion
         // <events
         /// <summary>
         /// The ConnectionEstablished event occurs when the connection was build up and the key exchange was finished

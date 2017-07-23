@@ -37,7 +37,7 @@ namespace VSL
         }
         internal override void HandleP03FinishHandshake(P03FinishHandshake p)
         {
-            parent.Logger.d("handling packet 03: " + p.ConnectionType.ToString());
+            //parent.Logger.D("handling packet 03: " + p.ConnectionType.ToString());
             switch (p.ConnectionType)
             {
                 case ConnectionType.Compatible:

@@ -30,7 +30,7 @@ namespace VSL
             {
                 byte b = (await parent.channel.ReadAsync(1))[0];
                 CryptographicAlgorithm algorithm = (CryptographicAlgorithm)b;
-                parent.Logger.d("Received packet with algorithm " + algorithm.ToString());
+                //parent.Logger.D("Received packet with algorithm " + algorithm.ToString());
                 switch (algorithm)
                 {
                     case CryptographicAlgorithm.None:
@@ -187,13 +187,14 @@ namespace VSL
                 }
                 int startIndex = Convert.ToInt32(plaintext.Length - length);
                 byte[] content = Util.SkipBytes(plaintext, startIndex); // remove random bytes
-                parent.Logger.d(string.Format("Received AES packet with native ID {0} and {1}bytes length.", id, content.Length));
                 if (success)
                 {
+                    parent.Logger.D(string.Format("Received internal AES packet: ID={0} Length={1}", id, content.Length));
                     parent.handler.HandleInternalPacket(id, content);
                 }
                 else
                 {
+                    parent.Logger.D(string.Format("Received external AES packet: extID={0} Length={1}", 255 - id, content.Length));
                     parent.OnPacketReceived(id, content);
                 }
             }
@@ -304,7 +305,7 @@ namespace VSL
                     tailBlock = await AES.EncryptAsync(plaintext, AesKey, SendIV);
                 }
                 parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock));
-                parent.Logger.d(string.Format("Sent AES packet with native ID {0} and {1}bytes length ({2} AES blocks)", head[0], content.Length, blocks));
+                parent.Logger.D(string.Format("Sent AES packet with native ID {0} and {1}bytes length ({2} AES blocks)", head[0], content.Length, blocks));
                 head = null;
                 content = null;
                 plaintext = null;
