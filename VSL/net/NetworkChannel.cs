@@ -140,7 +140,7 @@ namespace VSL
                         await Task.Delay(parent.SleepTime, ct);
                         continue;
                     }
-                    cache.Enqeue(buf.Take(len).ToArray());
+                    cache.Enqeue(Crypt.Util.TakeBytes(buf, len));
                     ReceivedBytes += len;
                     buf = null;
                 }
@@ -253,13 +253,42 @@ namespace VSL
             }
         }
 
+        ///// <summary>
+        ///// Sends data to the remote client asynchronously
+        ///// </summary>
+        ///// <param name="buf">data to send</param>
+        //internal void SendAsync(byte[] buf)
+        //{
+        //    queue.Enqueue(buf);
+        //}
+
         /// <summary>
         /// Sends data to the remote client asynchronously
         /// </summary>
         /// <param name="buf">data to send</param>
-        internal void SendAsync(byte[] buf)
+        internal async Task<int> SendAsync(byte[] buf)
         {
-            queue.Enqueue(buf);
+            ManualResetEventSlim handle = new ManualResetEventSlim();
+            SocketAsyncEventArgs e = new SocketAsyncEventArgs();
+            e.SetBuffer(buf, 0, buf.Length);
+            e.Completed += delegate { handle.Set(); };
+            tcp.Client.SendAsync(e);
+            await Task.Run(new Action(delegate
+            {
+                try
+                {
+                    handle.Wait(ct);
+                }
+                catch (OperationCanceledException)
+                {
+
+                }
+            }));
+            handle.Dispose();
+            int sent = e.BytesTransferred;
+            SentBytes += sent;
+            e.Dispose();
+            return sent;
         }
 
         /// <summary>

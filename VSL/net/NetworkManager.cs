@@ -62,8 +62,7 @@ namespace VSL
             try
             {
                 byte id = (await parent.channel.ReadAsync(1))[0];
-                Packet.IPacket packet;
-                bool success = parent.handler.TryGetPacket(id, out packet);
+                bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 if (success)
                 {
                     uint length = 0;
@@ -111,8 +110,7 @@ namespace VSL
                 byte[] ciphertext = await parent.channel.ReadAsync(256);
                 byte[] plaintext = await Task.Run(() => RSA.DecryptBlock(ciphertext, Keypair));
                 byte id = plaintext[0];
-                Packet.IPacket packet;
-                bool success = parent.handler.TryGetPacket(id, out packet);
+                bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 if (success)
                 {
                     uint length = 0;
@@ -165,8 +163,7 @@ namespace VSL
                 byte[] ciphertext = await parent.channel.ReadAsync(16); //TimeoutException
                 byte[] plaintext = await AES.DecryptAsync(ciphertext, AesKey, ReceiveIV); //CryptographicException
                 byte id = plaintext[0];
-                Packet.IPacket packet;
-                bool success = parent.handler.TryGetPacket(id, out packet);
+                bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 uint length = 0;
                 if (success && packet.PacketLength.Type == Packet.PacketLength.LengthType.Constant)
                 {
@@ -246,7 +243,7 @@ namespace VSL
             switch (alg)
             {
                 case CryptographicAlgorithm.None:
-                    SendPacket_Plaintext(head, content);
+                    await SendPacket_Plaintext(head, content);
                     break;
                 case CryptographicAlgorithm.RSA_2048:
                     await SendPacketAsync_RSA_2048(head, content);
@@ -256,16 +253,16 @@ namespace VSL
                     break;
             }
         }
-        private void SendPacket_Plaintext(byte[] head, byte[] content)
+        private async Task SendPacket_Plaintext(byte[] head, byte[] content)
         {
-            parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.None }, head, content));
+            await parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.None }, head, content));
         }
         private async Task SendPacketAsync_RSA_2048(byte[] head, byte[] content)
         {
             try
             {
                 byte[] ciphertext = await RSA.EncryptAsync(Util.ConnectBytesPA(head, content), PublicKey);
-                parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.RSA_2048 }, ciphertext));
+                await parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.RSA_2048 }, ciphertext));
                 head = null;
                 content = null;
             }
@@ -304,7 +301,7 @@ namespace VSL
                     plaintext = Util.SkipBytes(plaintext, 15);
                     tailBlock = await AES.EncryptAsync(plaintext, AesKey, SendIV);
                 }
-                parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock));
+                await parent.channel.SendAsync(Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock));
                 parent.Logger.D(string.Format("Sent AES packet with native ID {0} and {1}bytes length ({2} AES blocks)", head[0], content.Length, blocks));
                 head = null;
                 content = null;
