@@ -30,6 +30,7 @@ namespace VSL
         /// Initializes a new instance of the PacketBuffer class.
         /// </summary>
         /// <param name="buffer">byte array to initialize</param>
+        /// <exception cref="ArgumentNullException"/>
         public PacketBuffer(byte[] buffer)
         {
             baseStream = new MemoryStream(buffer);
@@ -81,6 +82,7 @@ namespace VSL
         /// Reads a byte array from the buffer
         /// </summary>
         /// <param name="count">count of bytes to read</param>
+        /// <exception cref="ArgumentOutOfRangeException"/>
         /// <returns></returns>
         private byte[] ReadByteRaw(int count)
         {

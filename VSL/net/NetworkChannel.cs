@@ -118,15 +118,13 @@ namespace VSL
             threadsRunning = false;
             if (!cts.IsCancellationRequested)
                 cts.Cancel();
-            listenerThread?.Abort();
-            senderThread?.Abort();
         }
 
         /// <summary>
         /// Receives bytes from the socket to the cache
         /// </summary>
         /// <returns></returns>
-        private async void ListenerThread()
+        private void ListenerThread()
         {
             try
             {
@@ -137,8 +135,10 @@ namespace VSL
                     SentBytes = probablySentLength; // Analytics, Socket.Send() does not throw any Exception without connection
                     if (len == 0)
                     {
-                        await Task.Delay(parent.SleepTime, ct);
-                        continue;
+                        if (ct.WaitHandle.WaitOne(parent.SleepTime))
+                            return;
+                        else
+                            continue;
                     }
                     cache.Enqeue(Crypt.Util.TakeBytes(buf, len));
                     ReceivedBytes += len;
@@ -148,10 +148,6 @@ namespace VSL
             catch (SocketException ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (TaskCanceledException)
-            {
-                return;
             }
         }
 
@@ -185,7 +181,7 @@ namespace VSL
         /// Sends pending data from the queue
         /// </summary>
         /// <returns></returns>
-        private async void SenderThread()
+        private void SenderThread()
         {
             while (!ct.IsCancellationRequested)
             {
@@ -203,36 +199,57 @@ namespace VSL
                 }
                 else
                 {
-                    try
-                    {
-                        await Task.Delay(parent.SleepTime, ct);
-                    }
-                    catch (TaskCanceledException)
-                    {
+                    if (ct.WaitHandle.WaitOne(parent.SleepTime))
                         return;
-                    }
                 }
             }
         }
 
         /// <summary>
-        /// Reads data from the buffer
+        /// Reads data from the buffer.
         /// </summary>
         /// <param name="count">count of bytes to read</param>
+        /// <exception cref="OperationCanceledException"/>
+        /// <exception cref="TimeoutException"/>
+        /// <returns></returns>
+        internal byte[] Read(int count)
+        {
+            const int wait = 10;
+            const int cycles = Constants.ReceiveTimeout / wait;
+            int cycle = 0;
+            while (cache.Length < count)
+            {
+                if (cycle >= cycles)
+                    throw new TimeoutException();
+                if (ct.WaitHandle.WaitOne(wait))
+                    throw new OperationCanceledException();
+                cycle++;
+            }
+            if (!cache.Dequeue(out byte[] buf, count))
+                throw new Exception("Error at dequeueing bytes");
+            return buf;
+        }
+        /// <summary>
+        /// Reads data from the buffer asynchronously.
+        /// </summary>
+        /// <param name="count">Count of bytes to read.</param>
+        /// <exception cref="TaskCanceledException"/>
+        /// <exception cref="TimeoutException"/>
         /// <returns></returns>
         internal async Task<byte[]> ReadAsync(int count)
         {
-            int cycle = 1;
+            const int wait = 10;
+            const int cycles = Constants.ReceiveTimeout / wait;
+            int cycle = 0;
             while (cache.Length < count)
             {
-                if (cycle >= 1000) throw new TimeoutException();
-                await Task.Delay(50, ct);
+                if (cycle >= cycles)
+                    throw new TimeoutException();
+                await Task.Delay(10, ct);
                 cycle++;
             }
-            byte[] buf = new byte[count];
-            bool success = cache.Dequeue(out buf, count);
-            if (!success)
-                throw new Exception("Error in the cache");
+            if (!cache.Dequeue(out byte[] buf, count))
+                throw new Exception("Error at dequeueing bytes");
             return buf;
         }
 

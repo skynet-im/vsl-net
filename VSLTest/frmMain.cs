@@ -49,10 +49,9 @@ namespace VSLTest
         private async Task ListenerTask()
         {
             //TcpListener listener = new TcpListener(IPAddress.Any, 32771);
-            MessageBox.Show(Dns.GetHostEntry("localhost").AddressList[1].ToString());
-            TcpListener listener = new TcpListener(Dns.GetHostEntry("localhost").AddressList[1], 32771);
+            TcpListener listener = new TcpListener(Dns.GetHostAddresses("127.0.0.1")[0], 32771);
             listener.Start();
-            btnStartServer.Text = "Server beenden";
+            btnStartServer.Text = "Beenden";
             btnStartServer.Enabled = true;
             while (running)
             {
@@ -62,6 +61,7 @@ namespace VSLTest
                     vslServer.Logger.PrintDebugMessages = true;
                     vslServer.Logger.PrintExceptionMessages = true;
                     vslServer.Logger.PrintInfoMessages = true;
+                    vslServer.ConnectionEstablished += VSL_Open;
                     vslServer.PacketReceived += vslServer_Received;
                     vslServer.ConnectionClosed += VSL_Close;
                     vslServer.FileTransfer.FileTransferRequested += vslServer_FTRequest;
@@ -94,10 +94,18 @@ namespace VSLTest
 
         private void VSL_Open(object sender, EventArgs e)
         {
-            btnConnect.Enabled = true;
-            btnConnect.Text = "Trennen";
-            btnSendFile.Enabled = true;
-            clientConnected = true;
+            if (sender == vslClient)
+            {
+                btnConnect.Enabled = true;
+                btnConnect.Text = "Trennen";
+                btnClientSendPacket.Enabled = true;
+                btnSendFile.Enabled = true;
+                clientConnected = true;
+            }
+            else if (sender == vslServer)
+            {
+                btnServerSendPacket.Enabled = true;
+            }
         }
 
         private void VSL_Close(object sender, ConnectionClosedEventArgs e)
@@ -105,33 +113,37 @@ namespace VSLTest
             if (sender == vslClient)
             {
                 btnConnect.Text = "Verbinden";
+                btnClientSendPacket.Enabled = false;
                 btnSendFile.Enabled = false;
                 clientConnected = false;
                 MessageBox.Show(string.Format("[Client] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
             }
             else if (sender == vslServer)
+            {
+                btnServerSendPacket.Enabled = false;
                 MessageBox.Show(string.Format("[Server] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
+            }
         }
 
         private void btnSendPacket_Click(object sender, EventArgs e)
         {
             // Skynet:
-            PacketBuffer buf = new PacketBuffer();
-            buf.WriteString("Twometer");
-            buf.WriteByteArray(new byte[32], false);
-            buf.WriteDate(DateTime.Now);
-            buf.WriteDate(DateTime.Now.AddDays(-1));
-            byte[] contents = buf.ToArray();
-            vslClient.SendPacket(1, contents);
+            //PacketBuffer buf = new PacketBuffer();
+            //buf.WriteString("Twometer");
+            //buf.WriteByteArray(new byte[32], false);
+            //buf.WriteDate(DateTime.Now);
+            //buf.WriteDate(DateTime.Now.AddDays(-1));
+            //byte[] contents = buf.ToArray();
+            //vslClient.SendPacket(1, contents);
 
             // VSL:
-            //Random rnd = new Random();
-            //byte[] b = new byte[65536]; // Ab 64k crasht es --> Queue funktioniert nicht.
-            //rnd.NextBytes(b);
-            //if ((Button)sender == btnClientSendPacket)
-            //    vslClient.SendPacket(1, b);
-            //else if((Button)sender == btnServerSendPacket)
-            //    vslServer.SendPacket(1, b);
+            Random rnd = new Random();
+            byte[] b = new byte[65536]; // Ab 64k crasht es --> Queue funktioniert nicht.
+            rnd.NextBytes(b);
+            if ((Button)sender == btnClientSendPacket)
+                vslClient.SendPacket(1, b);
+            else if ((Button)sender == btnServerSendPacket)
+                vslServer.SendPacket(1, b);
         }
 
         private void vslClient_Received(object sender, PacketReceivedEventArgs e)
