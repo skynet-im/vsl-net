@@ -30,14 +30,13 @@ namespace VSL
             {
                 byte b = (await parent.channel.ReadAsync(1))[0];
                 CryptographicAlgorithm algorithm = (CryptographicAlgorithm)b;
-                //parent.Logger.D("Received packet with algorithm " + algorithm.ToString());
                 switch (algorithm)
                 {
                     case CryptographicAlgorithm.None:
-                        await ReceivePacketAsync_Plaintext();
+                        ReceivePacket_Plaintext();
                         break;
                     case CryptographicAlgorithm.RSA_2048:
-                        await ReceivePacketAsync_RSA_2048();
+                        ReceivePacket_RSA_2048();
                         break;
                     case CryptographicAlgorithm.AES_256:
                         await ReceivePacketAsync_AES_256();
@@ -57,11 +56,11 @@ namespace VSL
                 return;
             }
         }
-        private async Task ReceivePacketAsync_Plaintext()
+        private void ReceivePacket_Plaintext()
         {
             try
             {
-                byte id = (await parent.channel.ReadAsync(1))[0];
+                byte id = parent.channel.Read(1)[0];
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 if (success)
                 {
@@ -72,44 +71,54 @@ namespace VSL
                     }
                     else if (packet.PacketLength.Type == Packet.PacketLength.LengthType.UInt32)
                     {
-                        length = BitConverter.ToUInt32(await parent.channel.ReadAsync(4), 0);
+                        length = BitConverter.ToUInt32(parent.channel.Read(4), 0);
+                        if (length > Constants.MaxPacketSize)
+                            parent.CloseConnection(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes", length, Constants.MaxPacketSize));
                     }
-                    parent.handler.HandleInternalPacket(id, await parent.channel.ReadAsync(Convert.ToInt32(length)));
+                    parent.handler.HandleInternalPacket(id, parent.channel.Read(Convert.ToInt32(length)));
                 }
                 else
                 {
                     throw new InvalidOperationException("Unknown packet id " + id);
                 }
             }
-            catch (ArgumentOutOfRangeException ex) //PacketBuffer
+            catch (ArgumentOutOfRangeException ex) // IPacket.ReadPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidCastException ex) // PacketHandler.HandleInternalPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (NotImplementedException ex) //PacketHandler
+            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket() and unkown packet
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (NotSupportedException ex) //PacketHandler
+            catch (NotImplementedException ex) // PacketHandler.HandleInternalPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (TimeoutException ex)
+            catch (NotSupportedException ex) // PacketHandler.HandleInternalPacket()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (OperationCanceledException) // NetworkChannel.Read()
+            {
+                // Already shutting down...
+            }
+            catch (TimeoutException ex) // NetworkChannel.Read()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
         }
-        private async Task ReceivePacketAsync_RSA_2048()
+        private void ReceivePacket_RSA_2048()
         {
             try
             {
                 int index = 1;
-                byte[] ciphertext = await parent.channel.ReadAsync(256);
-                byte[] plaintext = await Task.Run(() => RSA.DecryptBlock(ciphertext, Keypair));
-                byte id = plaintext[0];
+                byte[] ciphertext = parent.channel.Read(256);
+                byte[] plaintext = RSA.DecryptBlock(ciphertext, Keypair);
+                byte id = plaintext[0]; // index = 1
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 if (success)
                 {
@@ -121,6 +130,8 @@ namespace VSL
                     else if (packet.PacketLength.Type == Packet.PacketLength.LengthType.UInt32)
                     {
                         length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
+                        if (length > 251)
+                            parent.CloseConnection(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are 251 bytes", length));
                         index += 4;
                     }
                     parent.handler.HandleInternalPacket(id, Util.TakeBytes(plaintext, Convert.ToInt32(length), index));
@@ -130,27 +141,35 @@ namespace VSL
                     throw new InvalidOperationException("Unknown packet id " + id);
                 }
             }
-            catch (ArgumentOutOfRangeException ex) //PacketBuffer
+            catch (ArgumentOutOfRangeException ex) // IPacket.ReadPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (System.Security.Cryptography.CryptographicException ex)
+            catch (System.Security.Cryptography.CryptographicException ex) // RSA.DecryptBlock()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (InvalidOperationException ex) //PacketHandler
+            catch (InvalidCastException ex) // PacketHandler.HandleInternalPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (NotImplementedException ex) //PacketHandler
+            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket() and unkown packet
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (NotSupportedException ex) //PacketHandler
+            catch (NotImplementedException ex) // PacketHandler.HandleInternalPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (TimeoutException ex)
+            catch (NotSupportedException ex) // PacketHandler.HandleInternalPacket()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (OperationCanceledException) // NetworkChannel.Read()
+            {
+                // Already shutting down...
+            }
+            catch (TimeoutException ex) // NetworkChannel.Read()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }

@@ -59,6 +59,7 @@ namespace VSL
         /// <param name="id">Packet ID</param>
         /// <param name="content">Packet data</param>
         /// <exception cref="InvalidCastException"></exception>
+        /// <exception cref="InvalidOperationException"/>
         /// <exception cref="NotImplementedException"></exception>
         /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>

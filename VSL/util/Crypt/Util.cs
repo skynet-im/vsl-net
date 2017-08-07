@@ -104,6 +104,8 @@ namespace VSL.Crypt
         /// <param name="b">Source byte array.</param>
         /// <param name="count">Number of bytes to take.</param>
         /// <param name="startIndex">Index in the source byte array where taking starts.</param>
+        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentOutOfRangeException"/>
         /// <returns></returns>
         public static byte[] TakeBytes(byte[] b, int count, int startIndex)
         {

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using System.Windows.Threading;
 using VSL.FileTransfer;
 
 namespace VSL
@@ -17,6 +18,7 @@ namespace VSL
     {
         // <fields
         internal bool ConnectionAvailable = false;
+        internal Dispatcher ExecuteThread;
         internal NetworkChannel channel;
         internal NetworkManager manager;
         internal PacketHandler handler;
@@ -36,11 +38,12 @@ namespace VSL
         /// </summary>
         internal void InitializeComponent()
         {
+            ExecuteThread = Dispatcher.CurrentDispatcher;
             ExceptionHandler = new ExceptionHandler(this);
             Logger = new Logger(this);
         }
         //  constructor>
-#region properties
+        #region properties
         /// <summary>
         /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
         /// </summary>
@@ -67,7 +70,7 @@ namespace VSL
         /// Gets the total count of bytes, sent in this session until now.
         /// </summary>
         public long SentBytes => channel.SentBytes;
-#endregion
+        #endregion
         // <events
         /// <summary>
         /// The ConnectionEstablished event occurs when the connection was build up and the key exchange was finished
@@ -107,7 +110,8 @@ namespace VSL
             if (ConnectionAvailable)
             {
                 ConnectionAvailable = false;
-                ConnectionClosed?.Invoke(this, new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes));
+                ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
+                ExecuteThread.Invoke(delegate { ConnectionClosed?.Invoke(this, args); });
             }
         }
         //  events>
@@ -131,8 +135,22 @@ namespace VSL
         {
             OnConnectionClosed(reason);
             channel.CloseConnection();
-            ExceptionHandler.StopTasks();
             Dispose();
+        }
+        /// <summary>
+        /// Sets the thread to invoke events on to the calling thread.
+        /// </summary>
+        public void SetInvokeThread()
+        {
+            ExecuteThread = Dispatcher.CurrentDispatcher;
+        }
+        /// <summary>
+        /// Sets the specified thread as thread to invoke events on.
+        /// </summary>
+        /// <param name="invokeThread">Thread to invoke events on.</param>
+        public void SetInvokeThread(Thread invokeThread)
+        {
+            ExecuteThread = Dispatcher.FromThread(invokeThread);
         }
 
         #region IDisposable Support
@@ -150,7 +168,6 @@ namespace VSL
                 {
                     // TODO: dispose managed state (managed objects).
                     channel.Dispose();
-                    ExceptionHandler.Dispose();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
