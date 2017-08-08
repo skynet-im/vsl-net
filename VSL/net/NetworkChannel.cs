@@ -24,12 +24,14 @@ namespace VSL
 
         private Thread listenerThread;
         private Thread senderThread;
+        private Thread workerThread;
         private bool threadsRunning = false;
         private CancellationTokenSource cts;
         private CancellationToken ct;
         //  <stats
         internal long ReceivedBytes;
         internal long SentBytes;
+        private ConcurrentQueue<ManualResetEventSlim> verifyingQueue;
         private long probablySentLength;
         //   stats>
         //  fields>
@@ -79,6 +81,7 @@ namespace VSL
         {
             cache = new Queue();
             queue = new ConcurrentQueue<byte[]>();
+            verifyingQueue = new ConcurrentQueue<ManualResetEventSlim>();
             cts = new CancellationTokenSource();
             ct = cts.Token;
         }
@@ -103,11 +106,12 @@ namespace VSL
         {
             if (threadsRunning) throw new InvalidOperationException("Tasks are already running.");
             threadsRunning = true;
-            listenerThread = new Thread(() => ListenerThread());
+            listenerThread = new Thread(ListenerThread);
             listenerThread.Start();
-            senderThread = new Thread(() => SenderThread());
+            senderThread = new Thread(SenderThread);
             senderThread.Start();
-            Task workerTask = WorkerTask();
+            workerThread = new Thread(SenderThread);
+            workerThread.Start();
         }
 
         /// <summary>
@@ -132,17 +136,27 @@ namespace VSL
                 {
                     byte[] buf = new byte[_receiveBufferSize];
                     int len = tcp.Client.Receive(buf, _receiveBufferSize, SocketFlags.None);
-                    SentBytes = probablySentLength; // Analytics, Socket.Send() does not throw any Exception without connection
-                    if (len == 0)
+                    if (len > 0)
+                    {
+                        cache.Enqeue(Crypt.Util.TakeBytes(buf, len));
+                        ReceivedBytes += len;
+                        buf = null;
+                    }
+                    else
                     {
                         if (ct.WaitHandle.WaitOne(parent.SleepTime))
                             return;
-                        else
-                            continue;
                     }
-                    cache.Enqeue(Crypt.Util.TakeBytes(buf, len));
-                    ReceivedBytes += len;
-                    buf = null;
+                    // Socket.Send() does not throw any Exception without connection
+                    int cycle = 0;
+                    while (verifyingQueue.Count > 0)
+                    {
+                        if (cycle >= 10 || ct.IsCancellationRequested)
+                            break;
+                        if (verifyingQueue.TryDequeue(out ManualResetEventSlim handle))
+                            handle?.Set();
+                        cycle++;
+                    }
                 }
             }
             catch (SocketException ex)
@@ -155,24 +169,18 @@ namespace VSL
         /// Compounds packets from the received data
         /// </summary>
         /// <returns></returns>
-        private async Task WorkerTask()
+        private void WorkerThread()
         {
             while (!ct.IsCancellationRequested)
             {
                 if (cache.Length > 0)
                 {
-                    await parent.manager.OnDataReceiveAsync();
+                    parent.manager.OnDataReceive();
                 }
                 else
                 {
-                    try
-                    {
-                        await Task.Delay(parent.SleepTime, ct);
-                    }
-                    catch (TaskCanceledException)
-                    {
+                    if (ct.WaitHandle.WaitOne(parent.SleepTime))
                         return;
-                    }
                 }
             }
         }
@@ -190,7 +198,7 @@ namespace VSL
                     byte[] buf = new byte[0];
                     if (queue.TryDequeue(out buf))
                     {
-                        SendRaw(buf);
+                        Send(buf);
                     }
                     else
                     {
@@ -257,17 +265,32 @@ namespace VSL
         /// Sends data to the remote client
         /// </summary>
         /// <param name="buf">data to send</param>
-        internal void SendRaw(byte[] buf)
+        internal int Send(byte[] buf)
         {
+            int sent = 0;
             try
             {
-                probablySentLength += tcp.Client.Send(buf);
-                buf = null;
+                sent = tcp.Client.Send(buf);
             }
             catch (SocketException ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
+                return 0;
             }
+            ManualResetEventSlim handle = new ManualResetEventSlim();
+            verifyingQueue.Enqueue(handle);
+            try
+            {
+                handle.Wait(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                handle.Dispose();
+                return 0;
+            }
+            handle.Dispose();
+            SentBytes += sent;
+            return sent;
         }
 
         ///// <summary>
@@ -326,18 +349,18 @@ namespace VSL
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects).
+                    // -TODO: dispose managed state (managed objects).
                     cts.Dispose();
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
+                // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // -TODO: set large fields to null.
 
                 disposedValue = true;
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // -TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
         // ~NetworkChannel() {
         //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
         //   Dispose(false);
@@ -348,7 +371,7 @@ namespace VSL
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
+            // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
         #endregion

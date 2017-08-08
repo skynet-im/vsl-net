@@ -98,7 +98,7 @@ namespace VSL
             PacketReceived?.Invoke(this, new PacketReceivedEventArgs(Convert.ToByte(255 - id), content));
         }
         /// <summary>
-        /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it
+        /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it.
         /// </summary>
         public event EventHandler<ConnectionClosedEventArgs> ConnectionClosed;
         /// <summary>
@@ -117,17 +117,36 @@ namespace VSL
         //  events>
         // <functions
         /// <summary>
-        /// Sends a packet to the remotehost
+        /// Sends a packet to the remotehost.
         /// </summary>
         /// <param name="id">Packet ID</param>
         /// <param name="content">Packet data</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        public async void SendPacket(byte id, byte[] content)
+        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentOutOfRangeException"/>
+        /// <exception cref="InvalidOperationException"/>
+        public bool SendPacket(byte id, byte[] content)
         {
             if (content == null) throw new ArgumentNullException("\"content\" must not be null");
+            if (id >= 246) throw new ArgumentOutOfRangeException("\"id\" must be lower than 246 because of internal VSL packets");
             if (!ConnectionAvailable) throw new InvalidOperationException("You must not send a packet while there is no connection");
-            await manager.SendPacketAsync(Convert.ToByte(255 - id), content);
+            return manager.SendPacket(Convert.ToByte(255 - id), content);
         }
+        /// <summary>
+        /// Sends a packet to the remotehost asynchronously.
+        /// </summary>
+        /// <param name="id">Packet ID</param>
+        /// <param name="content">Packet data</param>
+        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentOutOfRangeException"/>
+        /// <exception cref="InvalidOperationException"/>
+        public Task<bool> SendPacketAsync(byte id, byte[] content)
+        {
+            if (content == null) throw new ArgumentNullException("\"content\" must not be null");
+            if (id >= 246) throw new ArgumentOutOfRangeException("\"id\" must be lower than 246 because of internal VSL packets");
+            if (!ConnectionAvailable) throw new InvalidOperationException("You must not send a packet while there is no connection");
+            return manager.SendPacketAsync(Convert.ToByte(255 - id), content);
+        }
+
         /// <summary>
         /// Closes the TCP Connection, raises the related event and releases all associated resources. Instead of calling this method, ensure that the stream is properly disposed.
         /// </summary>
@@ -166,18 +185,18 @@ namespace VSL
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects).
+                    // -TODO: dispose managed state (managed objects).
                     channel.Dispose();
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
+                // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // -TODO: set large fields to null.
 
                 disposedValue = true;
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // -TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
         // ~VSLSocket() {
         //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
         //   Dispose(false);
@@ -192,7 +211,7 @@ namespace VSL
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
+            // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
         #endregion
