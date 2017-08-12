@@ -138,7 +138,7 @@ namespace VSLTest
 
             // VSL:
             Random rnd = new Random();
-            byte[] b = new byte[65536]; // Ab 64k crasht es --> Queue funktioniert nicht.
+            byte[] b = new byte[65536];
             rnd.NextBytes(b);
             if ((Button)sender == btnClientSendPacket)
                 vslClient.SendPacket(1, b);

@@ -50,7 +50,7 @@ namespace VSL.FileTransfer
         /// </summary>
         internal void OnFileTransferFinished()
         {
-            FileTransferFinished?.Invoke(this, new EventArgs());
+            parent.ExecuteThread.Invoke(() => FileTransferFinished?.Invoke(this, new EventArgs()));
         }
         /// <summary>
         /// The FileTransferProgress event occurs when the progress of a running file transfer has changed.
@@ -61,7 +61,8 @@ namespace VSL.FileTransfer
         /// </summary>
         internal void OnFileTransferProgress()
         {
-            FileTransferProgress?.Invoke(this, new FileTransferProgressEventArgs(transfered, Mode != StreamMode.GetHeader ? length : 0));
+            FileTransferProgressEventArgs args = new FileTransferProgressEventArgs(transfered, Mode != StreamMode.GetHeader ? length : 0);
+            parent.ExecuteThread.Invoke(() => FileTransferProgress?.Invoke(this, args));
         }
         //  events>
         // <functions

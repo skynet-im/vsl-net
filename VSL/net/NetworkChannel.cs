@@ -19,11 +19,9 @@ namespace VSL
         internal VSLSocket parent;
         private TcpClient tcp;
         private Queue cache;
-        private ConcurrentQueue<byte[]> queue;
         private int _receiveBufferSize = Constants.ReceiveBufferSize;
 
         private Thread listenerThread;
-        private Thread senderThread;
         private Thread workerThread;
         private bool threadsRunning = false;
         private CancellationTokenSource cts;
@@ -31,8 +29,6 @@ namespace VSL
         //  <stats
         internal long ReceivedBytes;
         internal long SentBytes;
-        private ConcurrentQueue<ManualResetEventSlim> verifyingQueue;
-        private long probablySentLength;
         //   stats>
         //  fields>
 
@@ -80,8 +76,6 @@ namespace VSL
         internal void InitializeComponent()
         {
             cache = new Queue();
-            queue = new ConcurrentQueue<byte[]>();
-            verifyingQueue = new ConcurrentQueue<ManualResetEventSlim>();
             cts = new CancellationTokenSource();
             ct = cts.Token;
         }
@@ -108,9 +102,7 @@ namespace VSL
             threadsRunning = true;
             listenerThread = new Thread(ListenerThread);
             listenerThread.Start();
-            senderThread = new Thread(SenderThread);
-            senderThread.Start();
-            workerThread = new Thread(SenderThread);
+            workerThread = new Thread(WorkerThread);
             workerThread.Start();
         }
 
@@ -147,16 +139,6 @@ namespace VSL
                         if (ct.WaitHandle.WaitOne(parent.SleepTime))
                             return;
                     }
-                    // Socket.Send() does not throw any Exception without connection
-                    int cycle = 0;
-                    while (verifyingQueue.Count > 0)
-                    {
-                        if (cycle >= 10 || ct.IsCancellationRequested)
-                            break;
-                        if (verifyingQueue.TryDequeue(out ManualResetEventSlim handle))
-                            handle?.Set();
-                        cycle++;
-                    }
                 }
             }
             catch (SocketException ex)
@@ -176,34 +158,6 @@ namespace VSL
                 if (cache.Length > 0)
                 {
                     parent.manager.OnDataReceive();
-                }
-                else
-                {
-                    if (ct.WaitHandle.WaitOne(parent.SleepTime))
-                        return;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Sends pending data from the queue
-        /// </summary>
-        /// <returns></returns>
-        private void SenderThread()
-        {
-            while (!ct.IsCancellationRequested)
-            {
-                if (queue.Count > 0)
-                {
-                    byte[] buf = new byte[0];
-                    if (queue.TryDequeue(out buf))
-                    {
-                        Send(buf);
-                    }
-                    else
-                    {
-                        parent.Logger.I("Error at dequeuing the send queue in NetworkChannel.SenderTask");
-                    }
                 }
                 else
                 {
@@ -267,68 +221,19 @@ namespace VSL
         /// <param name="buf">data to send</param>
         internal int Send(byte[] buf)
         {
-            int sent = 0;
             try
             {
-                sent = tcp.Client.Send(buf);
+                int sent = tcp.Client.Send(buf);
+                if (ct.WaitHandle.WaitOne(1)) // Socket.Send() does not throw an Exception while having no connection
+                    return 0;
+                SentBytes += sent;
+                return sent;
             }
             catch (SocketException ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
                 return 0;
             }
-            ManualResetEventSlim handle = new ManualResetEventSlim();
-            verifyingQueue.Enqueue(handle);
-            try
-            {
-                handle.Wait(ct);
-            }
-            catch (OperationCanceledException)
-            {
-                handle.Dispose();
-                return 0;
-            }
-            handle.Dispose();
-            SentBytes += sent;
-            return sent;
-        }
-
-        ///// <summary>
-        ///// Sends data to the remote client asynchronously
-        ///// </summary>
-        ///// <param name="buf">data to send</param>
-        //internal void SendAsync(byte[] buf)
-        //{
-        //    queue.Enqueue(buf);
-        //}
-
-        /// <summary>
-        /// Sends data to the remote client asynchronously
-        /// </summary>
-        /// <param name="buf">data to send</param>
-        internal async Task<int> SendAsync(byte[] buf)
-        {
-            ManualResetEventSlim handle = new ManualResetEventSlim();
-            SocketAsyncEventArgs e = new SocketAsyncEventArgs();
-            e.SetBuffer(buf, 0, buf.Length);
-            e.Completed += delegate { handle.Set(); };
-            tcp.Client.SendAsync(e);
-            await Task.Run(new Action(delegate
-            {
-                try
-                {
-                    handle.Wait(ct);
-                }
-                catch (OperationCanceledException)
-                {
-
-                }
-            }));
-            handle.Dispose();
-            int sent = e.BytesTransferred;
-            SentBytes += sent;
-            e.Dispose();
-            return sent;
         }
 
         /// <summary>

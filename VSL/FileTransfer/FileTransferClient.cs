@@ -34,7 +34,7 @@ namespace VSL.FileTransfer
         /// </summary>
         internal void OnFileTransferDenied()
         {
-            FileTransferDenied?.Invoke(this, new EventArgs());
+            parent.ExecuteThread.Invoke(() => FileTransferDenied?.Invoke(this, new EventArgs()));
             Reset();
         }
         //  events>

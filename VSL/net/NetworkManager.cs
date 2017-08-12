@@ -333,7 +333,7 @@ namespace VSL
         private async Task<bool> SendPacketAsync_Plaintext(byte[] head, byte[] content)
         {
             byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.None }, head, content);
-            bool success = buf.Length == await parent.channel.SendAsync(buf);
+            bool success = buf.Length == await Task.Run(() => parent.channel.Send(buf));
             buf = null;
             return success;
         }
@@ -365,7 +365,7 @@ namespace VSL
             {
                 byte[] ciphertext = await Task.Run(() => RSA.EncryptBlock(Util.ConnectBytesPA(head, content), PublicKey));
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.RSA_2048 }, ciphertext);
-                bool success = buf.Length == await parent.channel.SendAsync(buf);
+                bool success = buf.Length == await Task.Run(() => parent.channel.Send(buf));
                 ciphertext = null;
                 buf = null;
                 return success;
@@ -450,7 +450,7 @@ namespace VSL
                     tailBlock = await AES.EncryptAsync(plaintext, AesKey, SendIV);
                 }
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock);
-                bool success = buf.Length == await parent.channel.SendAsync(buf);
+                bool success = buf.Length == await Task.Run(() => parent.channel.Send(buf));
                 parent.Logger.D(string.Format("Sent AES packet with native ID {0} and {1}bytes length ({2} AES blocks)", head[0], content.Length, blocks));
                 salt = null;
                 plaintext = null;
