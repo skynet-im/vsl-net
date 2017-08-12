@@ -17,7 +17,7 @@ namespace VSL
     public abstract class VSLSocket : IDisposable
     {
         // <fields
-        internal bool ConnectionAvailable = false;
+        private bool connectionAvailable = false;
         internal Dispatcher ExecuteThread;
         internal NetworkChannel channel;
         internal NetworkManager manager;
@@ -44,6 +44,10 @@ namespace VSL
         }
         //  constructor>
         #region properties
+        /// <summary>
+        /// Gets a value indicating whether a working and secure connection is available.
+        /// </summary>
+        public bool ConnectionAvailable => connectionAvailable;
         /// <summary>
         /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
         /// </summary>
@@ -81,8 +85,8 @@ namespace VSL
         /// </summary>
         internal virtual void OnConnectionEstablished()
         {
-            ConnectionAvailable = true;
-            ConnectionEstablished?.Invoke(this, new EventArgs());
+            connectionAvailable = true;
+            ExecuteThread.Invoke(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
         }
         /// <summary>
         /// The PacketReceived event occurs when a packet with an external ID was received
@@ -95,7 +99,8 @@ namespace VSL
         /// <param name="content">Packet content</param>
         internal virtual void OnPacketReceived(byte id, byte[] content)
         {
-            PacketReceived?.Invoke(this, new PacketReceivedEventArgs(Convert.ToByte(255 - id), content));
+            PacketReceivedEventArgs args = new PacketReceivedEventArgs(Convert.ToByte(255 - id), content);
+            ExecuteThread.Invoke(() => PacketReceived?.Invoke(this, args));
         }
         /// <summary>
         /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it.
@@ -107,11 +112,11 @@ namespace VSL
         /// <param name="reason">Reason why the connection was closed</param>
         internal virtual void OnConnectionClosed(string reason)
         {
-            if (ConnectionAvailable)
+            if (connectionAvailable)
             {
-                ConnectionAvailable = false;
+                connectionAvailable = false;
                 ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
-                ExecuteThread.Invoke(delegate { ConnectionClosed?.Invoke(this, args); });
+                ExecuteThread.Invoke(() => ConnectionClosed?.Invoke(this, args));
             }
         }
         //  events>
@@ -128,7 +133,7 @@ namespace VSL
         {
             if (content == null) throw new ArgumentNullException("\"content\" must not be null");
             if (id >= 246) throw new ArgumentOutOfRangeException("\"id\" must be lower than 246 because of internal VSL packets");
-            if (!ConnectionAvailable) throw new InvalidOperationException("You must not send a packet while there is no connection");
+            if (!connectionAvailable) throw new InvalidOperationException("You must not send a packet while there is no connection");
             return manager.SendPacket(Convert.ToByte(255 - id), content);
         }
         /// <summary>
@@ -143,17 +148,17 @@ namespace VSL
         {
             if (content == null) throw new ArgumentNullException("\"content\" must not be null");
             if (id >= 246) throw new ArgumentOutOfRangeException("\"id\" must be lower than 246 because of internal VSL packets");
-            if (!ConnectionAvailable) throw new InvalidOperationException("You must not send a packet while there is no connection");
+            if (!connectionAvailable) throw new InvalidOperationException("You must not send a packet while there is no connection");
             return manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
 
         /// <summary>
-        /// Closes the TCP Connection, raises the related event and releases all associated resources. Instead of calling this method, ensure that the stream is properly disposed.
+        /// Closes the TCP Connection, raises the related event and releases all associated resources.
         /// </summary>
         public void CloseConnection(string reason)
         {
-            OnConnectionClosed(reason);
             channel.CloseConnection();
+            OnConnectionClosed(reason);
             Dispose();
         }
         /// <summary>

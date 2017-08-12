@@ -27,8 +27,8 @@ namespace VSL
         /// 
         internal void CloseConnection(Exception ex)
         {
-            PrintException(ex);
             parent.CloseConnection(ex.Message);
+            PrintException(ex);
         }
 
         /// <summary>

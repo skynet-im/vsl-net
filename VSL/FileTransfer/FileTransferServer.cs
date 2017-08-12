@@ -36,7 +36,7 @@ namespace VSL.FileTransfer
         {
             ID = id;
             Mode = mode;
-            FileTransferRequested?.Invoke(this, new EventArgs());
+            parent.ExecuteThread.Invoke(() => FileTransferRequested?.Invoke(this, new EventArgs()));
         }
         //  events>
         // <functions
