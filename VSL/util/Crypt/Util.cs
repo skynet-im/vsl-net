@@ -120,6 +120,8 @@ namespace VSL.Crypt
         /// <param name="b1">First byte array.</param>
         /// <param name="b2">Second byte array.</param>
         /// <returns></returns>
+        [Obsolete("Util.ByteArraysEqual() is deprecated, please use IEnumerable.SequenceEqual() instead.", false)]
+        // Deprecated since v14
         public static bool ByteArraysEqual(byte[] b1, byte[] b2)
         {
             if (b1.Length != b2.Length) return false;
