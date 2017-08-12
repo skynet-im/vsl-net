@@ -21,8 +21,8 @@ namespace VSL
         /// <summary>
         /// Gets or sets a value indicating whether debug messages are printed in the console.
         /// </summary>
-        [Obsolete("Logger.DebugMessages is deprecated, please use Logger.PrintDebugMessages instead.", false)]
-        // Deprecated since v13
+        [Obsolete("Logger.DebugMessages is deprecated, please use Logger.PrintDebugMessages instead.", true)]
+        // Deprecated since v13, warning since v14
         public bool DebugMessages { get => PrintDebugMessages; set { PrintDebugMessages = value; } }
         /// <summary>
         /// Gets or sets a value indicating whether debug messages are directly printed in the console.
@@ -37,8 +37,8 @@ namespace VSL
         /// <summary>
         /// Gets or sets a value indicating whether exception messages are printed in the console.
         /// </summary>
-        [Obsolete("Logger.ExceptionMessages is deprecated, please use Logger.PrintExceptionMessages instead.", false)]
-        // Deprecated since v13
+        [Obsolete("Logger.ExceptionMessages is deprecated, please use Logger.PrintExceptionMessages instead.", true)]
+        // Deprecated since v13, warning since v14
         public bool ExceptionMessages { get => PrintExceptionMessages; set { PrintExceptionMessages = value; } }
         /// <summary>
         /// Gets or sets a value indicating whether exception messages are printed in the console.
@@ -53,8 +53,8 @@ namespace VSL
         /// <summary>
         /// Gets or sets a value indicating whether information messages are printed in the console.
         /// </summary>
-        [Obsolete("Logger.InfoMessages is deprecated, please use Logger.PrintInfoMessages instead.", false)]
-        // Deprecated since v13
+        [Obsolete("Logger.InfoMessages is deprecated, please use Logger.PrintInfoMessages instead.", true)]
+        // Deprecated since v13, warning since v14
         public bool InfoMessages { get => PrintInfoMessages; set { PrintInfoMessages = value; } }
         /// <summary>
         /// Gets or sets a value indicating whether information messages are printed in the console.
