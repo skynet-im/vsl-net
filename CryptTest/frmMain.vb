@@ -24,6 +24,9 @@ Public Class frmMain
     End Sub
 #End Region
 #Region "AES"
+    Private csp As New Security.Cryptography.AesCryptoServiceProvider()
+    Private encryptor As Security.Cryptography.ICryptoTransform
+
     Private Sub btnAesGenerate_Click(sender As Object, e As EventArgs) Handles btnAesGenerate.Click
         tbAesKey.Text = Util.ToHexString(AES.GenerateKey())
     End Sub
@@ -45,7 +48,20 @@ Public Class frmMain
         Dim enc As New Text.UTF8Encoding
         Dim pt As Byte() = enc.GetBytes(tbAesPlainText.Text)
         'Dim pt As Byte() = Util.GetBytes(tbAesPlainText.Text)
-        Dim ct As Byte() = Await AES.EncryptAsync(pt, Util.GetBytes(tbAesKey.Text), If(String.IsNullOrEmpty(tbAesIV.Text), Nothing, Util.GetBytes(tbAesIV.Text)))
+        'Dim ct As Byte() = Await AES.EncryptAsync(pt, Util.GetBytes(tbAesKey.Text), If(String.IsNullOrEmpty(tbAesIV.Text), Nothing, Util.GetBytes(tbAesIV.Text)))
+        Dim ct As Byte() = New Byte(31) {}
+        If encryptor Is Nothing Then
+            csp.Key = Util.GetBytes(tbAesKey.Text)
+            csp.IV = Util.GetBytes(tbAesIV.Text)
+            encryptor = csp.CreateEncryptor()
+        End If
+        Dim msCipherT As New IO.MemoryStream()
+        Dim csEncrypt As New Security.Cryptography.CryptoStream(msCipherT, encryptor, Security.Cryptography.CryptoStreamMode.Write)
+        Await csEncrypt.WriteAsync(pt, 0, pt.Length)
+        Await csEncrypt.FlushAsync()
+        csEncrypt.Close()
+        ct = msCipherT.ToArray()
+        msCipherT.Close()
         tbAesCipherText.Text = Util.ToHexString(ct)
         tbAesPlainText.Text = ""
     End Sub
@@ -84,7 +100,6 @@ Public Class frmMain
 #End Region
 #Region "ECDH"
     Private Sub btnECDHAliceGenParams_Click(sender As Object, e As EventArgs) Handles btnECDHAliceGenParams.Click
-        'ECDH_Old.Test()
         Dim prv As Byte() = {}
         Dim pub As Byte() = {}
         ECDH.GenerateKey(prv, pub)
@@ -117,32 +132,4 @@ Public Class frmMain
         'Next
     End Sub
 #End Region
-End Class
-Public Class ECDH_Old
-    Public Shared Function GeneratePrivateKey() As String
-        Dim privateKey As String
-        Using ecdh As New Security.Cryptography.ECDiffieHellmanCng(256)
-            ecdh.KeyDerivationFunction = Security.Cryptography.ECDiffieHellmanKeyDerivationFunction.Hash
-            ecdh.HashAlgorithm = Security.Cryptography.CngAlgorithm.Sha256
-            privateKey = ecdh.PublicKey.ToXmlString()
-        End Using
-        Return privateKey
-    End Function
-    Public Shared Sub Deserialize(ByRef ecdhxml As String, ByRef publickey As String)
-        Dim cng As Security.Cryptography.CngKey = Security.Cryptography.CngKey.Create(Security.Cryptography.CngAlgorithm.ECDiffieHellmanP256, Nothing, New Security.Cryptography.CngKeyCreationParameters() With {.ExportPolicy = Security.Cryptography.CngExportPolicies.AllowPlaintextExport})
-        Using ecdh As New Security.Cryptography.ECDiffieHellmanCng(cng)
-            ecdh.KeyDerivationFunction = Security.Cryptography.ECDiffieHellmanKeyDerivationFunction.Hash
-            ecdh.HashAlgorithm = Security.Cryptography.CngAlgorithm.Sha256
-            ecdhxml = Util.ToHexString(ecdh.Key.Export(Security.Cryptography.CngKeyBlobFormat.EccPrivateBlob))
-            publickey = ecdh.PublicKey.ToXmlString()
-        End Using
-    End Sub
-    Public Shared Sub Test()
-        Using ecdh As New Security.Cryptography.ECDiffieHellmanCng()
-            ecdh.KeyDerivationFunction = Security.Cryptography.ECDiffieHellmanKeyDerivationFunction.Hash
-            ecdh.HashAlgorithm = Security.Cryptography.CngAlgorithm.Sha256
-            Dim k As Security.Cryptography.CngKey = ecdh.Key
-            MsgBox(k.ToString())
-        End Using
-    End Sub
 End Class

@@ -58,9 +58,9 @@ namespace VSLTest
                 if (listener.Pending())
                 {
                     vslServer = new VSLServer(await listener.AcceptTcpClientAsync(), 0, 0, keypair);
-                    vslServer.Logger.PrintDebugMessages = true;
-                    vslServer.Logger.PrintExceptionMessages = true;
-                    vslServer.Logger.PrintInfoMessages = true;
+                    //vslServer.Logger.PrintDebugMessages = true;
+                    //vslServer.Logger.PrintExceptionMessages = true;
+                    //vslServer.Logger.PrintInfoMessages = true;
                     vslServer.ConnectionEstablished += VSL_Open;
                     vslServer.PacketReceived += vslServer_Received;
                     vslServer.ConnectionClosed += VSL_Close;
@@ -77,9 +77,9 @@ namespace VSLTest
             if (!clientConnected)
             {
                 vslClient = new VSLClient(0, 0);
-                vslClient.Logger.PrintDebugMessages = true;
-                vslClient.Logger.PrintExceptionMessages = true;
-                vslClient.Logger.PrintInfoMessages = true;
+                //vslClient.Logger.PrintDebugMessages = true;
+                //vslClient.Logger.PrintExceptionMessages = true;
+                //vslClient.Logger.PrintInfoMessages = true;
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
                 vslClient.PacketReceived += vslClient_Received;
@@ -172,20 +172,22 @@ namespace VSLTest
             }
             else
             {
-                vslServer.FileTransfer.Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Path.GetRandomFileName());
+                vslServer.FileTransfer.Path = Path.Combine("D:", "ProgramData", "VSLTest", Path.GetRandomFileName());
                 vslServer.FileTransfer.Accept();
             }
         }
 
         private void btnSendFile_Click(object sender, EventArgs e)
         {
-            //vslClient.FileTransfer.Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Path.GetRandomFileName());
-            //vslClient.FileTransfer.RequestFile(new VSL.FileTransfer.Identifier(0), VSL.FileTransfer.StreamMode.GetFile);
-            using (OpenFileDialog fd = new OpenFileDialog())
+            OpenFileDialog fd = new OpenFileDialog();
+            fd.ShowDialog();
+            if (string.IsNullOrEmpty(fd.FileName))
             {
-                fd.ShowDialog();
-                vslClient.FileTransfer.Path = fd.FileName;
+                fd.Dispose();
+                return;
             }
+            vslClient.FileTransfer.Path = fd.FileName;
+            fd.Dispose();
             vslClient.FileTransfer.RequestFile(new Identifier(0), StreamMode.UploadFile);
             btnSendFile.Enabled = false;
         }
