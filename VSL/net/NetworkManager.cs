@@ -11,11 +11,12 @@ namespace VSL
     /// <summary>
     /// Responsible for cryptography management
     /// </summary>
-    internal abstract class NetworkManager
+    internal abstract class NetworkManager:IDisposable
     {
         // <fields
         internal VSLSocket parent;
-        private AesCsp aes;
+        private AesCsp enc;
+        private AesCsp dec;
         //  fields>
         // <constructor
         internal void InitializeComponent()
@@ -80,7 +81,7 @@ namespace VSL
                     {
                         length = BitConverter.ToUInt32(parent.channel.Read(4), 0);
                         if (length > Constants.MaxPacketSize)
-                            parent.CloseConnection(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes", length, Constants.MaxPacketSize));
+                            throw new System.IO.InvalidDataException(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes", length, Constants.MaxPacketSize));
                     }
                     parent.handler.HandleInternalPacket(id, parent.channel.Read(Convert.ToInt32(length)));
                 }
@@ -94,6 +95,10 @@ namespace VSL
                 parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (InvalidCastException ex) // PacketHandler.HandleInternalPacket()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (System.IO.InvalidDataException ex) // Too big packet
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -138,7 +143,7 @@ namespace VSL
                     {
                         length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
                         if (length > 251)
-                            parent.CloseConnection(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are 251 bytes", length));
+                            throw new System.IO.InvalidDataException(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are 251 bytes", length));
                         index += 4;
                     }
                     parent.handler.HandleInternalPacket(id, Util.TakeBytes(plaintext, Convert.ToInt32(length), index));
@@ -157,6 +162,10 @@ namespace VSL
                 parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (InvalidCastException ex) // PacketHandler.HandleInternalPacket()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (System.IO.InvalidDataException ex) // Too big packet
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -187,7 +196,7 @@ namespace VSL
             {
                 int index = 1;
                 byte[] ciphertext = parent.channel.Read(16); //TimeoutException
-                byte[] plaintext = aes.Decrypt(ciphertext); //CryptographicException
+                byte[] plaintext = dec.Decrypt(ciphertext); //CryptographicException
                 byte id = plaintext[0];
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 uint length = 0;
@@ -199,6 +208,8 @@ namespace VSL
                 {
                     length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
                     index += 4;
+                    if (length > Constants.MaxPacketSize)
+                        throw new System.IO.InvalidDataException(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes", length, Constants.MaxPacketSize));
                 }
                 plaintext = Util.SkipBytes(plaintext, index);
                 if (length > plaintext.Length - 2) // 2 random bytes
@@ -206,7 +217,7 @@ namespace VSL
                     int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
                     int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
                     ciphertext = parent.channel.Read(pendingBlocks * 16);
-                    plaintext = Util.ConnectBytesPA(plaintext, aes.Decrypt(ciphertext));
+                    plaintext = Util.ConnectBytesPA(plaintext, dec.Decrypt(ciphertext));
                 }
                 int startIndex = Convert.ToInt32(plaintext.Length - length);
                 byte[] content = Util.SkipBytes(plaintext, startIndex); // remove random bytes
@@ -230,6 +241,10 @@ namespace VSL
                 parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (InvalidCastException ex) // PacketHandler.HandleInternalPacket()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (System.IO.InvalidDataException ex) // Too big packet
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -401,12 +416,12 @@ namespace VSL
                 Random random = new Random();
                 random.NextBytes(salt);
                 byte[] plaintext = Util.ConnectBytesPA(head, salt, content);
-                byte[] headBlock = aes.Encrypt(Util.TakeBytes(plaintext, 15));
+                byte[] headBlock = enc.Encrypt(Util.TakeBytes(plaintext, 15));
                 byte[] tailBlock = new byte[0];
                 if (plaintext.Length > 15)
                 {
                     plaintext = Util.SkipBytes(plaintext, 15);
-                    tailBlock = aes.Encrypt(plaintext);
+                    tailBlock = enc.Encrypt(plaintext);
                 }
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock);
                 bool success = buf.Length == parent.channel.Send(buf);
@@ -443,12 +458,12 @@ namespace VSL
                 Random random = new Random();
                 random.NextBytes(salt);
                 byte[] plaintext = Util.ConnectBytesPA(head, salt, content);
-                byte[] headBlock = await aes.EncryptAsync(Util.TakeBytes(plaintext, 15));
+                byte[] headBlock = await enc.EncryptAsync(Util.TakeBytes(plaintext, 15));
                 byte[] tailBlock = new byte[0];
                 if (plaintext.Length > 15)
                 {
                     plaintext = Util.SkipBytes(plaintext, 15);
-                    tailBlock = await aes.EncryptAsync(plaintext);
+                    tailBlock = await enc.EncryptAsync(plaintext);
                 }
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock);
                 bool success = buf.Length == await Task.Run(() => parent.channel.Send(buf));
@@ -479,10 +494,14 @@ namespace VSL
             set
             {
                 _aesKey = value;
-                if (aes == null)
-                    aes = new AesCsp(value);
+                if (enc == null)
+                    enc = new AesCsp(value);
                 else
-                    aes.Key = value;
+                    enc.Key = value;
+                if (dec == null)
+                    dec = new AesCsp(value);
+                else
+                    dec.Key = value;
             }
         }
         private byte[] _receiveIV;
@@ -494,9 +513,9 @@ namespace VSL
             }
             set
             {
-                if (aes == null) throw new InvalidOperationException("You have to asign the key before the iv");
+                if (dec == null) throw new InvalidOperationException("You have to asign the key before the iv");
                 _receiveIV = value;
-                aes.DecryptIV = value;
+                dec.IV = value;
             }
         }
         private byte[] _sendIV;
@@ -508,11 +527,48 @@ namespace VSL
             }
             set
             {
-                if (aes == null) throw new InvalidOperationException("You have to asign the key before the iv");
+                if (enc == null) throw new InvalidOperationException("You have to asign the key before the iv");
                 _sendIV = value;
-                aes.EncryptIV = value;
+                enc.IV = value;
             }
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // -TODO: dispose managed state (managed objects).
+                    enc.Dispose();
+                    dec.Dispose();
+                }
+
+                // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // -TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // -TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~NetworkManager() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // -TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
         //  functions>
     }
 }

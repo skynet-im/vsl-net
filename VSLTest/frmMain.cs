@@ -17,9 +17,7 @@ namespace VSLTest
 {
     public partial class frmMain : Form
     {
-        private VSLServer vslServer;
         private VSLClient vslClient;
-        private const string keypair = "<RSAKeyValue><Modulus>qBQQScN/+A2Tfi971dmOyPwSXpoq3XVwQBJNzbCCk1ohGVoOzdNK87Csw3thZyrynfaDzujW555S4HkWXxLR5dzo8rj/6KAk0yugYtFMt10XC1iZHRQACQIB3j+lS5wK9ZHfbsE4+/CUAoUdhYa9cad/xEbYrgkkyY0TuZZ1w2piiE1SdOXB+U6NF1aJbkUtKrHU2zcp5YzhYlRePvx7e+GQ5GMctSuT/xFzPpBZ5DZx1I/7lQicq7V21M/ktilRQIeqIslX98j4jLuFriinySwW+oi0s+8hantRwZ9jgAIIEao9+tbDSj8ePHb0Li6hhuoMmLeImLaoadDG39VnFQ==</Modulus><Exponent>AQAB</Exponent><P>z5tqnHWJ4X0lZVBXtVxJNI/h5NLBrwDoS0bvFL0Mx1SkYjF4Rjy8EGrLA51W+C8TzEY7ddBiC+eQPXw1PlbzHg+h0hal2gp5iUj+QEvCw1vDVXGoGTeP6UBL8ixYTbLQaVG70rWPm7j2nR7sQSQgJHX4ppvKQ4Mo9DI1RnJ1/2U=</P><Q>z0HXU22CFiUhoxuWuePjtkJ2gtopsZu5x6F/I+EqBqnq8KVVp+qRKOHm34xbh3gTQjDcBtJXu+FGgKRvQWj5ArhMt2QtNKIhmRBIuRQoHWSwg0deMPzD9IUHDU8D4xwkoZWuAGFjWW5KrkW6TX6SMHM8GUMnGzGP50MbIrEHBfE=</Q><DP>zvoJbfcZAb+82qcg6mUZbtfLxFACXTEwZmxPy4M3DDtsr6DWYmAGtu9hezcQD9sPh+a1PR4FwgyZF1OP2ZjiRSQcltGRhDJRPPeS1BM0F4SS18q6Znmodklt7gEcAEq30Wh1MvtkM0JSTA8aR0925CLhRWmoW2qWF+8+gf93eKk=</DP><DQ>U+5p8NMsFyO6V39YrrbnBGwt6hfHQrG5rmpsPm90wXYWOpX59iI73r587JK+jkHGKsv2jpyoAuHb10S/+VE1ZjCUgMAEvofZ60545NqQ1DZudPt13Yi/Ikqs7GrPPC2td/JRoL3PqevMOn7qT2+ubAh+kgxrzctoZ1L5rjbajUE=</DQ><InverseQ>o/VbhG+A+MtSe1qNCsgv41bCSVVJyzJH+lC/j3hYksjwFJEimDu6D+MheFU/PcBER1IoomUnyUwqYfK7YLmb3JHt9nCmnUUx+OrOT81TRhs63kGm2UKMwY7vNOIvhjfsbmoeTr0Of0Mc/Pf62lp1PzJaJtCao67zC5VTLt+e16I=</InverseQ><D>BkuXSMmYzvr9/n17gajwCZqZYVY1/n/1NM0kTizLIzo+hmzPV6NPMB2HejXlkf/mwO0roCt4tLzcshnCJJleAVV65/AI071ymHJoNwAYXVjQMcvyeWD9pFi6wBVTSCe/m4i7nRiBg7w0MWKR41jgQRpeAhIjCcrmLnwvrcvGVhiXLys4vw/XEPEc5Yk7ZWUVHRDr/2f1+AEL1T7kkDPY002qIDrP2NJbRGMpNulDt1xB1qcnK0VLgQ87zOTzZEUQviYCgvZjf3xnkYG1j87acaFQlNMN6pqJGAdD158rATy99OzScORgKbYNXtx1GGc1Yzj+alaszH3xBOpghTSscQ==</D></RSAKeyValue>";
         // TESTSEVER: 
         private const string publickey = "<RSAKeyValue><Modulus>qBQQScN/+A2Tfi971dmOyPwSXpoq3XVwQBJNzbCCk1ohGVoOzdNK87Csw3thZyrynfaDzujW555S4HkWXxLR5dzo8rj/6KAk0yugYtFMt10XC1iZHRQACQIB3j+lS5wK9ZHfbsE4+/CUAoUdhYa9cad/xEbYrgkkyY0TuZZ1w2piiE1SdOXB+U6NF1aJbkUtKrHU2zcp5YzhYlRePvx7e+GQ5GMctSuT/xFzPpBZ5DZx1I/7lQicq7V21M/ktilRQIeqIslX98j4jLuFriinySwW+oi0s+8hantRwZ9jgAIIEao9+tbDSj8ePHb0Li6hhuoMmLeImLaoadDG39VnFQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
         // SKYNETSERVER:
@@ -41,8 +39,7 @@ namespace VSLTest
             }
             else
             {
-                vslServer.CloseConnection("Server beendet");
-                running = false;
+                CloseServer();
             }
         }
 
@@ -53,19 +50,23 @@ namespace VSLTest
             listener.Start();
             btnStartServer.Text = "Beenden";
             btnStartServer.Enabled = true;
+            serverRunning = true;
             while (running)
             {
                 if (listener.Pending())
                 {
-                    vslServer = new VSLServer(await listener.AcceptTcpClientAsync(), 0, 0, keypair);
-                    //vslServer.Logger.PrintDebugMessages = true;
-                    //vslServer.Logger.PrintExceptionMessages = true;
-                    //vslServer.Logger.PrintInfoMessages = true;
-                    vslServer.ConnectionEstablished += VSL_Open;
-                    vslServer.PacketReceived += vslServer_Received;
-                    vslServer.ConnectionClosed += VSL_Close;
-                    vslServer.FileTransfer.FileTransferRequested += vslServer_FTRequest;
-                    serverRunning = true;
+                    TcpClient native = await listener.AcceptTcpClientAsync();
+                    bool success = false;
+                    for (int i = 0; i < Program.Clients.Length; i++)
+                    {
+                        if (Program.Clients[i] == null)
+                        {
+                            Program.Clients[i] = new Client(native);
+                            success = true;
+                            break;
+                        }
+                    }
+                    if (!success) MessageBox.Show("No space for this new client!");
                 }
                 else
                     await Task.Delay(10);
@@ -78,7 +79,7 @@ namespace VSLTest
             {
                 vslClient = new VSLClient(0, 0);
                 //vslClient.Logger.PrintDebugMessages = true;
-                //vslClient.Logger.PrintExceptionMessages = true;
+                vslClient.Logger.PrintExceptionMessages = true;
                 //vslClient.Logger.PrintInfoMessages = true;
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
@@ -94,35 +95,20 @@ namespace VSLTest
 
         private void VSL_Open(object sender, EventArgs e)
         {
-            if (sender == vslClient)
-            {
-                btnConnect.Enabled = true;
-                btnConnect.Text = "Trennen";
-                btnClientSendPacket.Enabled = true;
-                btnSendFile.Enabled = true;
-                clientConnected = true;
-            }
-            else if (sender == vslServer)
-            {
-                btnServerSendPacket.Enabled = true;
-            }
+            btnConnect.Enabled = true;
+            btnConnect.Text = "Trennen";
+            btnClientSendPacket.Enabled = true;
+            btnSendFile.Enabled = true;
+            clientConnected = true;
         }
 
         private void VSL_Close(object sender, ConnectionClosedEventArgs e)
         {
-            if (sender == vslClient)
-            {
-                btnConnect.Text = "Verbinden";
-                btnClientSendPacket.Enabled = false;
-                btnSendFile.Enabled = false;
-                clientConnected = false;
-                MessageBox.Show(string.Format("[Client] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
-            }
-            else if (sender == vslServer)
-            {
-                btnServerSendPacket.Enabled = false;
-                MessageBox.Show(string.Format("[Server] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
-            }
+            btnConnect.Text = "Verbinden";
+            btnClientSendPacket.Enabled = false;
+            btnSendFile.Enabled = false;
+            clientConnected = false;
+            MessageBox.Show(string.Format("[Client] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
         }
 
         private void btnSendPacket_Click(object sender, EventArgs e)
@@ -143,7 +129,10 @@ namespace VSLTest
             if ((Button)sender == btnClientSendPacket)
                 vslClient.SendPacket(1, b);
             else if ((Button)sender == btnServerSendPacket)
-                vslServer.SendPacket(1, b);
+                for (int i = 0; i < Program.Clients.Length; i++)
+                {
+                    Program.Clients[i]?.Vsl.SendPacket(1, b);
+                }
         }
 
         private void vslClient_Received(object sender, PacketReceivedEventArgs e)
@@ -159,36 +148,21 @@ namespace VSLTest
                 MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, VSL.Crypt.Util.ToHexString(e.Content)));
         }
 
-        private void vslServer_FTRequest(object sender, EventArgs e)
-        {
-            if (vslServer.FileTransfer.Mode != StreamMode.UploadFile)
-            {
-                using (OpenFileDialog fd = new OpenFileDialog())
-                {
-                    fd.ShowDialog();
-                    vslServer.FileTransfer.Path = fd.FileName;
-                    vslServer.FileTransfer.Accept();
-                }
-            }
-            else
-            {
-                vslServer.FileTransfer.Path = Path.Combine("D:", "ProgramData", "VSLTest", Path.GetRandomFileName());
-                vslServer.FileTransfer.Accept();
-            }
-        }
-
         private void btnSendFile_Click(object sender, EventArgs e)
         {
-            OpenFileDialog fd = new OpenFileDialog();
-            fd.ShowDialog();
-            if (string.IsNullOrEmpty(fd.FileName))
-            {
-                fd.Dispose();
-                return;
-            }
-            vslClient.FileTransfer.Path = fd.FileName;
-            fd.Dispose();
-            vslClient.FileTransfer.RequestFile(new Identifier(0), StreamMode.UploadFile);
+            //using (OpenFileDialog fd = new OpenFileDialog())
+            //{
+            //    fd.ShowDialog();
+            //    if (string.IsNullOrEmpty(fd.FileName))
+            //    {
+            //        fd.Dispose();
+            //        return;
+            //    }
+            //    vslClient.FileTransfer.Path = fd.FileName;
+            //}
+            vslClient.FileTransfer.Path = Path.Combine("D:", "ProgramData", "VSLTest", Path.GetRandomFileName());
+            MessageBox.Show(vslClient.FileTransfer.Path);
+            vslClient.FileTransfer.RequestFile(new Identifier(0), StreamMode.GetFile);
             btnSendFile.Enabled = false;
         }
 
@@ -206,8 +180,17 @@ namespace VSLTest
         {
             if (vslClient != null)
                 vslClient.ConnectionClosed -= VSL_Close;
-            vslServer?.CloseConnection("");
             vslClient?.CloseConnection("");
+            CloseServer();
+        }
+
+        private void CloseServer()
+        {
+            for (int i = 0; i < Program.Clients.Length; i++)
+            {
+                Program.Clients[i]?.Vsl.CloseConnection("");
+            }
+            running = false;
         }
     }
 }

@@ -87,7 +87,6 @@
             // 
             // btnServerSendPacket
             // 
-            this.btnServerSendPacket.Enabled = false;
             this.btnServerSendPacket.Location = new System.Drawing.Point(13, 41);
             this.btnServerSendPacket.Name = "btnServerSendPacket";
             this.btnServerSendPacket.Size = new System.Drawing.Size(88, 23);

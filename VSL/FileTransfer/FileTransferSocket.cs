@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,6 +18,7 @@ namespace VSL.FileTransfer
         internal VSLSocket parent;
         internal bool ReceivingFile = false;
         internal bool SendingFile = false;
+        private Stopwatch stopwatch;
         /// <summary>
         /// The Identifier that is used to identify the file to transfer.
         /// </summary>
@@ -50,7 +52,7 @@ namespace VSL.FileTransfer
         /// </summary>
         internal void OnFileTransferFinished()
         {
-            parent.ExecuteThread.Invoke(() => FileTransferFinished?.Invoke(this, new EventArgs()));
+            parent.EventThread.QueueWorkItem(() => FileTransferFinished?.Invoke(this, new EventArgs()));
         }
         /// <summary>
         /// The FileTransferProgress event occurs when the progress of a running file transfer has changed.
@@ -62,7 +64,7 @@ namespace VSL.FileTransfer
         internal void OnFileTransferProgress()
         {
             FileTransferProgressEventArgs args = new FileTransferProgressEventArgs(transfered, Mode != StreamMode.GetHeader ? length : 0);
-            parent.ExecuteThread.Invoke(() => FileTransferProgress?.Invoke(this, args));
+            parent.EventThread.QueueWorkItem(() => FileTransferProgress?.Invoke(this, args));
         }
         //  events>
         // <functions
@@ -78,11 +80,13 @@ namespace VSL.FileTransfer
             {
                 newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path), packet.Name);
                 File.Move(path, newPath);
-                FileInfo fi = new FileInfo(newPath);
-                fi.Attributes = packet.Attributes;
-                fi.CreationTime = packet.CreationTime;
-                fi.LastAccessTime = packet.LastAccessTime;
-                fi.LastWriteTime = packet.LastWriteTime;
+                FileInfo fi = new FileInfo(newPath)
+                {
+                    Attributes = packet.Attributes,
+                    CreationTime = packet.CreationTime,
+                    LastAccessTime = packet.LastAccessTime,
+                    LastWriteTime = packet.LastWriteTime
+                };
             }
             //catch (IOException ex)
             //{
@@ -141,22 +145,36 @@ namespace VSL.FileTransfer
             Task t = parent.manager.SendPacketAsync(header);
             try
             {
-                stream = new FileStream(Path, FileMode.Open);
+                stream = new FileStream(Path, FileMode.Open, FileAccess.Read, FileShare.Read);
             }
             catch (Exception ex)
             {
                 parent.ExceptionHandler.CancelFileTransfer(ex);
             }
             OnFileTransferProgress();
+            stopwatch = new Stopwatch();
             await t;
         }
         internal virtual async void OnAccepted(P06Accepted p)
         {
             if (SendingFile)
             {
-                byte[] buf = new byte[131072];
+                if (stopwatch.IsRunning)
+                    stopwatch.Stop();
+                int elapsed = Convert.ToInt32(stopwatch.ElapsedMilliseconds);
+                int size = 131072;
+                if (elapsed > 0)
+                {
+                    if (elapsed < 100)
+                        size = 1048568; // 8 bytes packet overhead
+                    else if (elapsed < 500)
+                        size = 524288;
+                    else if (elapsed < 1000)
+                        size = 262144;
+                }
+                byte[] buf = new byte[size];
                 ulong startPos = Convert.ToUInt64(stream.Position);
-                int count = await stream.ReadAsync(buf, 0, 131072);
+                int count = await stream.ReadAsync(buf, 0, size);
                 if (count == 0)
                 {
                     stream.Close();
@@ -165,10 +183,11 @@ namespace VSL.FileTransfer
                 }
                 else
                 {
-                    Task t = parent.manager.SendPacketAsync(new P09FileDataBlock(startPos, buf.Take(count).ToArray()));
+                    Task t = parent.manager.SendPacketAsync(new P09FileDataBlock(startPos, Crypt.Util.TakeBytes(buf, count)));
                     transfered += count;
                     OnFileTransferProgress();
                     await t;
+                    stopwatch.Restart();
                 }
             }
         }

@@ -27,25 +27,38 @@ namespace VSL
         internal ushort LatestProduct;
         internal ushort OldestProduct;
         private int _networkBufferSize = Constants.ReceiveBufferSize;
-        private Dispatcher ExecuteThread;
         //  fields>
         // <constructor
         /// <summary>
-        /// Creates a VSL Client that has to be connected
+        /// Creates a VSL Client that has to be connected.
         /// </summary>
-        /// <param name="latestProduct">The application version</param>
-        /// <param name="oldestProduct">The oldest supported version</param>
+        /// <param name="latestProduct">The application version.</param>
+        /// <param name="oldestProduct">The oldest supported version.</param>
         public VSLClient(ushort latestProduct, ushort oldestProduct)
         {
-            InitializeComponent();
+            InitializeComponent(ThreadMgr.InvokeMode.Dispatcher);
 
             LatestProduct = latestProduct;
             OldestProduct = oldestProduct;
 
             FileTransfer = new FileTransferClient(this);
             base.FileTransfer = FileTransfer;
+        }
+        /// <summary>
+        /// Creates a VSL Client that has to be connected.
+        /// </summary>
+        /// <param name="latestProduct">The application version.</param>
+        /// <param name="oldestProduct">The oldest supported version.</param>
+        /// <param name="mode">The way how events are invoked.</param>
+        public VSLClient(ushort latestProduct, ushort oldestProduct, ThreadMgr.InvokeMode mode)
+        {
+            InitializeComponent(mode);
 
-            ExecuteThread = Dispatcher.CurrentDispatcher;
+            LatestProduct = latestProduct;
+            OldestProduct = oldestProduct;
+
+            FileTransfer = new FileTransferClient(this);
+            base.FileTransfer = FileTransfer;
         }
         //  constructor>
         // <properties
@@ -138,39 +151,6 @@ namespace VSL
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct));
             //  key exchange>
         }
-#region Invoke
-        /// <summary>
-        /// Sets the thread to invoke events on to the calling thread.
-        /// </summary>
-        public void SetInvokeThread()
-        {
-            ExecuteThread = Dispatcher.CurrentDispatcher;
-        }
-        /// <summary>
-        /// Sets the specified thread as thread to invoke events on.
-        /// </summary>
-        /// <param name="invokeThread">Thread to invoke events on.</param>
-        public void SetInvokeThread(Thread invokeThread)
-        {
-            ExecuteThread = Dispatcher.FromThread(invokeThread);
-        }
-        /// <summary>
-        /// Invokes an Action on the associated thread.
-        /// </summary>
-        /// <param name="work">Action to execute.</param>
-        public override void Invoke(Action work)
-        {
-            ExecuteThread.Invoke(work);
-        }
-        /// <summary>
-        /// Queues an Action on the associated thread.
-        /// </summary>
-        /// <param name="work">Action to execute.</param>
-        public override void QueueWorkItem(Action work)
-        {
-            ExecuteThread.InvokeAsync(work);
-        }
-#endregion
         //  functions>
     }
 }

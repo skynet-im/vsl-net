@@ -14,8 +14,6 @@ namespace VSL.Crypt
     {
         // © 2017 Daniel Lerch
         private AesCryptoServiceProvider csp;
-        private ICryptoTransform encryptor;
-        private ICryptoTransform decryptor;
         /// <summary>
         /// Initializes a new instance of the AesCsp class which is more efficient than the static <see cref="AES"/> class for multiple operations with the same key.
         /// </summary>
@@ -32,10 +30,6 @@ namespace VSL.Crypt
                 Key = key,
                 IV = iv
             };
-            encryptor = csp.CreateEncryptor();
-            decryptor = csp.CreateDecryptor();
-            _encryptIV = iv;
-            _decryptIV = iv;
         }
         /// <summary>
         /// Sets the key for the next operations.
@@ -46,10 +40,6 @@ namespace VSL.Crypt
             {
                 if (value.Length != 32) throw new ArgumentOutOfRangeException("The key must have a length of 256 bit");
                 csp.Key = value;
-                csp.IV = _encryptIV;
-                encryptor = csp.CreateEncryptor();
-                csp.IV = _decryptIV;
-                decryptor = csp.CreateDecryptor();
             }
         }
         /// <summary>
@@ -62,40 +52,6 @@ namespace VSL.Crypt
                 if (value == null) value = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 if (value.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
                 csp.IV = value;
-                _encryptIV = value;
-                _decryptIV = value;
-                encryptor = csp.CreateEncryptor();
-                decryptor = csp.CreateDecryptor();
-            }
-        }
-        private byte[] _encryptIV;
-        /// <summary>
-        /// Sets the initialization vector for the next encryptions.
-        /// </summary>
-        public byte[] EncryptIV
-        {
-            set
-            {
-                if (value == null) value = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-                if (value.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
-                csp.IV = value;
-                _encryptIV = value;
-                encryptor = csp.CreateEncryptor();
-            }
-        }
-        private byte[] _decryptIV;
-        /// <summary>
-        /// Sets the initialization vector for the next decryptions.
-        /// </summary>
-        public byte[] DecryptIV
-        {
-            set
-            {
-                if (value == null) value = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-                if (value.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
-                csp.IV = value;
-                _decryptIV = value;
-                decryptor = csp.CreateDecryptor();
             }
         }
 
@@ -109,14 +65,16 @@ namespace VSL.Crypt
         public byte[] Encrypt(byte[] buf)
         {
             if (buf == null) throw new ArgumentNullException("buf");
-            byte[] ciphertext = new byte[0];
-            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+            byte[] ciphertext;
+            using (System.IO.MemoryStream msCiphertext = new System.IO.MemoryStream())
             {
-                System.IO.MemoryStream msCiphertext = new System.IO.MemoryStream();
-                CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write);
-                csEncrypt.Write(buf, 0, buf.Length);
-                csEncrypt.Close();
-                ciphertext = msCiphertext.ToArray();
+                using (ICryptoTransform encryptor = csp.CreateEncryptor())
+                {
+                    CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write);
+                    csEncrypt.Write(buf, 0, buf.Length);
+                    csEncrypt.Close();
+                    ciphertext = msCiphertext.ToArray();
+                }
             }
             return ciphertext;
         }
@@ -130,16 +88,14 @@ namespace VSL.Crypt
         public async Task<byte[]> EncryptAsync(byte[] buf)
         {
             if (buf == null) throw new ArgumentNullException("buf");
-            byte[] ciphertext = new byte[0];
-            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+            byte[] ciphertext;
+            using (System.IO.MemoryStream msCiphertext = new System.IO.MemoryStream())
             {
-                using (System.IO.MemoryStream msCiphertext = new System.IO.MemoryStream())
+                using (ICryptoTransform encryptor = csp.CreateEncryptor())
                 {
-                    using (CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write))
-                    {
-                        await csEncrypt.WriteAsync(buf, 0, buf.Length);
-                        csEncrypt.Close();
-                    }
+                    CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write);
+                    await csEncrypt.WriteAsync(buf, 0, buf.Length);
+                    csEncrypt.Close();
                     ciphertext = msCiphertext.ToArray();
                 }
             }
@@ -159,13 +115,15 @@ namespace VSL.Crypt
             if (buf == null) throw new ArgumentNullException("buf");
             if (buf.Length % 16 != 0) throw new ArgumentOutOfRangeException("buf", "The blocksize must be 16 bytes.");
             byte[] plaintext = new byte[0];
-            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+            using (System.IO.MemoryStream msPlaintext = new System.IO.MemoryStream())
             {
-                System.IO.MemoryStream msPlaintext = new System.IO.MemoryStream();
-                CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write);
-                csDecrypt.Write(buf, 0, buf.Length);
-                csDecrypt.Close();
-                plaintext = msPlaintext.ToArray();
+                using (ICryptoTransform decryptor = csp.CreateDecryptor())
+                {
+                    CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write);
+                    csDecrypt.Write(buf, 0, buf.Length);
+                    csDecrypt.Close();
+                    plaintext = msPlaintext.ToArray();
+                }
             }
             return plaintext;
         }
@@ -181,16 +139,14 @@ namespace VSL.Crypt
         {
             if (buf == null) throw new ArgumentNullException("buf");
             if (buf.Length % 16 != 0) throw new ArgumentOutOfRangeException("buf", "The blocksize must be 16 bytes.");
-            byte[] plaintext = new byte[0];
-            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+            byte[] plaintext;
+            using (System.IO.MemoryStream msPlaintext = new System.IO.MemoryStream())
             {
-                using (System.IO.MemoryStream msPlaintext = new System.IO.MemoryStream())
+                using (ICryptoTransform decryptor = csp.CreateDecryptor())
                 {
-                    using (CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write))
-                    {
-                        await csDecrypt.WriteAsync(buf, 0, buf.Length);
-                        csDecrypt.Close();
-                    }
+                    CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write);
+                    await csDecrypt.WriteAsync(buf, 0, buf.Length);
+                    csDecrypt.Close();
                     plaintext = msPlaintext.ToArray();
                 }
             }
@@ -254,10 +210,8 @@ namespace VSL.Crypt
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects).
+                    // -TODO: dispose managed state (managed objects).
                     csp.Dispose();
-                    encryptor.Dispose();
-                    decryptor.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.

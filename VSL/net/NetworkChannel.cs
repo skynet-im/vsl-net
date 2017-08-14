@@ -16,7 +16,7 @@ namespace VSL
     internal class NetworkChannel : IDisposable
     {
         // <fields
-        internal VSLSocket parent;
+        private VSLSocket parent;
         private TcpClient tcp;
         private Queue cache;
         private int _receiveBufferSize = Constants.ReceiveBufferSize;
@@ -177,12 +177,12 @@ namespace VSL
         internal byte[] Read(int count)
         {
             const int wait = 10;
-            const int cycles = Constants.ReceiveTimeout / wait;
+            int cycles = (Constants.ReceiveTimeout + count / 8) / wait;
             int cycle = 0;
             while (cache.Length < count)
             {
                 if (cycle >= cycles)
-                    throw new TimeoutException();
+                    throw new TimeoutException(string.Format("Waiting for {0} bytes took over {1} ms.", count, cycles * wait));
                 if (ct.WaitHandle.WaitOne(wait))
                     throw new OperationCanceledException();
                 cycle++;
@@ -201,12 +201,12 @@ namespace VSL
         internal async Task<byte[]> ReadAsync(int count)
         {
             const int wait = 10;
-            const int cycles = Constants.ReceiveTimeout / wait;
+            int cycles = (Constants.ReceiveTimeout + count / 8) / wait;
             int cycle = 0;
             while (cache.Length < count)
             {
                 if (cycle >= cycles)
-                    throw new TimeoutException();
+                    throw new TimeoutException(string.Format("Waiting for {0} bytes took over {1} ms.", count, cycles * wait));
                 await Task.Delay(10, ct);
                 cycle++;
             }
