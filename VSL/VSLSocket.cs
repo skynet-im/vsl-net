@@ -22,21 +22,26 @@ namespace VSL
         internal NetworkManager manager;
         internal PacketHandler handler;
         /// <summary>
+        /// Gets the manager for event invocation and load balancing.
+        /// </summary>
+        public ThreadMgr EventThread { get; internal set; }
+        /// <summary>
         /// Access file transfer functions.
         /// </summary>
-        public FileTransferSocket FileTransfer;
+        public FileTransferSocket FileTransfer { get; internal set; }
         internal ExceptionHandler ExceptionHandler;
         /// <summary>
         /// Configure necessary console output.
         /// </summary>
-        public Logger Logger;
+        public Logger Logger { get; internal set; }
         //  fields>
         // <constructor
         /// <summary>
         /// Initializes all non-child-specific components.
         /// </summary>
-        internal void InitializeComponent()
+        internal void InitializeComponent(ThreadMgr.InvokeMode mode)
         {
+            EventThread = new ThreadMgr(this, mode);
             ExceptionHandler = new ExceptionHandler(this);
             Logger = new Logger(this);
         }
@@ -84,7 +89,7 @@ namespace VSL
         internal virtual void OnConnectionEstablished()
         {
             connectionAvailable = true;
-            Invoke(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
+            EventThread.Invoke(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
         }
         /// <summary>
         /// The PacketReceived event occurs when a packet with an external ID was received
@@ -98,7 +103,7 @@ namespace VSL
         internal virtual void OnPacketReceived(byte id, byte[] content)
         {
             PacketReceivedEventArgs args = new PacketReceivedEventArgs(Convert.ToByte(255 - id), content);
-            Invoke(() => PacketReceived?.Invoke(this, args));
+            EventThread.QueueWorkItem(() => PacketReceived?.Invoke(this, args));
         }
         /// <summary>
         /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it.
@@ -114,7 +119,7 @@ namespace VSL
             {
                 connectionAvailable = false;
                 ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
-                Invoke(() => ConnectionClosed?.Invoke(this, args));
+                EventThread.QueueWorkItem(() => ConnectionClosed?.Invoke(this, args));
             }
         }
         //  events>
@@ -157,18 +162,10 @@ namespace VSL
         {
             channel.CloseConnection();
             OnConnectionClosed(reason);
+            if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
+                EventThread.Exit();
             Dispose();
         }
-        /// <summary>
-        /// Invokes an Action on the associated thread.
-        /// </summary>
-        /// <param name="work">Action to execute.</param>
-        public abstract void Invoke(Action work);
-        /// <summary>
-        /// Queues an Action on the associated thread.
-        /// </summary>
-        /// <param name="work">Action to execute.</param>
-        public abstract void QueueWorkItem(Action work);
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
@@ -185,6 +182,7 @@ namespace VSL
                 {
                     // -TODO: dispose managed state (managed objects).
                     channel.Dispose();
+                    manager.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.

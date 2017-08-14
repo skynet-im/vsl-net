@@ -24,9 +24,8 @@ Public Class frmMain
     End Sub
 #End Region
 #Region "AES"
-    Private csp As New Security.Cryptography.AesCryptoServiceProvider()
-    Private encryptor As Security.Cryptography.ICryptoTransform
-
+    Private encryptCsp As AesCsp
+    Private decryptCsp As AesCsp
     Private Sub btnAesGenerate_Click(sender As Object, e As EventArgs) Handles btnAesGenerate.Click
         tbAesKey.Text = Util.ToHexString(AES.GenerateKey())
     End Sub
@@ -38,30 +37,27 @@ Public Class frmMain
     Private Async Sub btnAesDecrypt_Click(sender As Object, e As EventArgs) Handles btnAesDecrypt.Click
         Dim enc As New Text.UTF8Encoding
         Dim ct As Byte() = Util.GetBytes(tbAesCipherText.Text)
-        Dim pt As Byte() = Await AES.DecryptAsync(ct, Util.GetBytes(tbAesKey.Text), If(String.IsNullOrEmpty(tbAesIV.Text), Nothing, Util.GetBytes(tbAesIV.Text)))
-        tbAesPlainText.Text = enc.GetString(pt)
-        'tbAesPlainText.Text = Util.ToHexString(pt)
+        'Dim pt As Byte() = Await AES.DecryptAsync(ct, Util.GetBytes(tbAesKey.Text), If(String.IsNullOrEmpty(tbAesIV.Text), Nothing, Util.GetBytes(tbAesIV.Text)))
+        Dim pt As Byte()
+        If decryptCsp Is Nothing Then
+            decryptCsp = New AesCsp(Util.GetBytes(tbAesKey.Text), Util.GetBytes(tbAesIV.Text))
+        End If
+        pt = Await decryptCsp.DecryptAsync(ct)
+        'tbAesPlainText.Text = enc.GetString(pt)
+        tbAesPlainText.Text = Util.ToHexString(pt)
         tbAesCipherText.Text = ""
     End Sub
 
     Private Async Sub btnAesEncrypt_Click(sender As Object, e As EventArgs) Handles btnAesEncrypt.Click
         Dim enc As New Text.UTF8Encoding
-        Dim pt As Byte() = enc.GetBytes(tbAesPlainText.Text)
-        'Dim pt As Byte() = Util.GetBytes(tbAesPlainText.Text)
+        'Dim pt As Byte() = enc.GetBytes(tbAesPlainText.Text)
+        Dim pt As Byte() = Util.GetBytes(tbAesPlainText.Text)
         'Dim ct As Byte() = Await AES.EncryptAsync(pt, Util.GetBytes(tbAesKey.Text), If(String.IsNullOrEmpty(tbAesIV.Text), Nothing, Util.GetBytes(tbAesIV.Text)))
-        Dim ct As Byte() = New Byte(31) {}
-        If encryptor Is Nothing Then
-            csp.Key = Util.GetBytes(tbAesKey.Text)
-            csp.IV = Util.GetBytes(tbAesIV.Text)
-            encryptor = csp.CreateEncryptor()
+        Dim ct As Byte()
+        If encryptCsp Is Nothing Then
+            encryptCsp = New AesCsp(Util.GetBytes(tbAesKey.Text), Util.GetBytes(tbAesIV.Text))
         End If
-        Dim msCipherT As New IO.MemoryStream()
-        Dim csEncrypt As New Security.Cryptography.CryptoStream(msCipherT, encryptor, Security.Cryptography.CryptoStreamMode.Write)
-        Await csEncrypt.WriteAsync(pt, 0, pt.Length)
-        Await csEncrypt.FlushAsync()
-        csEncrypt.Close()
-        ct = msCipherT.ToArray()
-        msCipherT.Close()
+        ct = Await encryptCsp.EncryptAsync(pt)
         tbAesCipherText.Text = Util.ToHexString(ct)
         tbAesPlainText.Text = ""
     End Sub

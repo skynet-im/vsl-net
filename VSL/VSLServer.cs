@@ -25,20 +25,42 @@ namespace VSL
         internal string Keypair;
         internal ushort LatestProduct;
         internal ushort OldestProduct;
-        private CancellationTokenSource cts;
-        private CancellationToken ct;
         //  fields>
         // <constructor
         /// <summary>
-        /// Creates a VSL listener for the specified client
+        /// Creates a VSL server for the specified client.
         /// </summary>
-        /// <param name="tcp">TCP Listener</param>
-        /// <param name="latestProduct">The application version</param>
-        /// <param name="oldestProduct">The oldest supported version</param>
-        /// <param name="keypair">The RSA-keypair of the server application</param>
+        /// <param name="tcp">Connected TcpClient.</param>
+        /// <param name="latestProduct">The application version.</param>
+        /// <param name="oldestProduct">The oldest supported version.</param>
+        /// <param name="keypair">The RSA-keypair of the server application.</param>
         public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair)
         {
-            InitializeComponent();
+            InitializeComponent(ThreadMgr.InvokeMode.ManagedThread);
+
+            LatestProduct = latestProduct;
+            OldestProduct = oldestProduct;
+            Keypair = keypair;
+            channel = new NetworkChannel(this, tcp);
+            manager = new NetworkManagerServer(this, keypair);
+            base.manager = manager;
+            handler = new PacketHandlerServer(this);
+            base.handler = handler;
+            FileTransfer = new FileTransferServer(this);
+            base.FileTransfer = FileTransfer;
+        }
+        // <constructor
+        /// <summary>
+        /// Creates a VSL server for the specified client.
+        /// </summary>
+        /// <param name="tcp">Connected TcpClient.</param>
+        /// <param name="latestProduct">The application version.</param>
+        /// <param name="oldestProduct">The oldest supported version.</param>
+        /// <param name="keypair">The RSA-keypair of the server application.</param>
+        /// <param name="mode">The way how events are invoked.</param>
+        public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair, ThreadMgr.InvokeMode mode)
+        {
+            InitializeComponent(mode);
 
             LatestProduct = latestProduct;
             OldestProduct = oldestProduct;
@@ -53,22 +75,6 @@ namespace VSL
         }
         //  constructor>
         // <functions
-        /// <summary>
-        /// Invokes an Action on the associated thread.
-        /// </summary>
-        /// <param name="work">Action to execute.</param>
-        public override void Invoke(Action work)
-        {
-            throw new NotImplementedException();
-        }
-        /// <summary>
-        /// Queues an Action on the associated thread.
-        /// </summary>
-        /// <param name="work">Action to execute.</param>
-        public override void QueueWorkItem(Action work)
-        {
-            throw new NotImplementedException();
-        }
         //  functions>
     }
 }
