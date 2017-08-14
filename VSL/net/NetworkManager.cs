@@ -15,6 +15,7 @@ namespace VSL
     {
         // <fields
         internal VSLSocket parent;
+        private AesCsp aes;
         //  fields>
         // <constructor
         internal void InitializeComponent()
@@ -186,7 +187,7 @@ namespace VSL
             {
                 int index = 1;
                 byte[] ciphertext = parent.channel.Read(16); //TimeoutException
-                byte[] plaintext = AES.Decrypt(ciphertext, AesKey, ReceiveIV); //CryptographicException
+                byte[] plaintext = aes.Decrypt(ciphertext); //CryptographicException
                 byte id = plaintext[0];
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 uint length = 0;
@@ -205,7 +206,7 @@ namespace VSL
                     int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
                     int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
                     ciphertext = parent.channel.Read(pendingBlocks * 16);
-                    plaintext = Util.ConnectBytesPA(plaintext, AES.Decrypt(ciphertext, AesKey, ReceiveIV));
+                    plaintext = Util.ConnectBytesPA(plaintext, aes.Decrypt(ciphertext));
                 }
                 int startIndex = Convert.ToInt32(plaintext.Length - length);
                 byte[] content = Util.SkipBytes(plaintext, startIndex); // remove random bytes
@@ -400,12 +401,12 @@ namespace VSL
                 Random random = new Random();
                 random.NextBytes(salt);
                 byte[] plaintext = Util.ConnectBytesPA(head, salt, content);
-                byte[] headBlock = AES.Encrypt(Util.TakeBytes(plaintext, 15), AesKey, SendIV);
+                byte[] headBlock = aes.Encrypt(Util.TakeBytes(plaintext, 15));
                 byte[] tailBlock = new byte[0];
                 if (plaintext.Length > 15)
                 {
                     plaintext = Util.SkipBytes(plaintext, 15);
-                    tailBlock = AES.Encrypt(plaintext, AesKey, SendIV);
+                    tailBlock = aes.Encrypt(plaintext);
                 }
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock);
                 bool success = buf.Length == parent.channel.Send(buf);
@@ -442,12 +443,12 @@ namespace VSL
                 Random random = new Random();
                 random.NextBytes(salt);
                 byte[] plaintext = Util.ConnectBytesPA(head, salt, content);
-                byte[] headBlock = await AES.EncryptAsync(Util.TakeBytes(plaintext, 15), AesKey, SendIV);
+                byte[] headBlock = await aes.EncryptAsync(Util.TakeBytes(plaintext, 15));
                 byte[] tailBlock = new byte[0];
                 if (plaintext.Length > 15)
                 {
                     plaintext = Util.SkipBytes(plaintext, 15);
-                    tailBlock = await AES.EncryptAsync(plaintext, AesKey, SendIV);
+                    tailBlock = await aes.EncryptAsync(plaintext);
                 }
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock);
                 bool success = buf.Length == await Task.Run(() => parent.channel.Send(buf));
@@ -468,9 +469,50 @@ namespace VSL
         #endregion send
         internal abstract string PublicKey { get; }
         internal abstract string Keypair { get; }
-        internal abstract byte[] AesKey { get; set; }
-        internal abstract byte[] ReceiveIV { get; set; }
-        internal abstract byte[] SendIV { get; set; }
+        private byte[] _aesKey;
+        internal byte[] AesKey
+        {
+            get
+            {
+                return _aesKey;
+            }
+            set
+            {
+                _aesKey = value;
+                if (aes == null)
+                    aes = new AesCsp(value);
+                else
+                    aes.Key = value;
+            }
+        }
+        private byte[] _receiveIV;
+        internal byte[] ReceiveIV
+        {
+            get
+            {
+                return _receiveIV;
+            }
+            set
+            {
+                if (aes == null) throw new InvalidOperationException("You have to asign the key before the iv");
+                _receiveIV = value;
+                aes.DecryptIV = value;
+            }
+        }
+        private byte[] _sendIV;
+        internal byte[] SendIV
+        {
+            get
+            {
+                return _sendIV;
+            }
+            set
+            {
+                if (aes == null) throw new InvalidOperationException("You have to asign the key before the iv");
+                _sendIV = value;
+                aes.EncryptIV = value;
+            }
+        }
         //  functions>
     }
 }

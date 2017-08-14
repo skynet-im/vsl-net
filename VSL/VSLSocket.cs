@@ -18,7 +18,6 @@ namespace VSL
     {
         // <fields
         private bool connectionAvailable = false;
-        internal Dispatcher ExecuteThread;
         internal NetworkChannel channel;
         internal NetworkManager manager;
         internal PacketHandler handler;
@@ -38,7 +37,6 @@ namespace VSL
         /// </summary>
         internal void InitializeComponent()
         {
-            ExecuteThread = Dispatcher.CurrentDispatcher;
             ExceptionHandler = new ExceptionHandler(this);
             Logger = new Logger(this);
         }
@@ -86,7 +84,7 @@ namespace VSL
         internal virtual void OnConnectionEstablished()
         {
             connectionAvailable = true;
-            ExecuteThread.Invoke(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
+            Invoke(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
         }
         /// <summary>
         /// The PacketReceived event occurs when a packet with an external ID was received
@@ -100,7 +98,7 @@ namespace VSL
         internal virtual void OnPacketReceived(byte id, byte[] content)
         {
             PacketReceivedEventArgs args = new PacketReceivedEventArgs(Convert.ToByte(255 - id), content);
-            ExecuteThread.Invoke(() => PacketReceived?.Invoke(this, args));
+            Invoke(() => PacketReceived?.Invoke(this, args));
         }
         /// <summary>
         /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it.
@@ -116,7 +114,7 @@ namespace VSL
             {
                 connectionAvailable = false;
                 ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
-                ExecuteThread.Invoke(() => ConnectionClosed?.Invoke(this, args));
+                Invoke(() => ConnectionClosed?.Invoke(this, args));
             }
         }
         //  events>
@@ -162,20 +160,15 @@ namespace VSL
             Dispose();
         }
         /// <summary>
-        /// Sets the thread to invoke events on to the calling thread.
+        /// Invokes an Action on the associated thread.
         /// </summary>
-        public void SetInvokeThread()
-        {
-            ExecuteThread = Dispatcher.CurrentDispatcher;
-        }
+        /// <param name="work">Action to execute.</param>
+        public abstract void Invoke(Action work);
         /// <summary>
-        /// Sets the specified thread as thread to invoke events on.
+        /// Queues an Action on the associated thread.
         /// </summary>
-        /// <param name="invokeThread">Thread to invoke events on.</param>
-        public void SetInvokeThread(Thread invokeThread)
-        {
-            ExecuteThread = Dispatcher.FromThread(invokeThread);
-        }
+        /// <param name="work">Action to execute.</param>
+        public abstract void QueueWorkItem(Action work);
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
