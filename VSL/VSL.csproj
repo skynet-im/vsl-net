@@ -81,6 +81,7 @@
     <Compile Include="FileTransfer\StreamMode.cs" />
     <Compile Include="Util\Constants.cs" />
     <Compile Include="Util\Crypt\AES.cs" />
+    <Compile Include="Util\Crypt\AesCsp.cs" />
     <Compile Include="Util\Crypt\ECDH.cs" />
     <Compile Include="Util\Crypt\Hash.cs" />
     <Compile Include="Util\Crypt\RSA.cs" />

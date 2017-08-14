@@ -18,8 +18,6 @@ namespace VSL
             InitializeComponent();
         }
 
-        internal override byte[] AesKey { get; set; }
-
         internal override string Keypair
         {
             get
@@ -29,9 +27,5 @@ namespace VSL
         }
 
         internal override string PublicKey { get; }
-
-        internal override byte[] ReceiveIV { get; set; }
-
-        internal override byte[] SendIV { get; set; }
     }
 }

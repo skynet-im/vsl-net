@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using System.Windows.Threading;
 using VSL.FileTransfer;
 using VSL.Packet;
 
@@ -25,6 +27,7 @@ namespace VSL
         internal ushort LatestProduct;
         internal ushort OldestProduct;
         private int _networkBufferSize = Constants.ReceiveBufferSize;
+        private Dispatcher ExecuteThread;
         //  fields>
         // <constructor
         /// <summary>
@@ -41,6 +44,8 @@ namespace VSL
 
             FileTransfer = new FileTransferClient(this);
             base.FileTransfer = FileTransfer;
+
+            ExecuteThread = Dispatcher.CurrentDispatcher;
         }
         //  constructor>
         // <properties
@@ -91,7 +96,6 @@ namespace VSL
             base.handler = handler;
             //  initialize component>
 
-
             // <resolve hostname
             /*IPAddress[] ips;
             try
@@ -134,6 +138,39 @@ namespace VSL
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct));
             //  key exchange>
         }
+#region Invoke
+        /// <summary>
+        /// Sets the thread to invoke events on to the calling thread.
+        /// </summary>
+        public void SetInvokeThread()
+        {
+            ExecuteThread = Dispatcher.CurrentDispatcher;
+        }
+        /// <summary>
+        /// Sets the specified thread as thread to invoke events on.
+        /// </summary>
+        /// <param name="invokeThread">Thread to invoke events on.</param>
+        public void SetInvokeThread(Thread invokeThread)
+        {
+            ExecuteThread = Dispatcher.FromThread(invokeThread);
+        }
+        /// <summary>
+        /// Invokes an Action on the associated thread.
+        /// </summary>
+        /// <param name="work">Action to execute.</param>
+        public override void Invoke(Action work)
+        {
+            ExecuteThread.Invoke(work);
+        }
+        /// <summary>
+        /// Queues an Action on the associated thread.
+        /// </summary>
+        /// <param name="work">Action to execute.</param>
+        public override void QueueWorkItem(Action work)
+        {
+            ExecuteThread.InvokeAsync(work);
+        }
+#endregion
         //  functions>
     }
 }

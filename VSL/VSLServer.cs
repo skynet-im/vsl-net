@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
@@ -24,6 +25,8 @@ namespace VSL
         internal string Keypair;
         internal ushort LatestProduct;
         internal ushort OldestProduct;
+        private CancellationTokenSource cts;
+        private CancellationToken ct;
         //  fields>
         // <constructor
         /// <summary>
@@ -50,6 +53,22 @@ namespace VSL
         }
         //  constructor>
         // <functions
+        /// <summary>
+        /// Invokes an Action on the associated thread.
+        /// </summary>
+        /// <param name="work">Action to execute.</param>
+        public override void Invoke(Action work)
+        {
+            throw new NotImplementedException();
+        }
+        /// <summary>
+        /// Queues an Action on the associated thread.
+        /// </summary>
+        /// <param name="work">Action to execute.</param>
+        public override void QueueWorkItem(Action work)
+        {
+            throw new NotImplementedException();
+        }
         //  functions>
     }
 }
