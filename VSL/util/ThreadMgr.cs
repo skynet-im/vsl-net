@@ -115,12 +115,11 @@ namespace VSL
         }
         private void ThreadWork()
         {
-            while (!ct.IsCancellationRequested)
+            while (true)
             {
                 while (workQueue.TryDequeue(out KeyValuePair<Action, ManualResetEventSlim> pair))
                 {
-                    if (ct.IsCancellationRequested)
-                        return;
+                    if (ct.IsCancellationRequested) return;
                     pair.Key.Invoke();
                     pair.Value?.Set();
                 }
