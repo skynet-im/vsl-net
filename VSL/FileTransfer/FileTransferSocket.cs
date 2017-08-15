@@ -225,7 +225,7 @@ namespace VSL.FileTransfer
                 if (disposing)
                 {
                     // -TODO: dispose managed state (managed objects).
-                    stream.Dispose();
+                    stream?.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.

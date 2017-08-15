@@ -215,8 +215,8 @@ namespace VSL
                 if (disposing)
                 {
                     // -TODO: dispose managed state (managed objects).
-                    channel.Dispose();
-                    manager.Dispose();
+                    channel?.Dispose();
+                    manager?.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
