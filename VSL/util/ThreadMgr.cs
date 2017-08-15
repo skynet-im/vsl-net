@@ -119,6 +119,8 @@ namespace VSL
             {
                 while (workQueue.TryDequeue(out KeyValuePair<Action, ManualResetEventSlim> pair))
                 {
+                    if (ct.IsCancellationRequested)
+                        return;
                     pair.Key.Invoke();
                     pair.Value?.Set();
                 }
