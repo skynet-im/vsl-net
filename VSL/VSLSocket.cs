@@ -18,6 +18,7 @@ namespace VSL
     {
         // <fields
         private bool connectionAvailable = false;
+        private DateTime connectionLost = DateTime.MinValue;
         internal NetworkChannel channel;
         internal NetworkManager manager;
         internal PacketHandler handler;
@@ -118,6 +119,7 @@ namespace VSL
             if (connectionAvailable)
             {
                 connectionAvailable = false;
+                connectionLost = DateTime.Now;
                 ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
                 EventThread.QueueWorkItem(() => ConnectionClosed?.Invoke(this, args));
             }
@@ -134,9 +136,25 @@ namespace VSL
         /// <exception cref="InvalidOperationException"/>
         public bool SendPacket(byte id, byte[] content)
         {
-            if (content == null) throw new ArgumentNullException("\"content\" must not be null");
-            if (id >= 246) throw new ArgumentOutOfRangeException("\"id\" must be lower than 246 because of internal VSL packets");
-            if (!connectionAvailable) throw new InvalidOperationException("You must not send a packet while there is no connection");
+            if (content == null) throw new ArgumentNullException("content");
+            if (id >= 246) throw new ArgumentOutOfRangeException("id", "must be lower than 246 because of internal VSL packets");
+            if (!ConnectionAvailable)
+            {
+                if (connectionLost == DateTime.MinValue)
+                    throw new InvalidOperationException("You have to wait until a secure connection is established before you send a packet.");
+                else
+                {
+                    double spanMilliseconds = (DateTime.Now - connectionLost).TotalMilliseconds;
+                    string spanText;
+                    if (spanMilliseconds < 100)
+                        return false;
+                    if (spanMilliseconds < 10000)
+                        spanText = Math.Round(spanMilliseconds).ToString() + " ms";
+                    else
+                        spanText = Math.Round(spanMilliseconds, 1).ToString() + " sek";
+                    throw new InvalidOperationException(string.Format("VSL has lost its connection {0} ago. Build up a new connection before sending a packet.", spanText));
+                }
+            }
             return manager.SendPacket(Convert.ToByte(255 - id), content);
         }
         /// <summary>
@@ -147,12 +165,28 @@ namespace VSL
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <exception cref="InvalidOperationException"/>
-        public Task<bool> SendPacketAsync(byte id, byte[] content)
+        public async Task<bool> SendPacketAsync(byte id, byte[] content)
         {
-            if (content == null) throw new ArgumentNullException("\"content\" must not be null");
-            if (id >= 246) throw new ArgumentOutOfRangeException("\"id\" must be lower than 246 because of internal VSL packets");
-            if (!connectionAvailable) throw new InvalidOperationException("You must not send a packet while there is no connection");
-            return manager.SendPacketAsync(Convert.ToByte(255 - id), content);
+            if (content == null) throw new ArgumentNullException("content");
+            if (id >= 246) throw new ArgumentOutOfRangeException("id", "must be lower than 246 because of internal VSL packets");
+            if (!ConnectionAvailable)
+            {
+                if (connectionLost == DateTime.MinValue)
+                    throw new InvalidOperationException("You have to wait until a secure connection is established before you send a packet.");
+                else
+                {
+                    double spanMilliseconds = (DateTime.Now - connectionLost).TotalMilliseconds;
+                    string spanText;
+                    if (spanMilliseconds < 100)
+                        return false;
+                    if (spanMilliseconds < 10000)
+                        spanText = Math.Round(spanMilliseconds).ToString() + " ms";
+                    else
+                        spanText = Math.Round(spanMilliseconds, 1).ToString() + " sek";
+                    throw new InvalidOperationException(string.Format("VSL has lost its connection {0} ago. Build up a new connection before sending a packet.", spanText));
+                }
+            }
+            return await manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
 
         /// <summary>
