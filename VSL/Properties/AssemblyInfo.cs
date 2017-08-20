@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("VSL x64")]
+[assembly: AssemblyTitle("VSL")]
 [assembly: AssemblyDescription("VectorData Security Layer")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("VectorData")]
-[assembly: AssemblyProduct("VSL x64")]
+[assembly: AssemblyProduct("VSL")]
 [assembly: AssemblyCopyright("Copyright © 2017 Daniel Lerch")]
 [assembly: AssemblyTrademark("VectorData")]
 [assembly: AssemblyCulture("")]
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.1.15.0")]
-[assembly: AssemblyFileVersion("1.1.15.0")]
+[assembly: AssemblyVersion("1.1.15.1")]
+[assembly: AssemblyFileVersion("1.1.15.1")]

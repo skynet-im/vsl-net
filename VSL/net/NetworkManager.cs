@@ -11,10 +11,11 @@ namespace VSL
     /// <summary>
     /// Responsible for cryptography management
     /// </summary>
-    internal abstract class NetworkManager:IDisposable
+    internal abstract class NetworkManager : IDisposable
     {
         // <fields
         internal VSLSocket parent;
+        internal bool Ready4Aes = false;
         private AesCsp enc;
         private AesCsp dec;
         //  fields>
@@ -41,7 +42,10 @@ namespace VSL
                         ReceivePacket_RSA_2048();
                         break;
                     case CryptographicAlgorithm.AES_256:
-                        ReceivePacketAsync_AES_256();
+                        if (Ready4Aes)
+                            ReceivePacket_AES_256();
+                        else
+                            throw new InvalidOperationException("Not ready to receive an AES packet, because key exchange is not finished yet.");
                         break;
                     default:
                         throw new InvalidOperationException(string.Format("Received packet with unknown algorithm ({0})", algorithm.ToString()));
@@ -190,7 +194,7 @@ namespace VSL
                 parent.ExceptionHandler.CloseConnection(ex);
             }
         }
-        private void ReceivePacketAsync_AES_256()
+        private void ReceivePacket_AES_256()
         {
             try
             {
@@ -228,7 +232,7 @@ namespace VSL
                 }
                 else
                 {
-                    parent.Logger.D(string.Format("Received external AES packet: extID={0} Length={1}", 255 - id, content.Length));
+                    parent.Logger.D(string.Format("Received external AES packet: ID={0} Length={1}", 255 - id, content.Length));
                     parent.OnPacketReceived(id, content);
                 }
             }
@@ -425,12 +429,14 @@ namespace VSL
                 }
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock);
                 bool success = buf.Length == parent.channel.Send(buf);
-                parent.Logger.D(string.Format("Sent AES packet with native ID {0} and {1}bytes length ({2} AES blocks)", head[0], content.Length, blocks));
+                if (head[0] <= 9)
+                    parent.Logger.D(string.Format("Sent internal AES packet: ID={0} Length={1} {2}b", head[0], buf.Length, blocks));
+                else
+                    parent.Logger.D(string.Format("Sent external AES packet: ID={0} Length={1} {2}b", 255 - head[0], buf.Length, blocks));
                 salt = null;
                 plaintext = null;
                 headBlock = null;
                 tailBlock = null;
-                buf = null;
                 return success;
             }
             catch (System.Security.Cryptography.CryptographicException ex) //Invalid key/iv
@@ -467,12 +473,14 @@ namespace VSL
                 }
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock);
                 bool success = buf.Length == await Task.Run(() => parent.channel.Send(buf));
-                parent.Logger.D(string.Format("Sent AES packet with native ID {0} and {1}bytes length ({2} AES blocks)", head[0], content.Length, blocks));
+                if (head[0] <= 9)
+                    parent.Logger.D(string.Format("Sent internal AES packet: ID={0} Length={1} {2}b", head[0], buf.Length, blocks));
+                else
+                    parent.Logger.D(string.Format("Sent external AES packet: ID={0} Length={1} {2}b", 255 - head[0], buf.Length, blocks));
                 salt = null;
                 plaintext = null;
                 headBlock = null;
                 tailBlock = null;
-                buf = null;
                 return success;
             }
             catch (System.Security.Cryptography.CryptographicException ex) //Invalid key/iv

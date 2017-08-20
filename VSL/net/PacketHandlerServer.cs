@@ -41,6 +41,7 @@ namespace VSL
                 parent.manager.AesKey = p.AesKey;
                 parent.manager.SendIV = p.ServerIV;
                 parent.manager.ReceiveIV = p.ClientIV;
+                parent.manager.Ready4Aes = true;
                 await parent.manager.SendPacketAsync(CryptographicAlgorithm.AES_256, new P03FinishHandshake(ConnectionType.Compatible));
                 parent.OnConnectionEstablished();
             }

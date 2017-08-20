@@ -36,13 +36,7 @@ namespace VSL
         /// <param name="oldestProduct">The oldest supported version.</param>
         public VSLClient(ushort latestProduct, ushort oldestProduct)
         {
-            InitializeComponent(ThreadMgr.InvokeMode.Dispatcher);
-
-            LatestProduct = latestProduct;
-            OldestProduct = oldestProduct;
-
-            FileTransfer = new FileTransferClient(this);
-            base.FileTransfer = FileTransfer;
+            InitializeComponent(latestProduct, oldestProduct, ThreadMgr.InvokeMode.Dispatcher);
         }
         /// <summary>
         /// Creates a VSL Client that has to be connected.
@@ -51,6 +45,16 @@ namespace VSL
         /// <param name="oldestProduct">The oldest supported version.</param>
         /// <param name="mode">The way how events are invoked.</param>
         public VSLClient(ushort latestProduct, ushort oldestProduct, ThreadMgr.InvokeMode mode)
+        {
+            InitializeComponent(latestProduct, oldestProduct, mode);
+        }
+        /// <summary>
+        /// Initializes a new instance of the VSLClient class that has to be connected.
+        /// </summary>
+        /// <param name="latestProduct">The application version.</param>
+        /// <param name="oldestProduct">The oldest supported version.</param>
+        /// <param name="mode">The way how events are invoked.</param>
+        private void InitializeComponent(ushort latestProduct, ushort oldestProduct, ThreadMgr.InvokeMode mode)
         {
             InitializeComponent(mode);
 
@@ -107,36 +111,8 @@ namespace VSL
             base.manager = manager;
             handler = new PacketHandlerClient(this);
             base.handler = handler;
+            channel.StartThreads();
             //  initialize component>
-
-            // <resolve hostname
-            /*IPAddress[] ips;
-            try
-            {
-                ips = await Dns.GetHostAddressesAsync(address);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Could not resolve hostname " + address + ": " + ex);
-            }*/
-            // resolve hostname>
-
-            // <connect
-            /*bool couldConnect = false;
-            foreach (IPAddress ip in ips)
-            {
-                try
-                {
-                    await tcp.ConnectAsync(ip, port);
-                    channel.Connect(tcp);
-                    couldConnect = true;
-                    Console.WriteLine(ip.ToString());
-                    break;
-                }
-                catch { }
-            }
-            if (!couldConnect) throw new Exception("Could not connect to the specified host");*/
-            // connect>
 
             // <key exchange
             Task s = manager.SendPacketAsync(CryptographicAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey));
@@ -146,6 +122,7 @@ namespace VSL
             manager.AesKey = await key;
             manager.SendIV = await civ;
             manager.ReceiveIV = await siv;
+            manager.Ready4Aes = true;
             await s;
             await manager.SendPacketAsync(CryptographicAlgorithm.RSA_2048, new P01KeyExchange(manager.AesKey, manager.SendIV,
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct));
