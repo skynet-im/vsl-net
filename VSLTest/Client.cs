@@ -17,6 +17,9 @@ namespace VSLTest
         public Client(TcpClient native)
         {
             Vsl = new VSLServer(native, 0, 0, Program.Keypair, ThreadMgr.InvokeMode.Dispatcher);
+            Vsl.Logger.PrintDebugMessages = true;
+            Vsl.Logger.PrintExceptionMessages = true;
+            Vsl.Logger.PrintInfoMessages = true;
             Vsl.FileTransfer.FileTransferRequested += Vsl_FileTransferRequested;
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
         }

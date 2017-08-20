@@ -68,7 +68,6 @@ namespace VSL
             this.tcp = tcp;
             this.tcp.ReceiveBufferSize = _receiveBufferSize;
             InitializeComponent();
-            StartTasks();
         }
         /// <summary>
         /// Initializes all non-child-specific components
@@ -90,13 +89,12 @@ namespace VSL
         {
             this.tcp = tcp;
             this.tcp.ReceiveBufferSize = _receiveBufferSize;
-            StartTasks();
         }
 
         /// <summary>
         /// Starts the tasks for receiving and compounding
         /// </summary>
-        private void StartTasks()
+        internal void StartThreads()
         {
             if (threadsRunning) throw new InvalidOperationException("Tasks are already running.");
             threadsRunning = true;

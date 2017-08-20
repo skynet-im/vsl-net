@@ -78,9 +78,9 @@ namespace VSLTest
             if (!clientConnected)
             {
                 vslClient = new VSLClient(0, 0);
-                //vslClient.Logger.PrintDebugMessages = true;
+                vslClient.Logger.PrintDebugMessages = true;
                 vslClient.Logger.PrintExceptionMessages = true;
-                //vslClient.Logger.PrintInfoMessages = true;
+                vslClient.Logger.PrintInfoMessages = true;
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
                 vslClient.PacketReceived += vslClient_Received;
