@@ -46,7 +46,8 @@ namespace VSL
         /// </summary>
         internal void PrintException(Exception ex)
         {
-            parent.Logger.E(ex.ToString());
+            if (parent.Logger.InitE)
+                parent.Logger.E(ex.ToString());
         }
         //  functions>
     }

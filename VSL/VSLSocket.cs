@@ -194,8 +194,8 @@ namespace VSL
         /// </summary>
         public void CloseConnection(string reason)
         {
-            channel.CloseConnection();
             OnConnectionClosed(reason);
+            channel.CloseConnection();
             if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
                 EventThread.Exit();
             Dispose();

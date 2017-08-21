@@ -34,9 +34,8 @@ namespace VSL
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
         /// <param name="keypair">The RSA-keypair of the server application.</param>
-        public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair)
+        public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair) : this(tcp, latestProduct, oldestProduct, keypair, ThreadMgr.InvokeMode.ManagedThread)
         {
-            InitializeComponent(tcp, latestProduct, oldestProduct, keypair, ThreadMgr.InvokeMode.ManagedThread);
         }
         // <constructor
         /// <summary>
@@ -48,19 +47,6 @@ namespace VSL
         /// <param name="keypair">The RSA-keypair of the server application.</param>
         /// <param name="mode">The way how events are invoked.</param>
         public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair, ThreadMgr.InvokeMode mode)
-        {
-            InitializeComponent(tcp, latestProduct, oldestProduct, keypair, mode);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the VSLServer class for the specified client.
-        /// </summary>
-        /// <param name="tcp">Connected TcpClient.</param>
-        /// <param name="latestProduct">The application version.</param>
-        /// <param name="oldestProduct">The oldest supported version.</param>
-        /// <param name="keypair">The RSA-keypair of the server application.</param>
-        /// <param name="mode">The way how events are invoked.</param>
-        private void InitializeComponent(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair, ThreadMgr.InvokeMode mode)
         {
             InitializeComponent(mode);
 
