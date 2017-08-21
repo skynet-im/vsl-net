@@ -90,7 +90,9 @@ namespace VSL
         internal virtual void OnConnectionEstablished()
         {
             connectionAvailable = true;
-            EventThread.Invoke(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
+            EventThread.QueueWorkItem(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
+            if (Logger.InitI)
+                Logger.I("New connection established");
         }
         /// <summary>
         /// The PacketReceived event occurs when a packet with an external ID was received
@@ -192,9 +194,28 @@ namespace VSL
         /// <summary>
         /// Closes the TCP Connection, raises the related event and releases all associated resources.
         /// </summary>
+        /// <param name="reason">The reason to print and share in the related event.</param>
         public void CloseConnection(string reason)
         {
             OnConnectionClosed(reason);
+            if (Logger.InitI)
+                Logger.I("Connection was forcibly closed: " + reason);
+            channel.CloseConnection();
+            if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
+                EventThread.Exit();
+            Dispose();
+        }
+
+        /// <summary>
+        /// Closes the TCP Connection, raises the related event and releases all associated resources.
+        /// </summary>
+        /// <param name="message">The message to print.</param>
+        /// <param name="exception">The exception text to share in the related event.</param>
+        internal void CloseConnection(string message, string exception)
+        {
+            OnConnectionClosed(exception);
+            if (Logger.InitI)
+                Logger.I(message);
             channel.CloseConnection();
             if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
                 EventThread.Exit();
