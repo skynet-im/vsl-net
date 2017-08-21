@@ -51,6 +51,7 @@ namespace VSL
         /// Invokes an <see cref="Action"/> on the associated thread.
         /// </summary>
         /// <param name="work">Action to execute.</param>
+        /// <exception cref="OperationCanceledException"/>
         public void Invoke(Action work)
         {
             if (Mode == InvokeMode.Dispatcher)

@@ -141,7 +141,8 @@ namespace VSL
             }
             catch (SocketException ex)
             {
-                parent.ExceptionHandler.CloseConnection(ex);
+                if (ex.SocketErrorCode != SocketError.Interrupted)
+                    parent.ExceptionHandler.CloseConnection(ex);
             }
         }
 
