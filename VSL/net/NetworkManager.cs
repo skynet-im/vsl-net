@@ -227,12 +227,14 @@ namespace VSL
                 byte[] content = Util.SkipBytes(plaintext, startIndex); // remove random bytes
                 if (success)
                 {
-                    parent.Logger.D(string.Format("Received internal AES packet: ID={0} Length={1}", id, content.Length));
+                    if (parent.Logger.InitD)
+                        parent.Logger.D(string.Format("Received internal AES packet: ID={0} Length={1}", id, content.Length));
                     parent.handler.HandleInternalPacket(id, content);
                 }
                 else
                 {
-                    parent.Logger.D(string.Format("Received external AES packet: ID={0} Length={1}", 255 - id, content.Length));
+                    if (parent.Logger.InitD)
+                        parent.Logger.D(string.Format("Received external AES packet: ID={0} Length={1}", 255 - id, content.Length));
                     parent.OnPacketReceived(id, content);
                 }
             }
@@ -429,9 +431,9 @@ namespace VSL
                 }
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock);
                 bool success = buf.Length == parent.channel.Send(buf);
-                if (head[0] <= 9)
+                if (head[0] <= 9 && parent.Logger.InitD)
                     parent.Logger.D(string.Format("Sent internal AES packet: ID={0} Length={1} {2}b", head[0], buf.Length, blocks));
-                else
+                else if (parent.Logger.InitD)
                     parent.Logger.D(string.Format("Sent external AES packet: ID={0} Length={1} {2}b", 255 - head[0], buf.Length, blocks));
                 salt = null;
                 plaintext = null;
@@ -473,9 +475,9 @@ namespace VSL
                 }
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.AES_256 }, headBlock, tailBlock);
                 bool success = buf.Length == await Task.Run(() => parent.channel.Send(buf));
-                if (head[0] <= 9)
+                if (head[0] <= 9 && parent.Logger.InitD)
                     parent.Logger.D(string.Format("Sent internal AES packet: ID={0} Length={1} {2}b", head[0], buf.Length, blocks));
-                else
+                else if (parent.Logger.InitD)
                     parent.Logger.D(string.Format("Sent external AES packet: ID={0} Length={1} {2}b", 255 - head[0], buf.Length, blocks));
                 salt = null;
                 plaintext = null;

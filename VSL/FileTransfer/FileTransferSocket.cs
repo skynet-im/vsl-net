@@ -113,13 +113,14 @@ namespace VSL.FileTransfer
         }
         internal async void OnDataBlockReceived(P09FileDataBlock packet)
         {
-            if (stream == null)
+            if (stream == null && parent.Logger.InitD)
                 parent.Logger.D("Waiting for stream to be initialized");
             while (stream == null)
             {
                 await Task.Delay(100);
             }
-            parent.Logger.D("Stream initialized");
+            if (parent.Logger.InitD)
+                parent.Logger.D("Stream initialized");
             Task r = parent.manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
             Task w = stream.WriteAsync(packet.DataBlock, 0, packet.DataBlock.Length);
             OnFileTransferProgress();

@@ -34,9 +34,8 @@ namespace VSL
         /// </summary>
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
-        public VSLClient(ushort latestProduct, ushort oldestProduct)
+        public VSLClient(ushort latestProduct, ushort oldestProduct) : this(latestProduct, oldestProduct, ThreadMgr.InvokeMode.Dispatcher)
         {
-            InitializeComponent(latestProduct, oldestProduct, ThreadMgr.InvokeMode.Dispatcher);
         }
         /// <summary>
         /// Creates a VSL Client that has to be connected.
@@ -45,16 +44,6 @@ namespace VSL
         /// <param name="oldestProduct">The oldest supported version.</param>
         /// <param name="mode">The way how events are invoked.</param>
         public VSLClient(ushort latestProduct, ushort oldestProduct, ThreadMgr.InvokeMode mode)
-        {
-            InitializeComponent(latestProduct, oldestProduct, mode);
-        }
-        /// <summary>
-        /// Initializes a new instance of the VSLClient class that has to be connected.
-        /// </summary>
-        /// <param name="latestProduct">The application version.</param>
-        /// <param name="oldestProduct">The oldest supported version.</param>
-        /// <param name="mode">The way how events are invoked.</param>
-        private void InitializeComponent(ushort latestProduct, ushort oldestProduct, ThreadMgr.InvokeMode mode)
         {
             InitializeComponent(mode);
 
