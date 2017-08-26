@@ -42,7 +42,16 @@ namespace VSL
             set
             {
                 _receiveBufferSize = value;
-                if (tcp != null) tcp.Client.ReceiveBufferSize = value;
+                if (tcp != null)
+                    try
+                    {
+                        tcp.Client.ReceiveBufferSize = value;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (parent.Logger.InitE)
+                            parent.Logger.E(ex.ToString());
+                    }
             }
         }
         //  properties>
