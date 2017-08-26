@@ -63,7 +63,8 @@ namespace VSL
             }
             set
             {
-                channel.ReceiveBufferSize = value;
+                if (!disposedValue)
+                    channel.ReceiveBufferSize = value;
             }
         }
         /// <summary>
@@ -79,7 +80,7 @@ namespace VSL
         /// </summary>
         public long SentBytes => channel.SentBytes;
         #endregion
-        // <events
+        #region events
         /// <summary>
         /// The ConnectionEstablished event occurs when the connection was build up and the key exchange was finished
         /// </summary>
@@ -126,7 +127,7 @@ namespace VSL
                 EventThread.QueueWorkItem(() => ConnectionClosed?.Invoke(this, args));
             }
         }
-        //  events>
+        #endregion
         // <functions
         /// <summary>
         /// Sends a packet to the remotehost.
