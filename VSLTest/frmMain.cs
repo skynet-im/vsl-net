@@ -20,8 +20,7 @@ namespace VSLTest
         private VSLClient vslClient;
         // TESTSEVER: 
         private const string publickey = "<RSAKeyValue><Modulus>qBQQScN/+A2Tfi971dmOyPwSXpoq3XVwQBJNzbCCk1ohGVoOzdNK87Csw3thZyrynfaDzujW555S4HkWXxLR5dzo8rj/6KAk0yugYtFMt10XC1iZHRQACQIB3j+lS5wK9ZHfbsE4+/CUAoUdhYa9cad/xEbYrgkkyY0TuZZ1w2piiE1SdOXB+U6NF1aJbkUtKrHU2zcp5YzhYlRePvx7e+GQ5GMctSuT/xFzPpBZ5DZx1I/7lQicq7V21M/ktilRQIeqIslX98j4jLuFriinySwW+oi0s+8hantRwZ9jgAIIEao9+tbDSj8ePHb0Li6hhuoMmLeImLaoadDG39VnFQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
-        // SKYNETSERVER:
-        //private const string publickey = "<RSAKeyValue><Modulus>jKoWxmIfePGQaCHE87/gVp2Xqv1dwowj5jm7r4rI6NzSMyYwSqYHb8u5RtKOGiUPAz80rgym5rrVezkP+eiGZN1oC2yPfgRk9WrFN2x1o205J6TRBWx3zgwVqgjzfb9j/WHZlY7s51nZOcUKC4XTST8F1Mx37s5Ginjv9veBcRzVOdSpfyQAAKMf6zT6x+H5/77eYdjFyWiAEg1o5o8zgRh+HqGKfXEwFTYFHKpeg4I/RKbE9QAVOfMj2ZqTScozcNeUdIraJ7uuCJvHVwvNDVqC38ZLXuuaqlYB4cc0TRYhbN50M74lWuGF7w1EWcdYSnWgidJaF0AZkdza2vz2Lw==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
+        private const int port = 32761;
         private bool clientConnected = false;
         private bool serverRunning = false;
         private bool running = true;
@@ -46,30 +45,15 @@ namespace VSLTest
         private async Task ListenerTask()
         {
             //TcpListener listener = new TcpListener(IPAddress.Any, 32771);
-            TcpListener listener = new TcpListener(Dns.GetHostAddresses("127.0.0.1")[0], 32771);
+            TcpListener listener = new TcpListener(Dns.GetHostAddresses("127.0.0.1")[0], port);
             listener.Start();
             btnStartServer.Text = "Beenden";
             btnStartServer.Enabled = true;
             serverRunning = true;
             while (running)
             {
-                if (listener.Pending())
-                {
-                    TcpClient native = await listener.AcceptTcpClientAsync();
-                    bool success = false;
-                    for (int i = 0; i < Program.Clients.Length; i++)
-                    {
-                        if (Program.Clients[i] == null)
-                        {
-                            Program.Clients[i] = new Client(native);
-                            success = true;
-                            break;
-                        }
-                    }
-                    if (!success) MessageBox.Show("No space for this new client!");
-                }
-                else
-                    await Task.Delay(10);
+                TcpClient native = await listener.AcceptTcpClientAsync();
+                Program.Clients = Program.Clients.Add(new Client(native));
             }
         }
 
@@ -86,7 +70,7 @@ namespace VSLTest
                 vslClient.PacketReceived += vslClient_Received;
                 vslClient.FileTransfer.FileTransferProgress += vslClient_FTProgress;
                 vslClient.FileTransfer.FileTransferFinished += vslClient_FTFinished;
-                await vslClient.ConnectAsync("localhost", 32771, publickey);
+                await vslClient.ConnectAsync("localhost", port, publickey);
                 btnConnect.Enabled = false;
             }
             else
@@ -129,15 +113,15 @@ namespace VSLTest
             if ((Button)sender == btnClientSendPacket)
                 vslClient.SendPacket(1, b);
             else if ((Button)sender == btnServerSendPacket)
-                for (int i = 0; i < Program.Clients.Length; i++)
+                foreach (Client c in Program.Clients)
                 {
-                    Program.Clients[i]?.Vsl.SendPacket(1, b);
+                    c.Vsl.SendPacket(1, b);
                 }
         }
 
         private void vslClient_Received(object sender, PacketReceivedEventArgs e)
         {
-            MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, e.Content.Length));
+            MessageBox.Show(string.Format("Client received: ID={0} Content={1}", e.ID, e.Content.Length));
         }
 
         private void vslServer_Received(object sender, PacketReceivedEventArgs e)
@@ -186,9 +170,9 @@ namespace VSLTest
 
         private void CloseServer()
         {
-            for (int i = 0; i < Program.Clients.Length; i++)
+            foreach (Client c in Program.Clients)
             {
-                Program.Clients[i]?.Vsl.CloseConnection("");
+                c.Vsl.CloseConnection("");
             }
             running = false;
         }
