@@ -34,6 +34,7 @@
             this.btnSendFile = new System.Windows.Forms.Button();
             this.pbFileTransfer = new System.Windows.Forms.ProgressBar();
             this.btnServerSendPacket = new System.Windows.Forms.Button();
+            this.btnPenetrationTest = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnStartServer
@@ -95,11 +96,22 @@
             this.btnServerSendPacket.UseVisualStyleBackColor = true;
             this.btnServerSendPacket.Click += new System.EventHandler(this.btnSendPacket_Click);
             // 
+            // btnPenetrationTest
+            // 
+            this.btnPenetrationTest.Location = new System.Drawing.Point(183, 99);
+            this.btnPenetrationTest.Name = "btnPenetrationTest";
+            this.btnPenetrationTest.Size = new System.Drawing.Size(89, 23);
+            this.btnPenetrationTest.TabIndex = 6;
+            this.btnPenetrationTest.Text = "Stresstest";
+            this.btnPenetrationTest.UseVisualStyleBackColor = true;
+            this.btnPenetrationTest.Click += new System.EventHandler(this.BtnPenetrationTest_Click);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.btnPenetrationTest);
             this.Controls.Add(this.btnServerSendPacket);
             this.Controls.Add(this.pbFileTransfer);
             this.Controls.Add(this.btnSendFile);
@@ -121,6 +133,7 @@
         private System.Windows.Forms.Button btnSendFile;
         private System.Windows.Forms.ProgressBar pbFileTransfer;
         private System.Windows.Forms.Button btnServerSendPacket;
+        private System.Windows.Forms.Button btnPenetrationTest;
     }
 }
 

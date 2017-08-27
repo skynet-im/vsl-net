@@ -28,15 +28,16 @@ namespace VSL
         internal ushort OldestProduct;
         private int _networkBufferSize = Constants.ReceiveBufferSize;
         //  fields>
+
         // <constructor
         /// <summary>
         /// Creates a VSL Client that has to be connected.
         /// </summary>
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
-        public VSLClient(ushort latestProduct, ushort oldestProduct) : this(latestProduct, oldestProduct, ThreadMgr.InvokeMode.Dispatcher)
-        {
-        }
+        public VSLClient(ushort latestProduct, ushort oldestProduct)
+            : this(latestProduct, oldestProduct, ThreadMgr.InvokeMode.Dispatcher) { }
+
         /// <summary>
         /// Creates a VSL Client that has to be connected.
         /// </summary>
@@ -54,6 +55,7 @@ namespace VSL
             base.FileTransfer = FileTransfer;
         }
         //  constructor>
+
         // <properties
         /// <summary>
         /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
@@ -75,6 +77,7 @@ namespace VSL
             }
         }
         //  properties>
+
         // <functions
         /// <summary>
         /// Connects the TCP Client asynchronously
@@ -95,7 +98,7 @@ namespace VSL
             await tcp.ConnectAsync(address, port);
 
             // <initialize component
-            channel = new NetworkChannel(this, tcp);
+            channel = new NetworkChannel(this, tcp.Client);
             manager = new NetworkManagerClient(this, serverKey);
             base.manager = manager;
             handler = new PacketHandlerClient(this);
