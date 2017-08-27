@@ -14,23 +14,27 @@ namespace VSLTest
     public class Client
     {
         public VSLServer Vsl;
-        public Client(TcpClient native)
+        public Client(Socket native)
         {
-            Vsl = new VSLServer(native, 0, 0, Program.Keypair, ThreadMgr.InvokeMode.Dispatcher);
+            Vsl = new VSLServer(native, 0, 0, Program.Keypair, ThreadMgr.InvokeMode.ManagedThread, Vsl_ConnectionClosed);
+            //Vsl.ConnectionClosed += Vsl_ConnectionClosed;
+            Vsl.FileTransfer.FileTransferRequested += Vsl_FileTransferRequested;
             //Vsl.Logger.PrintDebugMessages = true;
             //Vsl.Logger.PrintExceptionMessages = true;
             //Vsl.Logger.PrintInfoMessages = true;
             Vsl.Logger.InvokeDebugMessages = false;
             Vsl.Logger.InvokeExceptionMessages = false;
             Vsl.Logger.InvokeInfoMessages = false;
-            Vsl.FileTransfer.FileTransferRequested += Vsl_FileTransferRequested;
-            Vsl.ConnectionClosed += Vsl_ConnectionClosed;
         }
 
         private void Vsl_ConnectionClosed(object sender, ConnectionClosedEventArgs e)
         {
             //MessageBox.Show(string.Format("[Server] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
             Program.Clients = Program.Clients.Remove(this);
+#if DEBUG
+            if (Program.Clients.Count == 0)
+                Console.WriteLine("Empty");
+#endif
         }
 
         private void Vsl_FileTransferRequested(object sender, EventArgs e)

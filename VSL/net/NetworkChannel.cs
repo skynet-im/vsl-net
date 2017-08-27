@@ -17,7 +17,7 @@ namespace VSL
     {
         // <fields
         private VSLSocket parent;
-        private TcpClient tcp;
+        private Socket socket;
         private Queue cache;
         private int _receiveBufferSize = Constants.ReceiveBufferSize;
 
@@ -42,10 +42,10 @@ namespace VSL
             set
             {
                 _receiveBufferSize = value;
-                if (tcp != null)
+                if (socket != null)
                     try
                     {
-                        tcp.Client.ReceiveBufferSize = value;
+                        socket.ReceiveBufferSize = value;
                     }
                     catch (Exception ex)
                     {
@@ -67,15 +67,15 @@ namespace VSL
             InitializeComponent();
         }
         /// <summary>
-        /// Initializes a new instance of the NetworkChannel class
+        /// Initializes a new instance of the <see cref="NetworkChannel"/> class
         /// </summary>
-        /// <param name="parent">Underlying VSL socket</param>
-        /// <param name="tcp">Connected TCP client</param>
-        internal NetworkChannel(VSLSocket parent, TcpClient tcp)
+        /// <param name="parent">Underlying <see cref="VSLSocket"/></param>
+        /// <param name="socket">Connected <see cref="Socket"/></param>
+        internal NetworkChannel(VSLSocket parent, Socket socket)
         {
             this.parent = parent;
-            this.tcp = tcp;
-            this.tcp.ReceiveBufferSize = _receiveBufferSize;
+            this.socket = socket;
+            ReceiveBufferSize = _receiveBufferSize;
             InitializeComponent();
         }
         /// <summary>
@@ -93,11 +93,11 @@ namespace VSL
         /// <summary>
         /// Sets a VSL socket for the specified client
         /// </summary>
-        /// <param name="tcp">TCP listener</param>
-        internal void Connect(TcpClient tcp)
+        /// <param name="socket">Connected <see cref="Socket"/></param>
+        internal void Connect(Socket socket)
         {
-            this.tcp = tcp;
-            this.tcp.ReceiveBufferSize = _receiveBufferSize;
+            this.socket = socket;
+            ReceiveBufferSize = _receiveBufferSize;
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace VSL
                 while (!ct.IsCancellationRequested)
                 {
                     byte[] buf = new byte[_receiveBufferSize];
-                    int len = tcp.Client.Receive(buf, _receiveBufferSize, SocketFlags.None);
+                    int len = socket.Receive(buf, _receiveBufferSize, SocketFlags.None);
                     if (len > 0)
                     {
                         cache.Enqeue(Crypt.Util.TakeBytes(buf, len));
@@ -152,6 +152,10 @@ namespace VSL
             {
                 if (ex.SocketErrorCode != SocketError.Interrupted)
                     parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
             }
         }
 
@@ -231,13 +235,18 @@ namespace VSL
         {
             try
             {
-                int sent = tcp.Client.Send(buf);
+                int sent = socket.Send(buf);
                 if (ct.WaitHandle.WaitOne(1)) // Socket.Send() does not throw an Exception while having no connection
                     return 0;
                 SentBytes += sent;
                 return sent;
             }
             catch (SocketException ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+                return 0;
+            }
+            catch (ObjectDisposedException ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
                 return 0;
@@ -250,7 +259,7 @@ namespace VSL
         internal void CloseConnection()
         {
             StopTasks();
-            tcp.Close();
+            socket?.Close();
         }
 
         #region IDisposable Support
@@ -264,6 +273,7 @@ namespace VSL
                 {
                     // -TODO: dispose managed state (managed objects).
                     cts?.Dispose();
+                    socket?.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.

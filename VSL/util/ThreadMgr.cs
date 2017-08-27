@@ -21,7 +21,7 @@ namespace VSL
         public InvokeMode Mode { get; }
         private Thread thread;
         private Dispatcher dispatcher;
-        private ConcurrentQueue<KeyValuePair<Action, ManualResetEventSlim>> workQueue;
+        private ConcurrentQueue<WorkItem> workQueue;
         private CancellationTokenSource cts;
         private CancellationToken ct;
         // <constructor
@@ -40,7 +40,7 @@ namespace VSL
         }
         private void Init_ManagedThread()
         {
-            workQueue = new ConcurrentQueue<KeyValuePair<Action, ManualResetEventSlim>>();
+            workQueue = new ConcurrentQueue<WorkItem>();
             cts = new CancellationTokenSource();
             ct = cts.Token;
             thread = new Thread(ThreadWork);
@@ -59,7 +59,7 @@ namespace VSL
             else
             {
                 ManualResetEventSlim handle = new ManualResetEventSlim();
-                workQueue.Enqueue(new KeyValuePair<Action, ManualResetEventSlim>(work, handle));
+                workQueue.Enqueue(new WorkItem(work, handle));
                 try
                 {
                     handle.Wait(ct);
@@ -88,14 +88,24 @@ namespace VSL
         /// Queues an Action on the associated thread.
         /// </summary>
         /// <param name="work">Action to execute.</param>
-        public void QueueWorkItem(Action work)
+        /// <param name="critical">Critical item will be executed if enqueuing succeeded.</param>
+        /// <returns>If the enqueuing succeeded.</returns>
+        public bool QueueWorkItem(Action work, bool critical = false)
         {
             if (Mode == InvokeMode.Dispatcher)
             {
                 Task t = InvokeAsync(work);
+                return true;
             }
             else if (Mode == InvokeMode.ManagedThread)
-                workQueue.Enqueue(new KeyValuePair<Action, ManualResetEventSlim>(work, null));
+            {
+                if (!ct.IsCancellationRequested)
+                {
+                    workQueue.Enqueue(new WorkItem(work, critical));
+                    return true;
+                }
+            }
+            return false;
         }
         /// <summary>
         /// Sets the thread to invoke events on to the calling thread. This method is only available with <see cref="InvokeMode.Dispatcher"/>.
@@ -118,16 +128,40 @@ namespace VSL
         {
             while (true)
             {
-                while (workQueue.TryDequeue(out KeyValuePair<Action, ManualResetEventSlim> pair))
+                while (workQueue.TryDequeue(out WorkItem item))
                 {
-                    if (ct.IsCancellationRequested) return;
-                    pair.Key.Invoke();
-                    pair.Value?.Set();
+                    if (ct.IsCancellationRequested)
+                    {
+                        Cleanup(item);
+                        return;
+                    }
+                    item.Work.Invoke();
+                    item.Handle?.Set();
                 }
                 if (ct.WaitHandle.WaitOne(parent.SleepTime))
+                {
+                    Cleanup();
                     return;
+                }
             }
         }
+        private void Cleanup(WorkItem pending = null)
+        {
+            if (pending != null && pending.Critical)
+            {
+                pending.Work.Invoke();
+                pending.Handle?.Set();
+            }
+            while (workQueue.TryDequeue(out WorkItem item))
+            {
+                if (item.Critical)
+                {
+                    item.Work.Invoke();
+                    item.Handle?.Set();
+                }
+            }
+        }
+
         internal void Exit()
         {
             cts.Cancel();
@@ -145,6 +179,22 @@ namespace VSL
             /// Actions are invoked on a thread, managed by VSL. This mode is recommended for server applications.
             /// </summary>
             ManagedThread
+        }
+        private class WorkItem
+        {
+            internal Action Work { get; }
+            internal ManualResetEventSlim Handle { get; }
+            internal bool Critical { get; }
+            internal WorkItem(Action work, ManualResetEventSlim handle)
+                : this(work, handle, false) { }
+            internal WorkItem(Action work, bool critical)
+                : this(work, null, critical) { }
+            internal WorkItem(Action work, ManualResetEventSlim handle, bool critical)
+            {
+                Work = work;
+                Handle = handle;
+                Critical = critical;
+            }
         }
     }
 }

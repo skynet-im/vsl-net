@@ -36,7 +36,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\VSL.xml</DocumentationFile>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <PlatformTarget>x64</PlatformTarget>
@@ -99,8 +99,8 @@
     <Compile Include="Util\Logger.cs" />
     <Compile Include="Util\PacketBuffer.cs" />
     <Compile Include="Util\Queue.cs" />
-    <Compile Include="Util\VersionManager.cs" />
     <Compile Include="Util\ThreadMgr.cs" />
+    <Compile Include="Util\VersionManager.cs" />
     <Compile Include="VSLClient.cs" />
     <Compile Include="VSLServer.cs" />
     <Compile Include="VSLSocket.cs" />

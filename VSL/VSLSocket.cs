@@ -17,6 +17,9 @@ namespace VSL
     public abstract class VSLSocket : IDisposable
     {
         // <fields
+        /// <summary>
+        /// Specifies if a working and secure connection is available.
+        /// </summary>
         private bool connectionAvailable = false;
         private DateTime connectionLost = DateTime.MinValue;
         internal NetworkChannel channel;
@@ -119,13 +122,11 @@ namespace VSL
         /// <param name="reason">Reason why the connection was closed</param>
         internal virtual void OnConnectionClosed(string reason)
         {
-            if (connectionAvailable)
-            {
-                connectionAvailable = false;
-                connectionLost = DateTime.Now;
-                ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
-                EventThread.QueueWorkItem(() => ConnectionClosed?.Invoke(this, args));
-            }
+            connectionAvailable = false;
+            connectionLost = DateTime.Now;
+            ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
+            if (!EventThread.QueueWorkItem(() => ConnectionClosed.Invoke(this, args), true))
+                ThreadPool.QueueUserWorkItem((state) => ConnectionClosed.Invoke(this, args));
         }
         #endregion
         // <functions
@@ -198,13 +199,16 @@ namespace VSL
         /// <param name="reason">The reason to print and share in the related event.</param>
         public void CloseConnection(string reason)
         {
-            OnConnectionClosed(reason);
-            if (Logger.InitI)
-                Logger.I("Connection was forcibly closed: " + reason);
-            channel.CloseConnection();
-            if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
-                EventThread.Exit();
-            Dispose();
+            if (connectionLost == DateTime.MinValue)
+            {
+                OnConnectionClosed(reason);
+                if (Logger.InitI)
+                    Logger.I("Connection was forcibly closed: " + reason);
+                channel.CloseConnection();
+                if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
+                    EventThread.Exit();
+                Dispose();
+            }
         }
 
         /// <summary>

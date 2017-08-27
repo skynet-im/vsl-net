@@ -52,7 +52,7 @@ namespace VSLTest
             serverRunning = true;
             while (running)
             {
-                TcpClient native = await listener.AcceptTcpClientAsync();
+                Socket native = await listener.AcceptSocketAsync();
                 Program.Clients = Program.Clients.Add(new Client(native));
             }
         }
@@ -150,6 +150,38 @@ namespace VSLTest
             btnSendFile.Enabled = false;
         }
 
+        private bool runningPT = false;
+        private void BtnPenetrationTest_Click(object sender, EventArgs e)
+        {
+            if (runningPT)
+            {
+                runningPT = false;
+                btnPenetrationTest.Text = "Stresstest";
+            }
+            else
+            {
+                runningPT = true;
+                btnPenetrationTest.Text = "Stoppen";
+                Task.Run(delegate
+                {
+                    while (runningPT)
+                    {
+                        try
+                        {
+                            TcpClient tcp = new TcpClient();
+                            tcp.Connect("127.0.0.1", port);
+                            Random rand = new Random();
+                            byte[] buf = new byte[rand.Next(2048)];
+                            rand.NextBytes(buf);
+                            tcp.Client.Send(buf);
+                            tcp.Close();
+                            System.Threading.Thread.Sleep(100);
+                        }
+                        catch { }
+                    }
+                });
+            }
+        }
         private void vslClient_FTProgress(object sender, FileTransferProgressEventArgs e)
         {
             pbFileTransfer.Value = Convert.ToInt32(e.Percentage * 100);
