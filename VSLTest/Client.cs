@@ -30,6 +30,8 @@ namespace VSLTest
         private void Vsl_ConnectionClosed(object sender, ConnectionClosedEventArgs e)
         {
             //MessageBox.Show(string.Format("[Server] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
+            // TODO: Why is VSL null?
+            Vsl?.Dispose();
             Program.Clients = Program.Clients.Remove(this);
 #if DEBUG
             if (Program.Clients.Count == 0)

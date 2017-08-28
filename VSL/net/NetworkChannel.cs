@@ -116,7 +116,7 @@ namespace VSL
         /// <summary>
         /// Stops the tasks for receiving and compounding
         /// </summary>
-        private void StopTasks()
+        private void StopThreads()
         {
             threadsRunning = false;
             if (!cts.IsCancellationRequested)
@@ -258,7 +258,7 @@ namespace VSL
         /// </summary>
         internal void CloseConnection()
         {
-            StopTasks();
+            StopThreads();
             socket?.Close();
         }
 
@@ -272,6 +272,7 @@ namespace VSL
                 if (disposing)
                 {
                     // -TODO: dispose managed state (managed objects).
+                    StopThreads();
                     cts?.Dispose();
                     socket?.Dispose();
                 }

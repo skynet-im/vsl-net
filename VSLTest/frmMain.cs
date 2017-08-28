@@ -164,7 +164,10 @@ namespace VSLTest
                 btnPenetrationTest.Text = "Stoppen";
                 Task.Run(delegate
                 {
-                    while (runningPT)
+                    System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+                    stopwatch.Start();
+                    int done = 0;
+                    while (runningPT && done < 1000)
                     {
                         try
                         {
@@ -175,10 +178,13 @@ namespace VSLTest
                             rand.NextBytes(buf);
                             tcp.Client.Send(buf);
                             tcp.Close();
-                            System.Threading.Thread.Sleep(100);
+                            done++;
+                            //System.Threading.Thread.Sleep(100);
                         }
                         catch { }
                     }
+                    stopwatch.Stop();
+                    MessageBox.Show(string.Format("1000 attacks in {0}ms", stopwatch.ElapsedMilliseconds));
                 });
             }
         }
@@ -204,7 +210,11 @@ namespace VSLTest
         {
             foreach (Client c in Program.Clients)
             {
-                c.Vsl.CloseConnection("");
+                try
+                {
+                    c.Vsl.CloseConnection("");
+                }
+                catch (ObjectDisposedException) { }
             }
             running = false;
         }

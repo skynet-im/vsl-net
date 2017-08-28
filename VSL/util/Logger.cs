@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace VSL
@@ -62,8 +63,10 @@ namespace VSL
         public event EventHandler<LoggedMessageEventArgs> LoggedMessage;
         private void OnLoggedMessage(string text, LogType type)
         {
-            if (WritePrefix) text = "[VSL " + type.ToString() + "] " + text;
-            LoggedMessage?.Invoke(this, new LoggedMessageEventArgs(type, text));
+            ThreadPool.QueueUserWorkItem((o) => {
+                if (WritePrefix) text = "[VSL " + type.ToString() + "] " + text;
+                LoggedMessage?.Invoke(this, new LoggedMessageEventArgs(type, text));
+            });
         }
         //  events>
         internal void PrintMessage(string text, LogType type)

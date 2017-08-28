@@ -27,13 +27,13 @@ namespace VSL
         /// 
         internal void CloseConnection(Exception ex)
         {
-            parent.CloseConnection("Connection was closed due to an error: ", ex.ToString());
+            parent.CloseInternal("Connection was closed due to an error: ", ex.ToString());
             PrintException(ex);
         }
 
         internal void CloseConnection(System.Net.Sockets.SocketException ex)
         {
-            parent.CloseConnection("Connection was interrupted", ex.ToString());
+            parent.CloseInternal("Connection was interrupted", ex.ToString());
             PrintException(ex);
         }
 
