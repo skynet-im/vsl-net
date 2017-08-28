@@ -115,25 +115,6 @@ namespace VSL.Crypt
         }
 
         /// <summary>
-        /// Determines whether two byte arrays are equal.
-        /// </summary>
-        /// <param name="b1">First byte array.</param>
-        /// <param name="b2">Second byte array.</param>
-        /// <returns></returns>
-        [Obsolete("Util.ByteArraysEqual() is deprecated, please use IEnumerable.SequenceEqual() instead.", true)]
-        // Deprecated since v14, warning since v15
-        public static bool ByteArraysEqual(byte[] b1, byte[] b2)
-        {
-            if (b1.Length != b2.Length) return false;
-            if (b1.Length == 0) return true;
-            for (int i = 0; i < b1.Length; i++)
-            {
-                if (b1[i] != b2[i]) return false;
-            }
-            return true;
-        }
-
-        /// <summary>
         /// Converts a byte array to a hexadecimal string
         /// </summary>
         /// <param name="b">byte array to convert</param>

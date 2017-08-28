@@ -22,6 +22,7 @@ namespace VSL
         /// </summary>
         private bool connectionAvailable = false;
         private DateTime connectionLost = DateTime.MinValue;
+        private DateTime disposingTime = DateTime.MinValue;
         internal NetworkChannel channel;
         internal NetworkManager manager;
         internal PacketHandler handler;
@@ -94,6 +95,7 @@ namespace VSL
         internal virtual void OnConnectionEstablished()
         {
             connectionAvailable = true;
+            EventThread.Start();
             EventThread.QueueWorkItem(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
             if (Logger.InitI)
                 Logger.I("New connection established");
@@ -142,6 +144,8 @@ namespace VSL
         {
             if (content == null) throw new ArgumentNullException("content");
             if (id >= 246) throw new ArgumentOutOfRangeException("id", "must be lower than 246 because of internal VSL packets");
+            if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
+                throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
             if (!ConnectionAvailable)
             {
                 if (connectionLost == DateTime.MinValue)
@@ -169,10 +173,13 @@ namespace VSL
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <exception cref="InvalidOperationException"/>
+        /// <exception cref="ObjectDisposedException"/>
         public async Task<bool> SendPacketAsync(byte id, byte[] content)
         {
             if (content == null) throw new ArgumentNullException("content");
             if (id >= 246) throw new ArgumentOutOfRangeException("id", "must be lower than 246 because of internal VSL packets");
+            if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
+                throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
             if (!ConnectionAvailable)
             {
                 if (connectionLost == DateTime.MinValue)
@@ -197,9 +204,12 @@ namespace VSL
         /// Closes the TCP Connection, raises the related event and releases all associated resources.
         /// </summary>
         /// <param name="reason">The reason to print and share in the related event.</param>
+        /// <exception cref="ObjectDisposedException"/>
         public void CloseConnection(string reason)
         {
-            if (connectionLost == DateTime.MinValue)
+            if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
+                throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
+            if (connectionLost == DateTime.MinValue) // To detect redundant calls
             {
                 OnConnectionClosed(reason);
                 if (Logger.InitI)
@@ -212,19 +222,21 @@ namespace VSL
         }
 
         /// <summary>
-        /// Closes the TCP Connection, raises the related event and releases all associated resources.
+        /// Closes the TCP Connection and raises the related event.
         /// </summary>
         /// <param name="message">The message to print.</param>
         /// <param name="exception">The exception text to share in the related event.</param>
-        internal void CloseConnection(string message, string exception)
+        internal void CloseInternal(string message, string exception)
         {
-            OnConnectionClosed(exception);
-            if (Logger.InitI)
-                Logger.I(message);
-            channel.CloseConnection();
-            if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
-                EventThread.Exit();
-            Dispose();
+            if (connectionLost == DateTime.MinValue) // To detect redundant calls
+            {
+                OnConnectionClosed(exception);
+                if (Logger.InitI)
+                    Logger.I(message);
+                channel.CloseConnection();
+                if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
+                    EventThread.Exit();
+            }
         }
 
         #region IDisposable Support
@@ -243,11 +255,13 @@ namespace VSL
                     // -TODO: dispose managed state (managed objects).
                     channel?.Dispose();
                     manager?.Dispose();
+                    EventThread?.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // -TODO: set large fields to null.
 
+                disposingTime = DateTime.Now;
                 disposedValue = true;
             }
         }
