@@ -37,7 +37,7 @@ namespace VSL.Crypt
             int pending = length - i * blocksize;
             final[blocks - 1] = new byte[pending];
             Array.Copy(b, i * blocksize, final[blocks - 1], 0, pending);
-            return rb.ToArray();
+            return final;
         }
 
         /// <summary>

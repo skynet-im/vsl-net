@@ -14,7 +14,7 @@ namespace VSL
         /// <summary>
         /// The installed version of VSL.
         /// </summary>
-        public const string ProductVersion = "1.1.15.4";
+        public const string ProductVersion = "1.1.16.0";
         /// <summary>
         /// The installed version as ushort.
         /// </summary>

@@ -96,7 +96,7 @@ namespace VSL
         {
             connectionAvailable = true;
             EventThread.Start();
-            EventThread.QueueWorkItem(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
+            EventThread.QueueWorkItem((ct) => ConnectionEstablished?.Invoke(this, new EventArgs()));
             if (Logger.InitI)
                 Logger.I("New connection established");
         }
@@ -112,7 +112,7 @@ namespace VSL
         internal virtual void OnPacketReceived(byte id, byte[] content)
         {
             PacketReceivedEventArgs args = new PacketReceivedEventArgs(Convert.ToByte(255 - id), content);
-            EventThread.QueueWorkItem(() => PacketReceived?.Invoke(this, args));
+            EventThread.QueueWorkItem((ct) => PacketReceived?.Invoke(this, args));
         }
         /// <summary>
         /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it.
@@ -126,12 +126,14 @@ namespace VSL
         {
             connectionAvailable = false;
             connectionLost = DateTime.Now;
+            EventThread.ShuttingDown();
             ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
-            if (!EventThread.QueueWorkItem(() => ConnectionClosed.Invoke(this, args), true))
-                ThreadPool.QueueUserWorkItem((state) => ConnectionClosed.Invoke(this, args));
+            if (!EventThread.QueueCriticalWorkItem((ct) => ConnectionClosed?.Invoke(this, args)))
+                ThreadPool.QueueUserWorkItem((state) => ConnectionClosed?.Invoke(this, args));
         }
         #endregion
         // <functions
+        #region Send
         /// <summary>
         /// Sends a packet to the remotehost.
         /// </summary>
@@ -199,7 +201,8 @@ namespace VSL
             }
             return await manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
-
+        #endregion
+        #region Close
         /// <summary>
         /// Closes the TCP Connection, raises the related event and releases all associated resources.
         /// </summary>
@@ -235,7 +238,7 @@ namespace VSL
                     EventThread.Exit();
             }
         }
-
+        #endregion
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 

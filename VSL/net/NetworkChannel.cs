@@ -129,6 +129,8 @@ namespace VSL
         /// <returns></returns>
         private void ListenerThread()
         {
+            lock (disposeLock)
+                listenerReady = false;
             try
             {
                 while (!ct.IsCancellationRequested)
@@ -157,6 +159,15 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
+            finally
+            {
+                lock (disposeLock)
+                {
+                    listenerReady = true;
+                    if (disposePending && ReadyToDispose)
+                        Dispose();
+                }
+            }
         }
 
         /// <summary>
@@ -165,18 +176,26 @@ namespace VSL
         /// <returns></returns>
         private void WorkerThread()
         {
+            lock (disposeLock)
+                workerReady = false;
             while (!ct.IsCancellationRequested)
             {
                 if (cache.Length > 0)
                 {
                     if (!parent.manager.OnDataReceive())
-                        return;
+                        break;
                 }
                 else
                 {
                     if (ct.WaitHandle.WaitOne(parent.SleepTime))
-                        return;
+                        break;
                 }
+            }
+            lock (disposeLock)
+            {
+                workerReady = true;
+                if (disposePending && ReadyToDispose)
+                    Dispose();
             }
         }
 
@@ -265,11 +284,25 @@ namespace VSL
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
+        private object disposeLock = new object();
+        private bool listenerReady = true;
+        private bool workerReady = true;
+        private bool ReadyToDispose => listenerReady && workerReady;
+        private bool disposePending = false;
 
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
+                lock (disposeLock)
+                {
+                    if (!ReadyToDispose)
+                    {
+                        disposePending = true;
+                        return;
+                    }
+                }
+
                 if (disposing)
                 {
                     // -TODO: dispose managed state (managed objects).
