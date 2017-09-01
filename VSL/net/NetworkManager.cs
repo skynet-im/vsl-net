@@ -27,7 +27,7 @@ namespace VSL
         //  constructor>
         // <functions
         #region receive
-        internal void OnDataReceive()
+        internal bool OnDataReceive()
         {
             try
             {

@@ -224,15 +224,12 @@ namespace VSL
         /// <summary>
         /// Closes the TCP Connection and raises the related event.
         /// </summary>
-        /// <param name="message">The message to print.</param>
         /// <param name="exception">The exception text to share in the related event.</param>
-        internal void CloseInternal(string message, string exception)
+        internal void CloseInternal(string exception)
         {
             if (connectionLost == DateTime.MinValue) // To detect redundant calls
             {
                 OnConnectionClosed(exception);
-                if (Logger.InitI)
-                    Logger.I(message);
                 channel.CloseConnection();
                 if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
                     EventThread.Exit();

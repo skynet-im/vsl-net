@@ -45,7 +45,7 @@ namespace VSL
                 case ConnectionType.Redirect:
                     throw new NotSupportedException("This VSL version does not support redirects");
                 case ConnectionType.NotCompatible:
-                    parent.CloseInternal("Server denied VSL/application version", "The specified server does not support this VSL/application version");
+                    parent.CloseInternal("The specified server does not support this VSL/application version");
                     break;
             }
         }
