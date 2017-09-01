@@ -26,19 +26,21 @@ namespace VSL
         /// <param name="ex">Exception to print.</param>
         internal void CloseConnection(Exception ex)
         {
-            parent.CloseInternal(ex.ToString());
             PrintException(ex);
+            parent.CloseInternal(ex.ToString());
         }
 
         internal void CloseConnection(System.Net.Sockets.SocketException ex)
         {
-            parent.CloseInternal(ex.ToString());
             PrintException(ex);
+            parent.CloseInternal(ex.ToString());
         }
 
         internal void CloseConnection(string errorcode, string message)
         {
-            parent.CloseInternal();
+            if (parent.Logger.InitE)
+                parent.Logger.E(message);
+            parent.CloseInternal(message);
         }
 
         /// <summary>

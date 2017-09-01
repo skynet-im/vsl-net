@@ -27,39 +27,31 @@ namespace VSL
         internal ushort OldestProduct;
         //  fields>
 
-        //// <constructor
-        ///// <summary>
-        ///// Creates a VSL server for the specified client.
-        ///// </summary>
-        ///// <param name="tcp">Connected TcpClient.</param>
-        ///// <param name="latestProduct">The application version.</param>
-        ///// <param name="oldestProduct">The oldest supported version.</param>
-        ///// <param name="keypair">The RSA-keypair of the server application.</param>
-        //[Obsolete("VSLServer.VSLServer(TcpClient tcp, ...) is deprecated, please use VSLServer.VSLServer(Socket socket, ...) instead.", false)]
-        //public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair)
-        //    : this(tcp, latestProduct, oldestProduct, keypair, ThreadMgr.InvokeMode.ManagedThread) { }
+        // <constructor
+        /// <summary>
+        /// Creates a VSL server for the specified client.
+        /// </summary>
+        /// <param name="tcp">Connected TcpClient.</param>
+        /// <param name="latestProduct">The application version.</param>
+        /// <param name="oldestProduct">The oldest supported version.</param>
+        /// <param name="keypair">The RSA-keypair of the server application.</param>
+        [Obsolete("VSLServer.VSLServer(TcpClient tcp, ...) is deprecated, please use VSLServer.VSLServer(Socket socket, ...) instead.", false)]
+        // TODO: Add error in v1.1.17.0
+        public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair)
+            : this(tcp, latestProduct, oldestProduct, keypair, ThreadMgr.InvokeMode.ManagedThread) { }
 
-        ///// <summary>
-        ///// Creates a VSL server for the specified client.
-        ///// </summary>
-        ///// <param name="tcp">Connected TcpClient.</param>
-        ///// <param name="latestProduct">The application version.</param>
-        ///// <param name="oldestProduct">The oldest supported version.</param>
-        ///// <param name="keypair">The RSA-keypair of the server application.</param>
-        ///// <param name="mode">The way how events are invoked.</param>
-        //[Obsolete("VSLServer.VSLServer(TcpClient tcp, ...) is deprecated, please use VSLServer.VSLServer(Socket socket, ...) instead.", false)]
-        //public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair, ThreadMgr.InvokeMode mode)
-        //    : this(tcp.Client, latestProduct, oldestProduct, keypair, mode) { }
-
-        ///// <summary>
-        ///// Creates a VSL server for the specified client.
-        ///// </summary>
-        ///// <param name="socket">Connected <see cref="Socket"/>.</param>
-        ///// <param name="latestProduct">The application version.</param>
-        ///// <param name="oldestProduct">The oldest supported version.</param>
-        ///// <param name="keypair">The RSA-keypair of the server application.</param>
-        //public VSLServer(Socket socket, ushort latestProduct, ushort oldestProduct, string keypair)
-        //    : this(socket, latestProduct, oldestProduct, keypair, ThreadMgr.InvokeMode.ManagedThread) { }
+        /// <summary>
+        /// Creates a VSL server for the specified client.
+        /// </summary>
+        /// <param name="tcp">Connected TcpClient.</param>
+        /// <param name="latestProduct">The application version.</param>
+        /// <param name="oldestProduct">The oldest supported version.</param>
+        /// <param name="keypair">The RSA-keypair of the server application.</param>
+        /// <param name="mode">The way how events are invoked.</param>
+        [Obsolete("VSLServer.VSLServer(TcpClient tcp, ...) is deprecated, please use VSLServer.VSLServer(Socket socket, ...) instead.", false)]
+        // TODO: Add error in v1.1.17.0
+        public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair, ThreadMgr.InvokeMode mode)
+            : this(tcp.Client, latestProduct, oldestProduct, keypair, mode) { }
 
         /// <summary>
         /// Creates a VSL server for the specified client.
@@ -68,8 +60,18 @@ namespace VSL
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
         /// <param name="keypair">The RSA-keypair of the server application.</param>
+        public VSLServer(Socket socket, ushort latestProduct, ushort oldestProduct, string keypair)
+            : this(socket, latestProduct, oldestProduct, keypair, ThreadMgr.InvokeMode.ManagedThread) { }
+
+        /// <summary>
+        /// Creates a VSL server for the specified client. To start working, call <see cref="Start"/>.
+        /// </summary>
+        /// <param name="socket">Connected <see cref="Socket"/>.</param>
+        /// <param name="latestProduct">The application version.</param>
+        /// <param name="oldestProduct">The oldest supported version.</param>
+        /// <param name="keypair">The RSA-keypair of the server application.</param>
         /// <param name="mode">The way how events are invoked.</param>
-        public VSLServer(Socket socket, ushort latestProduct, ushort oldestProduct, string keypair, ThreadMgr.InvokeMode mode, EventHandler<ConnectionClosedEventArgs> callback)
+        public VSLServer(Socket socket, ushort latestProduct, ushort oldestProduct, string keypair, ThreadMgr.InvokeMode mode)
         {
             InitializeComponent(mode);
 
@@ -83,13 +85,17 @@ namespace VSL
             base.handler = handler;
             FileTransfer = new FileTransferServer(this);
             base.FileTransfer = FileTransfer;
-            ConnectionClosed += callback;
-            channel.StartThreads();
         }
         //  constructor>
 
         // <functions
-
+        /// <summary>
+        /// Starts all threads for receiving and process packets.
+        /// </summary>
+        public void Start()
+        {
+            channel.StartThreads();
+        }
         //  functions>
     }
 }

@@ -53,7 +53,9 @@ namespace VSLTest
             while (running)
             {
                 Socket native = await listener.AcceptSocketAsync();
-                Program.Clients = Program.Clients.Add(new Client(native));
+                Client c = new Client(native);
+                lock (Program.WriteLock)
+                    Program.Clients = Program.Clients.Add(c);
             }
         }
 
@@ -201,8 +203,14 @@ namespace VSLTest
         private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (vslClient != null)
+            {
                 vslClient.ConnectionClosed -= VSL_Close;
-            vslClient?.CloseConnection("");
+                try
+                {
+                    vslClient.CloseConnection("");
+                }
+                catch (ObjectDisposedException) { }
+            }
             CloseServer();
         }
 
@@ -210,11 +218,7 @@ namespace VSLTest
         {
             foreach (Client c in Program.Clients)
             {
-                try
-                {
-                    c.Vsl.CloseConnection("");
-                }
-                catch (ObjectDisposedException) { }
+                c.Vsl.CloseConnection("");
             }
             running = false;
         }

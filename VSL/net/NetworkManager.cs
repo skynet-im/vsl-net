@@ -37,35 +37,34 @@ namespace VSL
                 {
                     case CryptographicAlgorithm.None:
                         ReceivePacket_Plaintext();
-                        break;
+                        return true;
                     case CryptographicAlgorithm.RSA_2048:
                         ReceivePacket_RSA_2048();
-                        break;
+                        return true;
                     case CryptographicAlgorithm.AES_256:
                         if (Ready4Aes)
+                        {
                             ReceivePacket_AES_256();
+                            return true;
+                        }
                         else
-                            throw new InvalidOperationException("Not ready to receive an AES packet, because key exchange is not finished yet.");
-                        break;
+                        {
+                            parent.ExceptionHandler.CloseConnection("InvalidOperation", "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n\tat NetworkManager.OnDataReceive()");
+                            return false;
+                        }
                     default:
-                        throw new InvalidOperationException(string.Format("Received packet with unknown algorithm ({0})", algorithm.ToString()));
+                        parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", string.Format("Received packet with unknown algorithm ({0})", algorithm.ToString()));
+                        return false;
                 }
-            }
-            catch (InvalidCastException ex)
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (InvalidOperationException ex)
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (OperationCanceledException) // NetworkChannel.Read()
             {
-                // Already shutting down...
+                return false; // Already shutting down...
             }
-            catch (TimeoutException ex)
+            catch (TimeoutException ex) // NetworkChannel.Read()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
+                return false;
             }
         }
         private void ReceivePacket_Plaintext()

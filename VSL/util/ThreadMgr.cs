@@ -28,11 +28,15 @@ namespace VSL
         private ConcurrentQueue<WorkItem> workQueue;
         private CancellationTokenSource cts;
         private CancellationToken ct;
+        private CancellationTokenSource itemCts;
+        private CancellationToken itemCt;
         // <constructor
         internal ThreadMgr(VSLSocket parent, InvokeMode mode)
         {
             this.parent = parent;
             Mode = mode;
+            itemCts = new CancellationTokenSource();
+            itemCt = itemCts.Token;
             if (Mode == InvokeMode.Dispatcher)
                 Init_Dispatcher();
         }
@@ -65,7 +69,7 @@ namespace VSL
         /// <param name="work">Action to execute.</param>
         /// <exception cref="InvalidOperationException"/>
         /// <exception cref="OperationCanceledException"/>
-        public void Invoke(Action work)
+        public void Invoke(Action<CancellationToken> work)
         {
             if (!Started)
                 throw new InvalidOperationException("You have to start the thread manager before using it.");
@@ -95,21 +99,35 @@ namespace VSL
         /// <param name="work">Action to execute.</param>
         /// <exception cref="InvalidOperationException"/>
         /// <returns></returns>
-        public async Task InvokeAsync(Action work)
+        public async Task InvokeAsync(Action<CancellationToken> work)
         {
             if (!Started)
                 throw new InvalidOperationException("You have to start the thread manager before using it.");
             if (Mode == InvokeMode.ManagedThread)
                 throw new InvalidOperationException("You can not use InvokeAsync(Action work) with InvokeMode.ManagedThread");
-            await dispatcher.InvokeAsync(work);
+            await dispatcher.InvokeAsync(() => work.Invoke(itemCt));
         }
         /// <summary>
-        /// Queues an Action on the associated thread.
+        /// Queues an <see cref="Action"/> on the associated thread. The <see cref="CancellationToken"/> will be canceled when VSL is shutting down.
         /// </summary>
         /// <param name="work">Action to execute.</param>
-        /// <param name="critical">Critical item will be executed if enqueuing succeeded.</param>
-        /// <returns>If the enqueuing succeeded.</returns>
-        public bool QueueWorkItem(Action work, bool critical = false)
+        /// <returns>If enqueuing succeeded.</returns>
+        public bool QueueWorkItem(Action<CancellationToken> work)
+        {
+            return QueueItem(work, false);
+        }
+
+        /// <summary>
+        /// Queues a critical <see cref="Action"/> on the associated thread that will be executed even if VSL is shutting down. The <see cref="CancellationToken"/> will be canceled when VSL is shutting down.
+        /// </summary>
+        /// <param name="work">Action to execute.</param>
+        /// <returns>If enqueuing succeeded.</returns>
+        public bool QueueCriticalWorkItem(Action<CancellationToken> work)
+        {
+            return QueueItem(work, true);
+        }
+
+        private bool QueueItem(Action<CancellationToken> work, bool critical)
         {
             if (!Started)
                 return false;
@@ -149,6 +167,8 @@ namespace VSL
         }
         private void ThreadWork()
         {
+            lock (disposeLock)
+                readyToDispose = false;
             while (true)
             {
                 while (workQueue.TryDequeue(out WorkItem item))
@@ -156,33 +176,47 @@ namespace VSL
                     if (ct.IsCancellationRequested)
                     {
                         Cleanup(item);
-                        return;
+                        break;
                     }
-                    item.Work.Invoke();
+                    item.Work.Invoke(itemCt);
                     item.Handle?.Set();
                 }
                 if (ct.WaitHandle.WaitOne(parent.SleepTime))
                 {
                     Cleanup();
-                    return;
+                    break;
                 }
+            }
+            lock (disposeLock)
+            {
+                if (disposePending)
+                    Dispose();
+                readyToDispose = true;
             }
         }
         private void Cleanup(WorkItem pending = null)
         {
             if (pending != null && pending.Critical)
             {
-                pending.Work.Invoke();
+                pending.Work.Invoke(itemCt);
                 pending.Handle?.Set();
             }
             while (workQueue.TryDequeue(out WorkItem item))
             {
                 if (item.Critical)
                 {
-                    item.Work.Invoke();
+                    item.Work.Invoke(itemCt);
                     item.Handle?.Set();
                 }
             }
+        }
+
+        /// <summary>
+        /// Informs all queued work items that VSL is shutting down.
+        /// </summary>
+        internal void ShuttingDown()
+        {
+            itemCts.Cancel();
         }
 
         internal void Exit()
@@ -205,14 +239,14 @@ namespace VSL
         }
         private class WorkItem
         {
-            internal Action Work { get; }
+            internal Action<CancellationToken> Work { get; }
             internal ManualResetEventSlim Handle { get; }
             internal bool Critical { get; }
-            internal WorkItem(Action work, ManualResetEventSlim handle)
+            internal WorkItem(Action<CancellationToken> work, ManualResetEventSlim handle)
                 : this(work, handle, false) { }
-            internal WorkItem(Action work, bool critical)
+            internal WorkItem(Action<CancellationToken> work, bool critical)
                 : this(work, null, critical) { }
-            internal WorkItem(Action work, ManualResetEventSlim handle, bool critical)
+            internal WorkItem(Action<CancellationToken> work, ManualResetEventSlim handle, bool critical)
             {
                 Work = work;
                 Handle = handle;
@@ -222,6 +256,9 @@ namespace VSL
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
+        private object disposeLock = new object();
+        private bool readyToDispose = true;
+        private bool disposePending = false;
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
@@ -231,20 +268,30 @@ namespace VSL
         {
             if (!disposedValue)
             {
-                if (disposing)
+                lock (disposeLock)
                 {
-                    // TODO: dispose managed state (managed objects).
-                    cts?.Dispose();
+                    if (!readyToDispose)
+                    {
+                        disposePending = true;
+                        return;
+                    }
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
+                if (disposing)
+                {
+                    // -TODO: dispose managed state (managed objects).
+                    cts?.Dispose();
+                    itemCts?.Cancel();
+                }
+
+                // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // -TODO: set large fields to null.
 
                 disposedValue = true;
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // -TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
         // ~ThreadMgr() {
         //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
         //   Dispose(false);
@@ -259,7 +306,7 @@ namespace VSL
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
+            // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
         #endregion
