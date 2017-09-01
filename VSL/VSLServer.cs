@@ -29,7 +29,7 @@ namespace VSL
 
         // <constructor
         /// <summary>
-        /// Creates a VSL server for the specified client.
+        /// Creates a VSL server for the specified client. To start working, call <see cref="Start"/>.
         /// </summary>
         /// <param name="tcp">Connected TcpClient.</param>
         /// <param name="latestProduct">The application version.</param>
@@ -41,7 +41,7 @@ namespace VSL
             : this(tcp, latestProduct, oldestProduct, keypair, ThreadMgr.InvokeMode.ManagedThread) { }
 
         /// <summary>
-        /// Creates a VSL server for the specified client.
+        /// Creates a VSL server for the specified client. To start working, call <see cref="Start"/>.
         /// </summary>
         /// <param name="tcp">Connected TcpClient.</param>
         /// <param name="latestProduct">The application version.</param>
@@ -54,7 +54,7 @@ namespace VSL
             : this(tcp.Client, latestProduct, oldestProduct, keypair, mode) { }
 
         /// <summary>
-        /// Creates a VSL server for the specified client.
+        /// Creates a VSL server for the specified client. To start working, call <see cref="Start"/>.
         /// </summary>
         /// <param name="socket">Connected <see cref="Socket"/>.</param>
         /// <param name="latestProduct">The application version.</param>
