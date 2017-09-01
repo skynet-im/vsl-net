@@ -169,7 +169,8 @@ namespace VSL
             {
                 if (cache.Length > 0)
                 {
-                    parent.manager.OnDataReceive();
+                    if (!parent.manager.OnDataReceive())
+                        return;
                 }
                 else
                 {

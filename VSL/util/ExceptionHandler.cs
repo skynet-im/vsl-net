@@ -24,17 +24,21 @@ namespace VSL
         /// Handles an Exception by closing the connection and releasing all associated resources.
         /// </summary>
         /// <param name="ex">Exception to print.</param>
-        /// 
         internal void CloseConnection(Exception ex)
         {
-            parent.CloseInternal("Connection was closed due to an error: ", ex.ToString());
+            parent.CloseInternal(ex.ToString());
             PrintException(ex);
         }
 
         internal void CloseConnection(System.Net.Sockets.SocketException ex)
         {
-            parent.CloseInternal("Connection was interrupted", ex.ToString());
+            parent.CloseInternal(ex.ToString());
             PrintException(ex);
+        }
+
+        internal void CloseConnection(string errorcode, string message)
+        {
+            parent.CloseInternal();
         }
 
         /// <summary>

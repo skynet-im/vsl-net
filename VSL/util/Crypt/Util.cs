@@ -20,24 +20,23 @@ namespace VSL.Crypt
         /// <returns></returns>
         public static byte[][] SplitBytes(byte[] b, int blocksize)
         {
-            List<byte[]> rb = new List<byte[]>();
-            while (true)
+            int length = b.Length;
+            int blocks = Convert.ToInt32(Math.Ceiling(length / Convert.ToDouble(blocksize)));
+            byte[][] final = new byte[blocks][];
+            if (length == 0)
             {
-                if (b.Length >= blocksize)
-                {
-                    rb.Add(b.Take(blocksize).ToArray());
-                    b = b.Skip(blocksize).ToArray();
-                }
-                else if (b.Length > 0)
-                {
-                    rb.Add(b);
-                    break;
-                }
-                else
-                {
-                    break;
-                }
+                final[0] = new byte[0];
+                return final;
             }
+            int i;
+            for (i = 0; i < blocks - 1; i++)
+            {
+                final[i] = new byte[blocksize];
+                Array.Copy(b, i * blocksize, final[i], 0, blocksize);
+            }
+            int pending = length - i * blocksize;
+            final[blocks - 1] = new byte[pending];
+            Array.Copy(b, i * blocksize, final[blocks - 1], 0, pending);
             return rb.ToArray();
         }
 
@@ -121,12 +120,12 @@ namespace VSL.Crypt
         /// <returns></returns>
         public static string ToHexString(byte[] b)
         {
-            string result = "";
-            foreach (byte sb in b)
+            StringBuilder stb = new StringBuilder(b.Length);
+            for (int i = 0; i < b.Length; i++)
             {
-                result += sb.ToString("x2");
+                stb.Append(b[i].ToString("x2"));
             }
-            return result;
+            return stb.ToString();
         }
 
         /// <summary>
@@ -140,8 +139,7 @@ namespace VSL.Crypt
             byte[] final = new byte[hexadecimal.Length / 2];
             for (int i = 0; i < final.Length; i++)
             {
-                string hx = Convert.ToString(hexadecimal[i * 2]) + Convert.ToString(hexadecimal[i * 2 + 1]);
-                final[i] = Convert.ToByte(hx, 16);
+                final[i] = Convert.ToByte(new string(new char[] { hexadecimal[i * 2], hexadecimal[i * 2 + 1] }), 16);
             }
             return final;
         }
