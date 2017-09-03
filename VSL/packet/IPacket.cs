@@ -28,6 +28,9 @@ namespace VSL.Packet
         /// Forwards the packet to the handler.
         /// </summary>
         /// <param name="handler">The responsible packet handler.</param>
+        /// <exception cref="InvalidOperationException"/>
+        /// <exception cref="NotImplementedException"/>
+        /// <exception cref="NotSupportedException"/>
         void HandlePacket(PacketHandler handler);
         /// <summary>
         /// Reads the data from a PacketBuffer.
