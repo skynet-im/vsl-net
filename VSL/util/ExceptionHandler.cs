@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace VSL
@@ -11,7 +9,7 @@ namespace VSL
     internal class ExceptionHandler
     {
         // <fields
-        internal VSLSocket parent;
+        private VSLSocket parent;
         //  fields>
         // <constructor
         internal ExceptionHandler(VSLSocket parent)
@@ -26,20 +24,26 @@ namespace VSL
         /// <param name="ex">Exception to print.</param>
         internal void CloseConnection(Exception ex)
         {
+            if (parent.Logger.InitI)
+                parent.Logger.I("Connection was forcibly closed by VSL: " + ex.GetType().Name);
             PrintException(ex);
             parent.CloseInternal(ex.ToString());
         }
 
         internal void CloseConnection(System.Net.Sockets.SocketException ex)
         {
+            if (parent.Logger.InitI)
+                parent.Logger.I("Connection was interrupted");
             PrintException(ex);
             parent.CloseInternal(ex.ToString());
         }
 
         internal void CloseConnection(string errorcode, string message)
         {
+            if (parent.Logger.InitI)
+                parent.Logger.I("Connection was forcibly closed by VSL: " + errorcode);
             if (parent.Logger.InitE)
-                parent.Logger.E(message);
+                parent.Logger.E("Internal error (" + errorcode + "): " + message);
             parent.CloseInternal(message);
         }
 

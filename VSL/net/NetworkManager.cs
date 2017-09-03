@@ -36,8 +36,7 @@ namespace VSL
                 switch (algorithm)
                 {
                     case CryptographicAlgorithm.None:
-                        ReceivePacket_Plaintext();
-                        return true;
+                        return ReceivePacket_Plaintext();
                     case CryptographicAlgorithm.RSA_2048:
                         ReceivePacket_RSA_2048();
                         return true;
@@ -53,7 +52,7 @@ namespace VSL
                             return false;
                         }
                     default:
-                        parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", string.Format("Received packet with unknown algorithm ({0})", algorithm.ToString()));
+                        parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", string.Format("Received packet with unknown algorithm ({0}).\r\n\tat NetworkManager.OnDataReceive()", algorithm.ToString()));
                         return false;
                 }
             }
@@ -67,7 +66,7 @@ namespace VSL
                 return false;
             }
         }
-        private void ReceivePacket_Plaintext()
+        private bool ReceivePacket_Plaintext()
         {
             try
             {
@@ -84,13 +83,18 @@ namespace VSL
                     {
                         length = BitConverter.ToUInt32(parent.channel.Read(4), 0);
                         if (length > Constants.MaxPacketSize)
-                            throw new System.IO.InvalidDataException(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes", length, Constants.MaxPacketSize));
+                        {
+                            parent.ExceptionHandler.CloseConnection("TooBigPacket", string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes.\r\n\tat NetworkManager.ReceivePacket_Plaintext()", length, Constants.MaxPacketSize));
+                            return false;
+                        }
                     }
                     parent.handler.HandleInternalPacket(id, parent.channel.Read(Convert.ToInt32(length)));
+                    return true;
                 }
                 else
                 {
-                    throw new InvalidOperationException("Unknown packet id " + id);
+                    parent.ExceptionHandler.CloseConnection("UnknownPacket", "Received unknown internal plaintext packet with id " + id + "\r\n\tat NetworkManager.ReceivePacket_Plaintext()");
+                    return false;
                 }
             }
             catch (ArgumentOutOfRangeException ex) // IPacket.ReadPacket()
@@ -101,11 +105,7 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (System.IO.InvalidDataException ex) // Too big packet
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket() and unkown packet
+            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -125,7 +125,9 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
+            return false;
         }
+        // TODO: Implement custom information instead of exceptions
         private void ReceivePacket_RSA_2048()
         {
             try
@@ -193,6 +195,7 @@ namespace VSL
                 parent.ExceptionHandler.CloseConnection(ex);
             }
         }
+        // TODO: Implement custom information instead of exceptions
         private void ReceivePacket_AES_256()
         {
             try
