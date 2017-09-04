@@ -30,10 +30,13 @@ namespace VSLTest
 
         private void Vsl_ConnectionClosed(object sender, ConnectionClosedEventArgs e)
         {
-            MessageBox.Show(string.Format("[Server] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
+            //MessageBox.Show(string.Format("[Server] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
             Vsl.Dispose();
             lock (Program.WriteLock)
+            {
                 Program.Clients = Program.Clients.Remove(this);
+                Program.Disconnects++;
+            }
 #if DEBUG
             if (Program.Clients.Count == 0)
                 Console.WriteLine("Empty");

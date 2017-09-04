@@ -34,7 +34,7 @@ namespace VSLTest
             if (!serverRunning)
             {
                 btnStartServer.Enabled = false;
-                Task t = ListenerTask();
+                ListenerTask();
             }
             else
             {
@@ -42,7 +42,7 @@ namespace VSLTest
             }
         }
 
-        private async Task ListenerTask()
+        private void ListenerTask()
         {
             //TcpListener listener = new TcpListener(IPAddress.Any, 32771);
             TcpListener listener = new TcpListener(Dns.GetHostAddresses("127.0.0.1")[0], port);
@@ -50,13 +50,17 @@ namespace VSLTest
             btnStartServer.Text = "Beenden";
             btnStartServer.Enabled = true;
             serverRunning = true;
-            while (running)
+            Task.Run(delegate
             {
-                Socket native = await listener.AcceptSocketAsync();
-                Client c = new Client(native);
-                lock (Program.WriteLock)
-                    Program.Clients = Program.Clients.Add(c);
-            }
+                while (running)
+                {
+                    Socket native = listener.AcceptSocket();
+                    Client c = new Client(native);
+                    lock (Program.WriteLock)
+                        Program.Clients = Program.Clients.Add(c);
+                    Program.Connects++;
+                }
+            });
         }
 
         private async void btnConnect_Click(object sender, EventArgs e)
@@ -94,7 +98,7 @@ namespace VSLTest
             btnClientSendPacket.Enabled = false;
             btnSendFile.Enabled = false;
             clientConnected = false;
-            MessageBox.Show(string.Format("[Client] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
+            //MessageBox.Show(string.Format("[Client] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
         }
 
         private void btnSendPacket_Click(object sender, EventArgs e)
@@ -218,9 +222,22 @@ namespace VSLTest
         {
             foreach (Client c in Program.Clients)
             {
-                c.Vsl.CloseConnection("");
+                try
+                {
+                    c.Vsl.CloseConnection("");
+                }
+                catch { }
             }
             running = false;
+        }
+
+        private int maxCount = 0;
+        private void LbServerUpdateTimer_Tick(object sender, EventArgs e)
+        {
+            int current = Program.Clients.Count;
+            if (current > maxCount)
+                maxCount = current;
+            LbServer.Text = string.Format("{0} / {1} Clients\r\nConnects: {2} <> {3}", current, maxCount, Program.Connects, Program.Disconnects);
         }
     }
 }

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.btnStartServer = new System.Windows.Forms.Button();
             this.btnConnect = new System.Windows.Forms.Button();
             this.btnClientSendPacket = new System.Windows.Forms.Button();
@@ -35,6 +36,8 @@
             this.pbFileTransfer = new System.Windows.Forms.ProgressBar();
             this.btnServerSendPacket = new System.Windows.Forms.Button();
             this.btnPenetrationTest = new System.Windows.Forms.Button();
+            this.LbServer = new System.Windows.Forms.Label();
+            this.LbServerUpdateTimer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // btnStartServer
@@ -106,11 +109,26 @@
             this.btnPenetrationTest.UseVisualStyleBackColor = true;
             this.btnPenetrationTest.Click += new System.EventHandler(this.BtnPenetrationTest_Click);
             // 
+            // LbServer
+            // 
+            this.LbServer.AutoSize = true;
+            this.LbServer.Location = new System.Drawing.Point(13, 71);
+            this.LbServer.Name = "LbServer";
+            this.LbServer.Size = new System.Drawing.Size(54, 13);
+            this.LbServer.TabIndex = 7;
+            this.LbServer.Text = "Loading...";
+            // 
+            // LbServerUpdateTimer
+            // 
+            this.LbServerUpdateTimer.Enabled = true;
+            this.LbServerUpdateTimer.Tick += new System.EventHandler(this.LbServerUpdateTimer_Tick);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.LbServer);
             this.Controls.Add(this.btnPenetrationTest);
             this.Controls.Add(this.btnServerSendPacket);
             this.Controls.Add(this.pbFileTransfer);
@@ -122,6 +140,7 @@
             this.Text = "VSL test application";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -134,6 +153,8 @@
         private System.Windows.Forms.ProgressBar pbFileTransfer;
         private System.Windows.Forms.Button btnServerSendPacket;
         private System.Windows.Forms.Button btnPenetrationTest;
+        private System.Windows.Forms.Label LbServer;
+        private System.Windows.Forms.Timer LbServerUpdateTimer;
     }
 }
 

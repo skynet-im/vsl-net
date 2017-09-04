@@ -38,13 +38,11 @@ namespace VSL
                     case CryptographicAlgorithm.None:
                         return ReceivePacket_Plaintext();
                     case CryptographicAlgorithm.RSA_2048:
-                        ReceivePacket_RSA_2048();
-                        return true;
+                        return ReceivePacket_RSA_2048();
                     case CryptographicAlgorithm.AES_256:
                         if (Ready4Aes)
                         {
-                            ReceivePacket_AES_256();
-                            return true;
+                            return ReceivePacket_AES_256();
                         }
                         else
                         {
@@ -101,7 +99,68 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (InvalidCastException ex) // PacketHandler.HandleInternalPacket()
+            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (NotImplementedException ex) // PacketHandler.HandleInternalPacket()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (NotSupportedException ex) // PacketHandler.HandleInternalPacket()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (OperationCanceledException) // NetworkChannel.Read()
+            {
+                // Already shutting down...
+            }
+            catch (TimeoutException ex) // NetworkChannel.Read()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            return false;
+        }
+        private bool ReceivePacket_RSA_2048()
+        {
+            try
+            {
+                int index = 1;
+                byte[] ciphertext = parent.channel.Read(256);
+                byte[] plaintext = RSA.DecryptBlock(ciphertext, Keypair);
+                byte id = plaintext[0]; // index = 1
+                bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
+                if (success)
+                {
+                    uint length = 0;
+                    if (packet.PacketLength.Type == Packet.PacketLength.LengthType.Constant)
+                    {
+                        length = packet.PacketLength.Length;
+                    }
+                    else if (packet.PacketLength.Type == Packet.PacketLength.LengthType.UInt32)
+                    {
+                        length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
+                        if (length > 209) // 214 - 1 (id) - 4 (uint) => 209
+                        {
+                            parent.ExceptionHandler.CloseConnection("TooBigPacket", string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are 209 bytes.\r\n\tat NetworkManager.ReceivePacket_RSA_2048()", length, Constants.MaxPacketSize));
+                            return false;
+                        }
+                        index += 4;
+                    }
+                    parent.handler.HandleInternalPacket(id, Util.TakeBytes(plaintext, Convert.ToInt32(length), index));
+                    return true;
+                }
+                else
+                {
+                    parent.ExceptionHandler.CloseConnection("UnknownPacket", "Received unknown internal RSA packet with id " + id + "\r\n\tat NetworkManager.ReceivePacket_RSA_2048()");
+                    return false;
+                }
+            }
+            catch (ArgumentOutOfRangeException ex) // IPacket.ReadPacket()
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+            catch (System.Security.Cryptography.CryptographicException ex) // RSA.DecryptBlock()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -127,76 +186,7 @@ namespace VSL
             }
             return false;
         }
-        // TODO: Implement custom information instead of exceptions
-        private void ReceivePacket_RSA_2048()
-        {
-            try
-            {
-                int index = 1;
-                byte[] ciphertext = parent.channel.Read(256);
-                byte[] plaintext = RSA.DecryptBlock(ciphertext, Keypair);
-                byte id = plaintext[0]; // index = 1
-                bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
-                if (success)
-                {
-                    uint length = 0;
-                    if (packet.PacketLength.Type == Packet.PacketLength.LengthType.Constant)
-                    {
-                        length = packet.PacketLength.Length;
-                    }
-                    else if (packet.PacketLength.Type == Packet.PacketLength.LengthType.UInt32)
-                    {
-                        length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
-                        if (length > 251)
-                            throw new System.IO.InvalidDataException(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are 251 bytes", length));
-                        index += 4;
-                    }
-                    parent.handler.HandleInternalPacket(id, Util.TakeBytes(plaintext, Convert.ToInt32(length), index));
-                }
-                else
-                {
-                    throw new InvalidOperationException("Unknown packet id " + id);
-                }
-            }
-            catch (ArgumentOutOfRangeException ex) // IPacket.ReadPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (System.Security.Cryptography.CryptographicException ex) // RSA.DecryptBlock()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (InvalidCastException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (System.IO.InvalidDataException ex) // Too big packet
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket() and unkown packet
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (NotImplementedException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (NotSupportedException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (OperationCanceledException) // NetworkChannel.Read()
-            {
-                // Already shutting down...
-            }
-            catch (TimeoutException ex) // NetworkChannel.Read()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-        }
-        // TODO: Implement custom information instead of exceptions
-        private void ReceivePacket_AES_256()
+        private bool ReceivePacket_AES_256()
         {
             try
             {
@@ -215,7 +205,10 @@ namespace VSL
                     length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
                     index += 4;
                     if (length > Constants.MaxPacketSize)
-                        throw new System.IO.InvalidDataException(string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes", length, Constants.MaxPacketSize));
+                    {
+                        parent.ExceptionHandler.CloseConnection("TooBigPacket", string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes.\r\n\tat NetworkManager.ReceivePacket_Plaintext()", length, Constants.MaxPacketSize));
+                        return false;
+                    }
                 }
                 plaintext = Util.SkipBytes(plaintext, index);
                 if (length > plaintext.Length - 2) // 2 random bytes
@@ -239,6 +232,7 @@ namespace VSL
                         parent.Logger.D(string.Format("Received external AES packet: ID={0} Length={1}", 255 - id, content.Length));
                     parent.OnPacketReceived(id, content);
                 }
+                return true;
             }
             catch (ArgumentOutOfRangeException ex) // IPacket.ReadPacket()
             {
@@ -248,15 +242,7 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (InvalidCastException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (System.IO.InvalidDataException ex) // Too big packet
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket() and unkown packet
+            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -276,6 +262,7 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
+            return false;
         }
         #endregion receive
         #region send
