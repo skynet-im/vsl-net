@@ -100,6 +100,7 @@
     <Compile Include="Util\PacketBuffer.cs" />
     <Compile Include="Util\Queue.cs" />
     <Compile Include="Util\ThreadMgr.cs" />
+    <Compile Include="Util\ThreadSafeList.cs" />
     <Compile Include="Util\VersionManager.cs" />
     <Compile Include="VSLClient.cs" />
     <Compile Include="VSLServer.cs" />

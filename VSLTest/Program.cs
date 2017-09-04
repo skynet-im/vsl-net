@@ -13,6 +13,8 @@ namespace VSLTest
         public static ImmutableList<Client> Clients;
         public static object WriteLock;
         public static frmMain frmMain;
+        public static int Connects = 0;
+        public static int Disconnects = 0;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>

@@ -58,11 +58,12 @@ namespace VSL
         /// </summary>
         /// <param name="id">Packet ID</param>
         /// <param name="content">Packet data</param>
-        /// <exception cref="InvalidCastException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"/>
         /// <exception cref="InvalidOperationException"/>
         /// <exception cref="NotImplementedException"></exception>
         /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
+        // TODO: Implement custom information instead of exceptions
         internal void HandleInternalPacket(byte id, byte[] content)
         {
             foreach (IPacket p in RegisteredPackets)
