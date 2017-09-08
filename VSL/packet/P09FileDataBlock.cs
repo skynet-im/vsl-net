@@ -31,9 +31,9 @@ namespace VSL.Packet
             return new P09FileDataBlock();
         }
 
-        public void HandlePacket(PacketHandler handler)
+        public bool HandlePacket(PacketHandler handler)
         {
-            handler.HandleP09FileDataBlock(this);
+            return handler.HandleP09FileDataBlock(this);
         }
 
         public void ReadPacket(PacketBuffer buf)

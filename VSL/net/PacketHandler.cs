@@ -80,22 +80,43 @@ namespace VSL
             }
         }
 
-        internal abstract void HandleP00Handshake(P00Handshake p);
-        internal abstract void HandleP01KeyExchange(P01KeyExchange p);
-        internal abstract void HandleP02Certificate(P02Certificate p);
-        internal abstract void HandleP03FinishHandshake(P03FinishHandshake p);
-        internal abstract void HandleP04ChangeIV(P04ChangeIV p);
-        internal abstract void HandleP05KeepAlive(P05KeepAlive p);
-        internal virtual void HandleP06Accepted(P06Accepted p)
+        internal abstract bool HandleP00Handshake(P00Handshake p);
+        internal abstract bool HandleP01KeyExchange(P01KeyExchange p);
+        internal abstract bool HandleP02Certificate(P02Certificate p);
+        internal abstract bool HandleP03FinishHandshake(P03FinishHandshake p);
+        internal abstract bool HandleP04ChangeIV(P04ChangeIV p);
+        internal abstract bool HandleP05KeepAlive(P05KeepAlive p);
+        internal virtual bool HandleP06Accepted(P06Accepted p)
         {
             if (p.RelatedPacket > 5 && p.RelatedPacket < 10)
+            {
                 parent.FileTransfer.OnAccepted(p);
+                return true;
+            }
             else
-                throw new InvalidOperationException("Could not resume related packet");
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidPacket", string.Format("Could not resume related packet with id {0}.", p.RelatedPacket));
+                return false;
+            }
         }
-        internal abstract void HandleP07OpenFileTransfer(P07OpenFileTransfer p);
-        internal abstract void HandleP08FileHeader(P08FileHeader p);
-        internal abstract void HandleP09FileDataBlock(P09FileDataBlock p);
+        internal abstract bool HandleP07OpenFileTransfer(P07OpenFileTransfer p);
+        // TODO: What if no file transfer is running?
+        internal virtual bool HandleP08FileHeader(P08FileHeader p)
+        {
+            parent.FileTransfer.OnHeaderReceived(p);
+            return true;
+        }
+        // TODO: Remove Exception
+        internal virtual bool HandleP09FileDataBlock(P09FileDataBlock p)
+        {
+            if (parent.FileTransfer.ReceivingFile)
+            {
+                parent.FileTransfer.OnDataBlockReceived(p);
+                return true;
+            }
+            else
+                throw new InvalidOperationException("No active file transfer");
+        }
         //  functions>
     }
 }

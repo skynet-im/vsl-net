@@ -56,8 +56,8 @@ namespace VSLTest
                 {
                     Socket native = listener.AcceptSocket();
                     Client c = new Client(native);
-                    lock (Program.WriteLock)
-                        Program.Clients = Program.Clients.Add(c);
+                    //lock (Program.WriteLock)
+                    //    Program.Clients = Program.Clients.Add(c);
                     Program.Connects++;
                 }
             });
@@ -119,10 +119,11 @@ namespace VSLTest
             if ((Button)sender == btnClientSendPacket)
                 vslClient.SendPacket(1, b);
             else if ((Button)sender == btnServerSendPacket)
-                foreach (Client c in Program.Clients)
-                {
-                    c.Vsl.SendPacket(1, b);
-                }
+                Program.Clients.ParallelForEach((c) => c.Vsl.SendPacket(1, b));
+            //foreach (Client c in Program.Clients)
+            //{
+            //    c.Vsl.SendPacket(1, b);
+            //}
         }
 
         private void vslClient_Received(object sender, PacketReceivedEventArgs e)
@@ -220,14 +221,22 @@ namespace VSLTest
 
         private void CloseServer()
         {
-            foreach (Client c in Program.Clients)
+            //foreach (Client c in Program.Clients)
+            //{
+            //    try
+            //    {
+            //        c.Vsl.CloseConnection("");
+            //    }
+            //    catch { }
+            //}
+            Program.Clients.ParallelForEach((c) =>
             {
                 try
                 {
                     c.Vsl.CloseConnection("");
                 }
                 catch { }
-            }
+            });
             running = false;
         }
 

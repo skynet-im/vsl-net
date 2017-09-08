@@ -30,9 +30,9 @@ namespace VSL.Packet
             return new P00Handshake();
         }
 
-        public void HandlePacket(PacketHandler handler)
+        public bool HandlePacket(PacketHandler handler)
         {
-            handler.HandleP00Handshake(this);
+            return handler.HandleP00Handshake(this);
         }
 
         public void ReadPacket(PacketBuffer buf)

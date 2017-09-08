@@ -34,9 +34,9 @@ namespace VSL.Packet
             return new P03FinishHandshake();
         }
 
-        public void HandlePacket(PacketHandler handler)
+        public bool HandlePacket(PacketHandler handler)
         {
-            handler.HandleP03FinishHandshake(this);
+            return handler.HandleP03FinishHandshake(this);
         }
 
         public void ReadPacket(PacketBuffer buf)

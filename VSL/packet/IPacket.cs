@@ -31,7 +31,8 @@ namespace VSL.Packet
         /// <exception cref="InvalidOperationException"/>
         /// <exception cref="NotImplementedException"/>
         /// <exception cref="NotSupportedException"/>
-        void HandlePacket(PacketHandler handler);
+        /// <returns>If packet handling succeeded.</returns>
+        bool HandlePacket(PacketHandler handler);
         /// <summary>
         /// Reads the data from a PacketBuffer.
         /// </summary>

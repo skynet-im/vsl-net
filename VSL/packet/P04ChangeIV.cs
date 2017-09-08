@@ -32,9 +32,9 @@ namespace VSL.Packet
             return new P04ChangeIV();
         }
 
-        public void HandlePacket(PacketHandler handler)
+        public bool HandlePacket(PacketHandler handler)
         {
-            handler.HandleP04ChangeIV(this);
+            return handler.HandleP04ChangeIV(this);
         }
 
         public void ReadPacket(PacketBuffer buf)

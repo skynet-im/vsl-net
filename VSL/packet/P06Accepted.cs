@@ -33,9 +33,9 @@ namespace VSL.Packet
             return new P06Accepted();
         }
 
-        public void HandlePacket(PacketHandler handler)
+        public bool HandlePacket(PacketHandler handler)
         {
-            handler.HandleP06Accepted(this);
+            return handler.HandleP06Accepted(this);
         }
 
         public void ReadPacket(PacketBuffer buf)
