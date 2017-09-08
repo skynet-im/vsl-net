@@ -16,11 +16,13 @@ namespace VSL
         private List<T> addToList;
         private List<T> removeFromList;
         private bool cleaning = false;
+        private int count;
         private object cleanupLock;
         private object changeStateLock;
         private object currentListLock;
         private object addToListLock;
         private object removeFromListLock;
+        private object counterLock;
         /// <summary>
         /// Initializes a new instance of the <see cref="ThreadSafeList{T}"/> class.
         /// </summary>
@@ -34,6 +36,18 @@ namespace VSL
             currentListLock = new object();
             addToListLock = new object();
             removeFromListLock = new object();
+            counterLock = new object();
+        }
+        /// <summary>
+        /// Gets the number of elements contained in the <see cref="ThreadSafeList{T}"/>.
+        /// </summary>
+        public int Count
+        {
+            get
+            {
+                lock (counterLock)
+                    return count;
+            }
         }
         /// <summary>
         /// Adds an object to the <see cref="ThreadSafeList{T}"/>. 
@@ -44,8 +58,12 @@ namespace VSL
         {
             if (item == null)
                 throw new ArgumentNullException("item");
-            lock (currentListLock)
-                currentList.Add(item);
+            lock (counterLock)
+            {
+                lock (currentListLock)
+                    currentList.Add(item);
+                count++;
+            }
             bool cleaning;
             lock (changeStateLock)
                 cleaning = this.cleaning;
@@ -63,22 +81,31 @@ namespace VSL
             if (item == null)
                 throw new ArgumentNullException("item");
             bool final = false;
-            for (int i = 0; i < currentList.Count; i++)
+            lock (counterLock)
             {
-                if (ReferenceEquals(currentList[i], item))
+                for (int i = 0; i < currentList.Count; i++)
                 {
-                    currentList[i] = null;
-                    final = true;
+                    if (ReferenceEquals(currentList[i], item))
+                    {
+                        currentList[i] = null;
+                        count--;
+                        final = true;
+                    }
                 }
             }
             bool cleaning;
             lock (changeStateLock)
+            {
                 cleaning = this.cleaning;
+            }
             if (cleaning)
                 lock (removeFromListLock)
                     removeFromList.Add(item);
             return final;
         }
+        /// <summary>
+        /// Copies all still existing elements in a new internal list.
+        /// </summary>
         public void Cleanup()
         {
             lock (cleanupLock)

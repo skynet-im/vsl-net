@@ -25,6 +25,7 @@ namespace VSLTest
             Vsl.Logger.InvokeDebugMessages = false;
             Vsl.Logger.InvokeExceptionMessages = false;
             Vsl.Logger.InvokeInfoMessages = false;
+            Program.Clients.Add(this);
             Vsl.Start();
         }
 
@@ -32,9 +33,11 @@ namespace VSLTest
         {
             //MessageBox.Show(string.Format("[Server] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
             Vsl.Dispose();
+            if (!Program.Clients.Remove(this))
+                MessageBox.Show("Could not remove!!!");
             lock (Program.WriteLock)
             {
-                Program.Clients = Program.Clients.Remove(this);
+                //Program.Clients = Program.Clients.Remove(this);
                 Program.Disconnects++;
             }
 #if DEBUG

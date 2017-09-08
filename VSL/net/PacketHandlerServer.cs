@@ -23,18 +23,18 @@ namespace VSL
         //  constructor>
 
         // <functions
-        internal override async void HandleP00Handshake(P00Handshake p)
+        internal override bool HandleP00Handshake(P00Handshake p)
         {
             switch (p.RequestType)
             {
                 case RequestType.DirectPublicKey:
-                    break;
+                    return true;
                 default:
-                    await parent.manager.SendPacketAsync(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));
-                    break;
+                    parent.manager.SendPacket(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));
+                    return true;
             }
         }
-        internal override async void HandleP01KeyExchange(P01KeyExchange p)
+        internal override bool HandleP01KeyExchange(P01KeyExchange p)
         {
             if (VersionManager.IsVSLVersionSupported(p.LatestVSL, p.OldestVSL) && VersionManager.IsProductVersionSupported(parent.LatestProduct, parent.OldestProduct, p.LatestProduct, p.OldestProduct))
             {
@@ -42,48 +42,42 @@ namespace VSL
                 parent.manager.SendIV = p.ServerIV;
                 parent.manager.ReceiveIV = p.ClientIV;
                 parent.manager.Ready4Aes = true;
-                await parent.manager.SendPacketAsync(CryptographicAlgorithm.AES_256, new P03FinishHandshake(ConnectionType.Compatible));
+                parent.manager.SendPacket(CryptographicAlgorithm.AES_256, new P03FinishHandshake(ConnectionType.Compatible));
                 parent.OnConnectionEstablished();
             }
             else
-                await parent.manager.SendPacketAsync(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));
+                parent.manager.SendPacket(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));
+            return true;
         }
-        internal override void HandleP02Certificate(P02Certificate p)
+        internal override bool HandleP02Certificate(P02Certificate p)
         {
-            throw new NotImplementedException();
+            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL servers can not handle P02Certificate.");
+            return false;
         }
-        internal override void HandleP03FinishHandshake(P03FinishHandshake p)
+        internal override bool HandleP03FinishHandshake(P03FinishHandshake p)
         {
-            throw new NotSupportedException("This VSL version does not support unsafe fallback servers");
+            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL servers can not handle P03FinishHandshake.");
+            return false;
         }
-        internal override void HandleP04ChangeIV(P04ChangeIV p)
+        internal override bool HandleP04ChangeIV(P04ChangeIV p)
         {
             parent.manager.SendIV = p.ServerIV;
             parent.manager.ReceiveIV = p.ClientIV;
+            return true;
         }
-        internal override void HandleP05KeepAlive(P05KeepAlive p)
+        internal override bool HandleP05KeepAlive(P05KeepAlive p)
         {
-            throw new NotSupportedException("This VSL version does not support keep alive packets");
+            parent.ExceptionHandler.CloseConnection("NotSupported", "This VSL version does not support keep alive packets");
+            return false;
         }
-        internal override void HandleP06Accepted(P06Accepted p)
-        {
-            base.HandleP06Accepted(p);
-        }
-        internal override void HandleP07OpenFileTransfer(P07OpenFileTransfer p)
+        // overriding void HandleP06Accepted is not neccessary.
+        internal override bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
             parent.FileTransfer.OnFileTransferRequested(p.Identifier, p.StreamMode);
+            return true;
         }
-        internal override void HandleP08FileHeader(P08FileHeader p)
-        {
-            parent.FileTransfer.OnHeaderReceived(p);
-        }
-        internal override void HandleP09FileDataBlock(P09FileDataBlock p)
-        {
-            if (parent.FileTransfer.ReceivingFile)
-                parent.FileTransfer.OnDataBlockReceived(p);
-            else
-                throw new InvalidOperationException("No active file transfer");
-        }
+        // overriding void HandleP08FileHeader is not neccessary.
+        // overriding void HandleP09FileDataBlock is not neccessary.
         //  functions>
     }
 }

@@ -32,9 +32,9 @@ namespace VSL.Packet
             return new P07OpenFileTransfer();
         }
 
-        public void HandlePacket(PacketHandler handler)
+        public bool HandlePacket(PacketHandler handler)
         {
-            handler.HandleP07OpenFileTransfer(this);
+            return handler.HandleP07OpenFileTransfer(this);
         }
 
         public void ReadPacket(PacketBuffer buf)

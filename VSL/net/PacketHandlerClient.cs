@@ -23,56 +23,55 @@ namespace VSL
         //  constructor>
 
         // <functions
-        internal override void HandleP00Handshake(P00Handshake p)
+        internal override bool HandleP00Handshake(P00Handshake p)
         {
-            throw new NotImplementedException();
+            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P00Handshake.");
+            return false;
         }
-        internal override void HandleP01KeyExchange(P01KeyExchange p)
+        internal override bool HandleP01KeyExchange(P01KeyExchange p)
         {
-            throw new NotImplementedException();
+            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P01KeyExchange.");
+            return false;
         }
-        internal override void HandleP02Certificate(P02Certificate p)
+        internal override bool HandleP02Certificate(P02Certificate p)
         {
             throw new NotSupportedException("This VSL version does not support Certificates");
         }
-        internal override void HandleP03FinishHandshake(P03FinishHandshake p)
+        internal override bool HandleP03FinishHandshake(P03FinishHandshake p)
         {
             switch (p.ConnectionType)
             {
                 case ConnectionType.Compatible:
                     parent.OnConnectionEstablished();
-                    break;
+                    return true;
                 case ConnectionType.Redirect:
-                    throw new NotSupportedException("This VSL version does not support redirects");
+                    parent.ExceptionHandler.CloseConnection("NotSupported", "This VSL version does not support redirects.");
+                    return false;
                 case ConnectionType.NotCompatible:
-                    parent.CloseInternal("The specified server does not support this VSL/application version");
-                    break;
+                    parent.ExceptionHandler.CloseConnection("ConnectionDenied", "The specified server denied the connection to this VSL/application version client.");
+                    return false;
+                default:
+                    return false;
             }
         }
-        internal override void HandleP04ChangeIV(P04ChangeIV p)
+        internal override bool HandleP04ChangeIV(P04ChangeIV p)
         {
-            throw new NotImplementedException();
+            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P04ChangeIV.");
+            return false;
         }
-        internal override void HandleP05KeepAlive(P05KeepAlive p)
+        internal override bool HandleP05KeepAlive(P05KeepAlive p)
         {
-            throw new NotImplementedException();
+            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P05KeepAlive.");
+            return false;
         }
-        internal override void HandleP06Accepted(P06Accepted p)
+        // overriding void HandleP06Accepted is not neccessary.
+        internal override bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
-            base.HandleP06Accepted(p);
+            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P07OpenFileTransfer.");
+            return false;
         }
-        internal override void HandleP07OpenFileTransfer(P07OpenFileTransfer p)
-        {
-            throw new NotImplementedException();
-        }
-        internal override void HandleP08FileHeader(P08FileHeader p)
-        {
-            parent.FileTransfer.OnHeaderReceived(p);
-        }
-        internal override void HandleP09FileDataBlock(P09FileDataBlock p)
-        {
-            parent.FileTransfer.OnDataBlockReceived(p);
-        }
+        // overriding void HandleP08FileHeader is not neccessary.
+        // overriding void HandleP09FileDataBlock is not neccessary.
         //  functions>
     }
 }

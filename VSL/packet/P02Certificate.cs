@@ -20,22 +20,22 @@ namespace VSL.Packet
 
         public IPacket New()
         {
-            throw new NotImplementedException();
+            return new P02Certificate();
         }
 
-        public void HandlePacket(PacketHandler handler)
+        public bool HandlePacket(PacketHandler handler)
         {
-            throw new NotImplementedException();
+            return handler.HandleP02Certificate(this);
         }
 
         public void ReadPacket(PacketBuffer buf)
         {
-            throw new NotImplementedException();
+            
         }
 
         public void WritePacket(PacketBuffer buf)
         {
-            throw new NotImplementedException();
+            
         }
     }
 }

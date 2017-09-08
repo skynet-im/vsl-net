@@ -42,9 +42,9 @@ namespace VSL.Packet
             return new P01KeyExchange();
         }
 
-        public void HandlePacket(PacketHandler handler)
+        public bool HandlePacket(PacketHandler handler)
         {
-            handler.HandleP01KeyExchange(this);
+            return handler.HandleP01KeyExchange(this);
         }
 
         public void ReadPacket(PacketBuffer buf)
