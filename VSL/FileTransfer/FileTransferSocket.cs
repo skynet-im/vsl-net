@@ -73,6 +73,11 @@ namespace VSL.FileTransfer
             FileInfo fi = new FileInfo(path);
             return new P08FileHeader(fi.Name, Convert.ToUInt64(fi.Length), fi.Attributes, fi.CreationTime, fi.LastAccessTime, fi.LastWriteTime, new byte[0], new byte[0]);
         }
+        /// <summary>
+        /// Applies an FileHeader packet and writes all meta data to the specified file.
+        /// </summary>
+        /// <param name="path">The downloaded file without correct name and metadata.</param>
+        /// <param name="packet"></param>
         internal void SetHeaderPacket(string path, P08FileHeader packet)
         {
             string newPath = "";
@@ -94,6 +99,7 @@ namespace VSL.FileTransfer
             //}
             catch (Exception ex)
             {
+                // TODO: Change exception handling
                 parent.ExceptionHandler.PrintException(ex);
             }
         }

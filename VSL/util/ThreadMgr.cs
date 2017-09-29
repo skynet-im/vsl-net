@@ -167,31 +167,38 @@ namespace VSL
         }
         private void ThreadWork()
         {
-            lock (disposeLock)
-                readyToDispose = false;
-            while (true)
+            try
             {
-                while (workQueue.TryDequeue(out WorkItem item))
+                lock (disposeLock)
+                    readyToDispose = false;
+                while (true)
                 {
-                    if (ct.IsCancellationRequested)
+                    while (workQueue.TryDequeue(out WorkItem item))
                     {
-                        Cleanup(item);
+                        if (ct.IsCancellationRequested)
+                        {
+                            Cleanup(item);
+                            break;
+                        }
+                        item.Work.Invoke(itemCt);
+                        item.Handle?.Set();
+                    }
+                    if (ct.WaitHandle.WaitOne(parent.SleepTime))
+                    {
+                        Cleanup();
                         break;
                     }
-                    item.Work.Invoke(itemCt);
-                    item.Handle?.Set();
                 }
-                if (ct.WaitHandle.WaitOne(parent.SleepTime))
+                lock (disposeLock)
                 {
-                    Cleanup();
-                    break;
+                    if (disposePending)
+                        Dispose();
+                    readyToDispose = true;
                 }
             }
-            lock (disposeLock)
+            catch (Exception ex)
             {
-                if (disposePending)
-                    Dispose();
-                readyToDispose = true;
+                parent.ExceptionHandler.CloseUncaught(ex);
             }
         }
         private void Cleanup(WorkItem pending = null)

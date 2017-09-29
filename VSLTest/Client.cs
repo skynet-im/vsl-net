@@ -22,6 +22,7 @@ namespace VSLTest
             //Vsl.Logger.PrintDebugMessages = true;
             //Vsl.Logger.PrintExceptionMessages = true;
             //Vsl.Logger.PrintInfoMessages = true;
+            Vsl.Logger.PrintUncaughtExceptions = true;
             Vsl.Logger.InvokeDebugMessages = false;
             Vsl.Logger.InvokeExceptionMessages = false;
             Vsl.Logger.InvokeInfoMessages = false;

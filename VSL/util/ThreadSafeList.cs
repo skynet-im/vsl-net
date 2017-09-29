@@ -9,19 +9,25 @@ namespace VSL
     /// <summary>
     /// Represents a strongly typed, threadsafe list of refernce class objects that can't be accessed by index.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class ThreadSafeList<T> where T : class
+    /// <typeparam name="T">Generic type has to be a nullable value.</typeparam>
+    public sealed class ThreadSafeList<T> where T : class
     {
         private List<T> currentList;
         private List<T> addToList;
         private List<T> removeFromList;
         private bool cleaning = false;
         private int count;
+        /// <summary>
+        /// Locks <see cref="void"/> <see cref="Cleanup"/>.
+        /// </summary>
         private object cleanupLock;
+        /// <summary>
+        /// Locks <see cref="bool"/> <see cref="cleaning"/> and is locked while finishing cleanup.
+        /// </summary>
         private object changeStateLock;
-        private object currentListLock;
-        private object addToListLock;
-        private object removeFromListLock;
+        /// <summary>
+        /// Locks <see cref="bool"/> <see cref="count"/>.
+        /// </summary>
         private object counterLock;
         /// <summary>
         /// Initializes a new instance of the <see cref="ThreadSafeList{T}"/> class.
@@ -33,9 +39,6 @@ namespace VSL
             removeFromList = new List<T>();
             cleanupLock = new object();
             changeStateLock = new object();
-            currentListLock = new object();
-            addToListLock = new object();
-            removeFromListLock = new object();
             counterLock = new object();
         }
         /// <summary>
@@ -58,21 +61,17 @@ namespace VSL
         {
             if (item == null)
                 throw new ArgumentNullException("item");
-            lock (counterLock)
-            {
-                lock (currentListLock)
-                    currentList.Add(item);
-                count++;
-            }
-            bool cleaning;
             lock (changeStateLock)
-                cleaning = this.cleaning;
-            if (cleaning)
-                lock (addToListLock)
+            {
+                if (cleaning)
                     addToList.Add(item);
+                currentList.Add(item);
+            }
+            lock (counterLock)
+                count++;
         }
         /// <summary>
-        /// Removes all occurencies of a specific object from the <see cref="ThreadSafeList{T}"/>
+        /// Removes the first occurency of a specific object from the <see cref="ThreadSafeList{T}"/>
         /// </summary>
         /// <param name="item">The object to be removed from the <see cref="ThreadSafeList{T}"/>. The value can't be null.</param>
         /// <returns></returns>
@@ -81,26 +80,24 @@ namespace VSL
             if (item == null)
                 throw new ArgumentNullException("item");
             bool final = false;
-            lock (counterLock)
+            // TODO: Do not run loop in lock
+            lock (changeStateLock)
             {
+                if (cleaning)
+                    removeFromList.Add(item);
                 for (int i = 0; i < currentList.Count; i++)
                 {
                     if (ReferenceEquals(currentList[i], item))
                     {
                         currentList[i] = null;
-                        count--;
                         final = true;
+                        break;
                     }
                 }
             }
-            bool cleaning;
-            lock (changeStateLock)
-            {
-                cleaning = this.cleaning;
-            }
-            if (cleaning)
-                lock (removeFromListLock)
-                    removeFromList.Add(item);
+            if (final)
+                lock (counterLock)
+                    count--;
             return final;
         }
         /// <summary>
@@ -122,6 +119,8 @@ namespace VSL
                     currentList = newList;
                     cleaning = false;
                 }
+                addToList.Clear();
+                removeFromList.Clear();
             }
         }
         /// <summary>

@@ -47,6 +47,12 @@ namespace VSL
             parent.CloseInternal(message);
         }
 
+        internal void CloseUncaught(Exception ex)
+        {
+            parent.Logger.Uncaught("A fatal unexpected error occured: " + ex.ToString());
+            parent.CloseInternal(ex.ToString());
+        }
+
         /// <summary>
         /// Handles an Exception by cancelling the current file transfer and releasing all associated resources.
         /// </summary>
