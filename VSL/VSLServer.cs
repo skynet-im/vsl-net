@@ -13,15 +13,14 @@ namespace VSL
     /// <summary>
     /// The server implementation of a VSL socket
     /// </summary>
-    public class VSLServer : VSLSocket
+    public sealed class VSLServer : VSLSocket
     {
         // <fields
-        new internal NetworkManagerServer manager;
         new internal PacketHandlerServer handler;
         /// <summary>
         /// Access file transfer functions.
         /// </summary>
-        new public FileTransferServer FileTransfer;
+        new public FileTransferServer FileTransfer { get; internal set; }
         internal string Keypair;
         internal ushort LatestProduct;
         internal ushort OldestProduct;
@@ -35,8 +34,8 @@ namespace VSL
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
         /// <param name="keypair">The RSA-keypair of the server application.</param>
-        [Obsolete("VSLServer.VSLServer(TcpClient tcp, ...) is deprecated, please use VSLServer.VSLServer(Socket socket, ...) instead.", false)]
-        // TODO: Add error in v1.1.17.0
+        [Obsolete("VSLServer.VSLServer(TcpClient tcp, ...) is deprecated, please use VSLServer.VSLServer(Socket socket, ...) instead.", true)]
+        // TODO: Remove in v1.1.18.0
         public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair)
             : this(tcp, latestProduct, oldestProduct, keypair, ThreadMgr.InvokeMode.ManagedThread) { }
 
@@ -48,8 +47,8 @@ namespace VSL
         /// <param name="oldestProduct">The oldest supported version.</param>
         /// <param name="keypair">The RSA-keypair of the server application.</param>
         /// <param name="mode">The way how events are invoked.</param>
-        [Obsolete("VSLServer.VSLServer(TcpClient tcp, ...) is deprecated, please use VSLServer.VSLServer(Socket socket, ...) instead.", false)]
-        // TODO: Add error in v1.1.17.0
+        [Obsolete("VSLServer.VSLServer(TcpClient tcp, ...) is deprecated, please use VSLServer.VSLServer(Socket socket, ...) instead.", true)]
+        // TODO: Remove in v1.1.18.0
         public VSLServer(TcpClient tcp, ushort latestProduct, ushort oldestProduct, string keypair, ThreadMgr.InvokeMode mode)
             : this(tcp.Client, latestProduct, oldestProduct, keypair, mode) { }
 
@@ -79,8 +78,7 @@ namespace VSL
             OldestProduct = oldestProduct;
             Keypair = keypair;
             channel = new NetworkChannel(this, socket);
-            manager = new NetworkManagerServer(this, keypair);
-            base.manager = manager;
+            manager = new NetworkManager(this, keypair);
             handler = new PacketHandlerServer(this);
             base.handler = handler;
             FileTransfer = new FileTransferServer(this);

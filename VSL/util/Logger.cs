@@ -52,6 +52,10 @@ namespace VSL
         internal bool InitI { get { return PrintInfoMessages || InvokeInfoMessages; } }
         #endregion
         /// <summary>
+        /// Gets or sets a value indicating whether uncaught exceptions are printed in the console.
+        /// </summary>
+        public bool PrintUncaughtExceptions { get; set; } = false;
+        /// <summary>
         /// Gets or sets a value indicating whether prefixes for types are written in events.
         /// </summary>
         public bool WritePrefix { get; set; } = true;
@@ -69,7 +73,7 @@ namespace VSL
             });
         }
         //  events>
-        internal void PrintMessage(string text, LogType type)
+        private void PrintMessage(string text, LogType type)
         {
             Console.WriteLine("[VSL " + type.ToString() + "] " + text);
         }
@@ -104,6 +108,12 @@ namespace VSL
             if (InvokeInfoMessages)
                 OnLoggedMessage(s, LogType.Info);
         }
+        internal void Uncaught(string s)
+        {
+            if (PrintUncaughtExceptions)
+                PrintMessage(s, LogType.UncaughtException);
+            OnLoggedMessage(s, LogType.UncaughtException);
+        }
         /// <summary>
         /// Specifies the type of a log output.
         /// </summary>
@@ -120,7 +130,11 @@ namespace VSL
             /// <summary>
             /// Basic information about events like connection build-up, disconnect or file transfer.
             /// </summary>
-            Info
+            Info,
+            /// <summary>
+            /// Information about occuring unexpected fatal exceptions.
+            /// </summary>
+            UncaughtException
         }
     }
 }

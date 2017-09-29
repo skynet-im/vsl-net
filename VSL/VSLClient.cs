@@ -15,15 +15,14 @@ namespace VSL
     /// <summary>
     /// The client implementation of a VSL socket
     /// </summary>
-    public class VSLClient : VSLSocket
+    public sealed class VSLClient : VSLSocket
     {
         // <fields
-        new internal NetworkManagerClient manager;
         new internal PacketHandlerClient handler;
         /// <summary>
         /// Access file transfer functions.
         /// </summary>
-        new public FileTransferClient FileTransfer;
+        new public FileTransferClient FileTransfer { get; internal set; }
         internal ushort LatestProduct;
         internal ushort OldestProduct;
         private int _networkBufferSize = Constants.ReceiveBufferSize;
@@ -99,8 +98,7 @@ namespace VSL
 
             // <initialize component
             channel = new NetworkChannel(this, tcp.Client);
-            manager = new NetworkManagerClient(this, serverKey);
-            base.manager = manager;
+            manager = new NetworkManager(this, serverKey);
             handler = new PacketHandlerClient(this);
             base.handler = handler;
             channel.StartThreads();

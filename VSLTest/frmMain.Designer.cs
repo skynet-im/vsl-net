@@ -38,13 +38,14 @@
             this.btnPenetrationTest = new System.Windows.Forms.Button();
             this.LbServer = new System.Windows.Forms.Label();
             this.LbServerUpdateTimer = new System.Windows.Forms.Timer(this.components);
+            this.BtnCleanup = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnStartServer
             // 
             this.btnStartServer.Location = new System.Drawing.Point(12, 12);
             this.btnStartServer.Name = "btnStartServer";
-            this.btnStartServer.Size = new System.Drawing.Size(89, 23);
+            this.btnStartServer.Size = new System.Drawing.Size(97, 23);
             this.btnStartServer.TabIndex = 0;
             this.btnStartServer.Text = "Server starten";
             this.btnStartServer.UseVisualStyleBackColor = true;
@@ -93,7 +94,7 @@
             // 
             this.btnServerSendPacket.Location = new System.Drawing.Point(13, 41);
             this.btnServerSendPacket.Name = "btnServerSendPacket";
-            this.btnServerSendPacket.Size = new System.Drawing.Size(88, 23);
+            this.btnServerSendPacket.Size = new System.Drawing.Size(96, 23);
             this.btnServerSendPacket.TabIndex = 5;
             this.btnServerSendPacket.Text = "Senden";
             this.btnServerSendPacket.UseVisualStyleBackColor = true;
@@ -123,11 +124,22 @@
             this.LbServerUpdateTimer.Enabled = true;
             this.LbServerUpdateTimer.Tick += new System.EventHandler(this.LbServerUpdateTimer_Tick);
             // 
+            // BtnCleanup
+            // 
+            this.BtnCleanup.Location = new System.Drawing.Point(12, 197);
+            this.BtnCleanup.Name = "BtnCleanup";
+            this.BtnCleanup.Size = new System.Drawing.Size(97, 23);
+            this.BtnCleanup.TabIndex = 8;
+            this.BtnCleanup.Text = "Liste aufräumen";
+            this.BtnCleanup.UseVisualStyleBackColor = true;
+            this.BtnCleanup.Click += new System.EventHandler(this.BtnCleanup_Click);
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.BtnCleanup);
             this.Controls.Add(this.LbServer);
             this.Controls.Add(this.btnPenetrationTest);
             this.Controls.Add(this.btnServerSendPacket);
@@ -155,6 +167,7 @@
         private System.Windows.Forms.Button btnPenetrationTest;
         private System.Windows.Forms.Label LbServer;
         private System.Windows.Forms.Timer LbServerUpdateTimer;
+        private System.Windows.Forms.Button BtnCleanup;
     }
 }
 

@@ -61,5 +61,34 @@ namespace VSL.Crypt
             }
             return hash;
         }
+        #region Scrypt
+        /// <summary>
+        /// This password hashing system tries to thwart off-line password
+        /// cracking using a computationally-intensive hashing algorithm.
+        /// </summary>
+        /// <param name="password"></param>
+        /// <param name="salt"></param>
+        /// <returns>Binary 256bit hash.</returns>
+        public static byte[] Scrypt(byte[] password, byte[] salt)
+        {
+            return Scrypt(password, salt, 16384, 8, 0);
+        }
+        /// <summary>
+        /// This password hashing system tries to thwart off-line password
+        /// cracking using a computationally-intensive hashing algorithm,
+        /// the work factor of the algorithm is parameterised, so it can be increased
+        /// as computers get faster.
+        /// </summary>
+        /// <param name="password"></param>
+        /// <param name="salt"></param>
+        /// <param name="n"></param>
+        /// <param name="r"></param>
+        /// <param name="p"></param>
+        /// <returns>Binary 256bit hash.</returns>
+        public static byte[] Scrypt(byte[] password, byte[] salt, int n, int r, int p)
+        {
+            return ScryptCsp.ComputeHash(password, salt, n, r, p);
+        }
+        #endregion
     }
 }

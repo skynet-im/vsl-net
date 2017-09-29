@@ -27,6 +27,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\VSL.xml</DocumentationFile>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -37,6 +38,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\VSL.xml</DocumentationFile>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <PlatformTarget>x64</PlatformTarget>
@@ -65,8 +67,6 @@
     <Compile Include="FileTransfer\FileTransferClient.cs" />
     <Compile Include="Net\CryptographicAlgorithm.cs" />
     <Compile Include="Net\NetworkManager.cs" />
-    <Compile Include="Net\NetworkManagerServer.cs" />
-    <Compile Include="Net\NetworkManagerClient.cs" />
     <Compile Include="Net\PacketHandlerClient.cs" />
     <Compile Include="Net\NetworkChannel.cs" />
     <Compile Include="Net\PacketHandler.cs" />
@@ -93,6 +93,7 @@
     <Compile Include="Util\Crypt\ECDH.cs" />
     <Compile Include="Util\Crypt\Hash.cs" />
     <Compile Include="Util\Crypt\RSA.cs" />
+    <Compile Include="Util\Crypt\ScryptCsp.cs" />
     <Compile Include="Util\Crypt\Util.cs" />
     <Compile Include="Util\ExceptionHandler.cs" />
     <Compile Include="FileTransfer\Identifier.cs" />

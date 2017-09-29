@@ -13,7 +13,7 @@ namespace VSL
     /// <summary>
     /// Responsible for the network communication
     /// </summary>
-    internal class NetworkChannel : IDisposable
+    internal sealed class NetworkChannel : IDisposable
     {
         // <fields
         private VSLSocket parent;
@@ -129,44 +129,51 @@ namespace VSL
         /// <returns></returns>
         private void ListenerThread()
         {
-            lock (disposeLock)
-                listenerReady = false;
             try
             {
-                while (!ct.IsCancellationRequested)
-                {
-                    byte[] buf = new byte[_receiveBufferSize];
-                    int len = socket.Receive(buf, _receiveBufferSize, SocketFlags.None);
-                    if (len > 0)
-                    {
-                        cache.Enqeue(Crypt.Util.TakeBytes(buf, len));
-                        ReceivedBytes += len;
-                        buf = null;
-                    }
-                    else
-                    {
-                        if (ct.WaitHandle.WaitOne(parent.SleepTime))
-                            return;
-                    }
-                }
-            }
-            catch (SocketException ex)
-            {
-                if (ex.SocketErrorCode != SocketError.Interrupted)
-                    parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (ObjectDisposedException ex)
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            finally
-            {
                 lock (disposeLock)
+                    listenerReady = false;
+                try
                 {
-                    listenerReady = true;
-                    if (disposePending && ReadyToDispose)
-                        Dispose();
+                    while (!ct.IsCancellationRequested)
+                    {
+                        byte[] buf = new byte[_receiveBufferSize];
+                        int len = socket.Receive(buf, _receiveBufferSize, SocketFlags.None);
+                        if (len > 0)
+                        {
+                            cache.Enqeue(Crypt.Util.TakeBytes(buf, len));
+                            ReceivedBytes += len;
+                            buf = null;
+                        }
+                        else
+                        {
+                            if (ct.WaitHandle.WaitOne(parent.SleepTime))
+                                return;
+                        }
+                    }
                 }
+                catch (SocketException ex)
+                {
+                    if (ex.SocketErrorCode != SocketError.Interrupted)
+                        parent.ExceptionHandler.CloseConnection(ex);
+                }
+                catch (ObjectDisposedException ex)
+                {
+                    parent.ExceptionHandler.CloseConnection(ex);
+                }
+                finally
+                {
+                    lock (disposeLock)
+                    {
+                        listenerReady = true;
+                        if (disposePending && ReadyToDispose)
+                            Dispose();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseUncaught(ex);
             }
         }
 
@@ -176,26 +183,33 @@ namespace VSL
         /// <returns></returns>
         private void WorkerThread()
         {
-            lock (disposeLock)
-                workerReady = false;
-            while (!ct.IsCancellationRequested)
+            try
             {
-                if (cache.Length > 0)
+                lock (disposeLock)
+                    workerReady = false;
+                while (!ct.IsCancellationRequested)
                 {
-                    if (!parent.manager.OnDataReceive())
-                        break;
+                    if (cache.Length > 0)
+                    {
+                        if (!parent.manager.OnDataReceive())
+                            break;
+                    }
+                    else
+                    {
+                        if (ct.WaitHandle.WaitOne(parent.SleepTime))
+                            break;
+                    }
                 }
-                else
+                lock (disposeLock)
                 {
-                    if (ct.WaitHandle.WaitOne(parent.SleepTime))
-                        break;
+                    workerReady = true;
+                    if (disposePending && ReadyToDispose)
+                        Dispose();
                 }
             }
-            lock (disposeLock)
+            catch (Exception ex)
             {
-                workerReady = true;
-                if (disposePending && ReadyToDispose)
-                    Dispose();
+                parent.ExceptionHandler.CloseUncaught(ex);
             }
         }
 
@@ -290,7 +304,7 @@ namespace VSL
         private bool ReadyToDispose => listenerReady && workerReady;
         private bool disposePending = false;
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!disposedValue)
             {

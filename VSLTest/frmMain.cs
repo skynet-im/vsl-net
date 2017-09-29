@@ -195,6 +195,16 @@ namespace VSLTest
                 });
             }
         }
+
+        private void BtnCleanup_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+            stopwatch.Start();
+            Program.Clients.Cleanup();
+            stopwatch.Stop();
+            MessageBox.Show(string.Format("Cleanup successful after {0} ms.", stopwatch.ElapsedMilliseconds));
+        }
+
         private void vslClient_FTProgress(object sender, FileTransferProgressEventArgs e)
         {
             pbFileTransfer.Value = Convert.ToInt32(e.Percentage * 100);

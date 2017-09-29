@@ -11,18 +11,20 @@ namespace VSL
     /// <summary>
     /// Responsible for cryptography management
     /// </summary>
-    internal abstract class NetworkManager : IDisposable
+    internal sealed class NetworkManager : IDisposable
     {
         // <fields
         internal VSLSocket parent;
         internal bool Ready4Aes = false;
+        private string rsaKey;
         private AesCsp enc;
         private AesCsp dec;
         //  fields>
         // <constructor
-        internal void InitializeComponent()
+        internal NetworkManager(VSLSocket parent, string rsaKey)
         {
-
+            this.parent = parent;
+            this.rsaKey = rsaKey;
         }
         //  constructor>
         // <functions
@@ -95,19 +97,7 @@ namespace VSL
                     return false;
                 }
             }
-            catch (ArgumentOutOfRangeException ex) // IPacket.ReadPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (NotImplementedException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (NotSupportedException ex) // PacketHandler.HandleInternalPacket()
+            catch (ArgumentOutOfRangeException ex) // PacketHandler.HandleInternalPacket() => IPacket.ReadPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -127,7 +117,7 @@ namespace VSL
             {
                 int index = 1;
                 byte[] ciphertext = parent.channel.Read(256);
-                byte[] plaintext = RSA.DecryptBlock(ciphertext, Keypair);
+                byte[] plaintext = RSA.DecryptBlock(ciphertext, rsaKey);
                 byte id = plaintext[0]; // index = 1
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 if (success)
@@ -156,23 +146,11 @@ namespace VSL
                     return false;
                 }
             }
-            catch (ArgumentOutOfRangeException ex) // IPacket.ReadPacket()
+            catch (ArgumentOutOfRangeException ex) // PacketHandler.HandleInternalPacket() => IPacket.ReadPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (System.Security.Cryptography.CryptographicException ex) // RSA.DecryptBlock()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (NotImplementedException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (NotSupportedException ex) // PacketHandler.HandleInternalPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -234,23 +212,11 @@ namespace VSL
                 }
                 return true;
             }
-            catch (ArgumentOutOfRangeException ex) // IPacket.ReadPacket()
+            catch (ArgumentOutOfRangeException ex) // PacketHandler.HandleInternalPacket() => IPacket.ReadPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (System.Security.Cryptography.CryptographicException ex) // AES.Decrypt()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (InvalidOperationException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (NotImplementedException ex) // PacketHandler.HandleInternalPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            catch (NotSupportedException ex) // PacketHandler.HandleInternalPacket()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -352,7 +318,7 @@ namespace VSL
         {
             try
             {
-                byte[] ciphertext = RSA.EncryptBlock(Util.ConnectBytesPA(head, content), PublicKey);
+                byte[] ciphertext = RSA.EncryptBlock(Util.ConnectBytesPA(head, content), rsaKey);
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.RSA_2048 }, ciphertext);
                 bool success = buf.Length == parent.channel.Send(buf);
                 ciphertext = null;
@@ -374,7 +340,7 @@ namespace VSL
         {
             try
             {
-                byte[] ciphertext = await Task.Run(() => RSA.EncryptBlock(Util.ConnectBytesPA(head, content), PublicKey));
+                byte[] ciphertext = await Task.Run(() => RSA.EncryptBlock(Util.ConnectBytesPA(head, content), rsaKey));
                 byte[] buf = Util.ConnectBytesPA(new byte[1] { (byte)CryptographicAlgorithm.RSA_2048 }, ciphertext);
                 bool success = buf.Length == await Task.Run(() => parent.channel.Send(buf));
                 ciphertext = null;
@@ -481,8 +447,6 @@ namespace VSL
             }
         }
         #endregion send
-        internal abstract string PublicKey { get; }
-        internal abstract string Keypair { get; }
         private byte[] _aesKey;
         internal byte[] AesKey
         {
@@ -535,7 +499,7 @@ namespace VSL
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!disposedValue)
             {

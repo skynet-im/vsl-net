@@ -59,11 +59,7 @@ namespace VSL
         /// <param name="id">Packet ID</param>
         /// <param name="content">Packet data</param>
         /// <exception cref="ArgumentOutOfRangeException"/>
-        /// <exception cref="InvalidOperationException"/>
-        /// <exception cref="NotImplementedException"></exception>
-        /// <exception cref="NotSupportedException"></exception>
         /// <returns></returns>
-        // TODO: Implement custom information instead of exceptions
         internal void HandleInternalPacket(byte id, byte[] content)
         {
             foreach (IPacket p in RegisteredPackets)
@@ -106,7 +102,6 @@ namespace VSL
             parent.FileTransfer.OnHeaderReceived(p);
             return true;
         }
-        // TODO: Remove Exception
         internal virtual bool HandleP09FileDataBlock(P09FileDataBlock p)
         {
             if (parent.FileTransfer.ReceivingFile)
@@ -115,7 +110,10 @@ namespace VSL
                 return true;
             }
             else
-                throw new InvalidOperationException("No active file transfer");
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidPacket", "No running file transfer that fits to the received P09FileDataBlock");
+                return false;
+            }
         }
         //  functions>
     }
