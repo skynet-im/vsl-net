@@ -4,6 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
+#if WINDOWS_UWP
+using Windows.Security.Cryptography;
+using Windows.Security.Cryptography.Core;
+using Windows.Storage.Streams;
+#endif
+//TODO: Check classic .NET version
 
 namespace VSL.Crypt
 {
@@ -12,7 +18,6 @@ namespace VSL.Crypt
     /// </summary>
     public static class AES
     {
-        // © 2017 Daniel Lerch
         /// <summary>
         /// Executes an AES encryption
         /// </summary>
@@ -26,6 +31,14 @@ namespace VSL.Crypt
             if (iv == null) iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
             if (iv.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
             byte[] ciphertext = new byte[0];
+#if WINDOWS_UWP
+            IBuffer bkey = CryptographicBuffer.CreateFromByteArray(key);
+            CryptographicKey ckey = SymmetricKeyAlgorithmProvider.OpenAlgorithm("AES_CBC_PKCS7").CreateSymmetricKey(bkey);
+            IBuffer data = CryptographicBuffer.CreateFromByteArray(b);
+            IBuffer biv = CryptographicBuffer.CreateFromByteArray(iv);
+            IBuffer bciphertext = CryptographicEngine.Encrypt(ckey, data, biv);
+            CryptographicBuffer.CopyToByteArray(bciphertext, out ciphertext);
+#else
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
                 aes.Key = key;
@@ -37,8 +50,10 @@ namespace VSL.Crypt
                 csEncrypt.Close();
                 ciphertext = msCiphertext.ToArray();
             }
+#endif
             return ciphertext;
         }
+
         /// <summary>
         /// Executes an AES encryption asychronously
         /// </summary>
@@ -52,6 +67,17 @@ namespace VSL.Crypt
             if (iv == null) iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
             if (iv.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
             byte[] ciphertext = new byte[0];
+#if WINDOWS_UWP
+            await Task.Run(() =>
+            {
+                IBuffer bkey = CryptographicBuffer.CreateFromByteArray(key);
+                CryptographicKey ckey = SymmetricKeyAlgorithmProvider.OpenAlgorithm("AES_CBC_PKCS7").CreateSymmetricKey(bkey);
+                IBuffer data = CryptographicBuffer.CreateFromByteArray(b);
+                IBuffer biv = CryptographicBuffer.CreateFromByteArray(iv);
+                IBuffer bciphertext = CryptographicEngine.Encrypt(ckey, data, biv);
+                CryptographicBuffer.CopyToByteArray(bciphertext, out ciphertext);
+            });
+#else
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
                 aes.Key = key;
@@ -67,22 +93,36 @@ namespace VSL.Crypt
                     ciphertext = msCiphertext.ToArray();
                 }
             }
+#endif
             return ciphertext;
         }
 
         /// <summary>
-        /// Executes an AES decryption
+        /// Executes an AES decryption.
         /// </summary>
         /// <param name="b">Ciphertext</param>
         /// <param name="key">AES key (256 bit)</param>
         /// <param name="iv">Optional initialization vector (128 bit)</param>
+        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentOutOfRangeException"/>
+        /// <exception cref="CryptographicException"/>
         /// <returns></returns>
         public static byte[] Decrypt(byte[] b, byte[] key, byte[] iv = null)
         {
-            if (key.Length != 32) throw new ArgumentOutOfRangeException("The key must have a length of 256 bits");
+            if (b == null) throw new ArgumentNullException("b");
+            if (key == null) throw new ArgumentNullException("key");
+            if (key.Length != 32) throw new ArgumentOutOfRangeException("key", "The key must have a length of 256 bits");
             if (iv == null) iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
             if (iv.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bits");
             byte[] plaintext = new byte[0];
+#if WINDOWS_UWP
+            IBuffer bkey = CryptographicBuffer.CreateFromByteArray(key);
+            CryptographicKey ckey = SymmetricKeyAlgorithmProvider.OpenAlgorithm("AES_CBC_PKCS7").CreateSymmetricKey(bkey);
+            IBuffer data = CryptographicBuffer.CreateFromByteArray(b);
+            IBuffer biv = CryptographicBuffer.CreateFromByteArray(iv);
+            IBuffer bplaintext = CryptographicEngine.Decrypt(ckey, data, biv);
+            CryptographicBuffer.CopyToByteArray(bplaintext, out plaintext);
+#else
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
                 aes.Key = key;
@@ -94,38 +134,51 @@ namespace VSL.Crypt
                 csDecrypt.Close();
                 plaintext = msPlaintext.ToArray();
             }
+#endif
             return plaintext;
         }
         /// <summary>
-        /// Executes an AES decryption asynchronously
+        /// Executes an AES decryption asynchronously.
         /// </summary>
         /// <param name="b">Ciphertext</param>
         /// <param name="key">AES key (256 bit)</param>
         /// <param name="iv">Optional initialization vector (128 bit)</param>
+        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentOutOfRangeException"/>
+        /// <exception cref="CryptographicException"/>
         /// <returns></returns>
-        public async static Task<byte[]> DecryptAsync(byte[] b, byte[] key, byte[] iv = null)
+        public static async Task<byte[]> DecryptAsync(byte[] b, byte[] key, byte[] iv = null)
         {
-            if (key.Length != 32) throw new ArgumentOutOfRangeException("The key must have a length of 256 bits");
+            if (b == null) throw new ArgumentNullException("b");
+            if (key == null) throw new ArgumentNullException("key");
+            if (key.Length != 32) throw new ArgumentOutOfRangeException("key", "The key must have a length of 256 bits");
             if (iv == null) iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
             if (iv.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bits");
             byte[] plaintext = new byte[0];
+#if WINDOWS_UWP
+            IBuffer bkey = CryptographicBuffer.CreateFromByteArray(key);
+            CryptographicKey ckey = SymmetricKeyAlgorithmProvider.OpenAlgorithm("AES_CBC_PKCS7").CreateSymmetricKey(bkey);
+            IBuffer data = CryptographicBuffer.CreateFromByteArray(b);
+            IBuffer biv = CryptographicBuffer.CreateFromByteArray(iv);
+            IBuffer bplaintext = await CryptographicEngine.DecryptAsync(ckey, data, biv);
+            CryptographicBuffer.CopyToByteArray(bplaintext, out plaintext);
+#else
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
                 aes.Key = key;
                 aes.IV = iv;
                 ICryptoTransform decryptor = aes.CreateDecryptor();
-                using (System.IO.MemoryStream msPlaintext = new System.IO.MemoryStream())
-                {
-                    using (CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write))
-                    {
-                        await csDecrypt.WriteAsync(b, 0, b.Length);
-                        csDecrypt.Close();
-                    }
-                    plaintext = msPlaintext.ToArray();
-                }
+                System.IO.MemoryStream msPlaintext = new System.IO.MemoryStream();
+                CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write);
+                csDecrypt.Write(b, 0, b.Length);
+                csDecrypt.Close();
+                plaintext = msPlaintext.ToArray();
             }
+#endif
             return plaintext;
         }
+#if !WINDOWS_UWP
+        // TODO: Mark as deprecated
         /// <summary>
         /// Generates a new 256 bit AES key
         /// </summary>
@@ -143,7 +196,7 @@ namespace VSL.Crypt
         }
 
         /// <summary>
-        /// Generates a new initialization vector
+        /// Generates a new initialization vector.
         /// </summary>
         /// <returns></returns>
         public static byte[] GenerateIV()
@@ -156,5 +209,6 @@ namespace VSL.Crypt
             }
             return iv;
         }
+#endif
     }
 }

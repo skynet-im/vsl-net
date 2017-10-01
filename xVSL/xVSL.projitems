@@ -18,13 +18,16 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Events.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Events.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferSocket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Identifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\StreamMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\CryptographicAlgorithm.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Net\NetworkChannel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetworkManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandlerClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandlerServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\ConnectionType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\IPacket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\P00Handshake.cs" />
@@ -42,15 +45,20 @@
     <Compile Include="$(MSBuildThisFileDirectory)Packet\RequestType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AES.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AesCsp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ECDH.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Hash.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\RSA.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ScryptCsp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Util.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\ExceptionHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Logger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\PacketBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Queue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\ThreadSafeList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\VersionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VSLClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VSLServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)VSLSocket.cs" />
   </ItemGroup>
 </Project>
