@@ -105,12 +105,16 @@ namespace VSL
 
             // <key exchange
             Task s = manager.SendPacketAsync(CryptographicAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey));
-            Task<byte[]> key = Task.Run(() => Crypt.AES.GenerateKey());
-            Task<byte[]> civ = Task.Run(() => Crypt.AES.GenerateIV());
-            Task<byte[]> siv = Task.Run(() => Crypt.AES.GenerateIV());
-            manager.AesKey = await key;
-            manager.SendIV = await civ;
-            manager.ReceiveIV = await siv;
+            Random random = new Random();
+            byte[] key = new byte[32];
+            random.NextBytes(key);
+            manager.AesKey = key;
+            byte[] siv = new byte[16];
+            random.NextBytes(siv);
+            manager.SendIV = siv;
+            byte[] riv = new byte[16];
+            random.NextBytes(riv);
+            manager.ReceiveIV = riv;
             manager.Ready4Aes = true;
             await s;
             await manager.SendPacketAsync(CryptographicAlgorithm.RSA_2048, new P01KeyExchange(manager.AesKey, manager.SendIV,
