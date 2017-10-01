@@ -9,7 +9,6 @@ using Windows.Security.Cryptography;
 using Windows.Security.Cryptography.Core;
 using Windows.Storage.Streams;
 #endif
-//TODO: Check classic .NET version
 
 namespace VSL.Crypt
 {
@@ -83,15 +82,11 @@ namespace VSL.Crypt
                 aes.Key = key;
                 aes.IV = iv;
                 ICryptoTransform encryptor = aes.CreateEncryptor();
-                using (System.IO.MemoryStream msCiphertext = new System.IO.MemoryStream())
-                {
-                    using (CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write))
-                    {
-                        await csEncrypt.WriteAsync(b, 0, b.Length);
-                        csEncrypt.Close();
-                    }
-                    ciphertext = msCiphertext.ToArray();
-                }
+                System.IO.MemoryStream msCiphertext = new System.IO.MemoryStream();
+                CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write);
+                await csEncrypt.WriteAsync(b, 0, b.Length);
+                csEncrypt.Close();
+                ciphertext = msCiphertext.ToArray();
             }
 #endif
             return ciphertext;
@@ -170,7 +165,7 @@ namespace VSL.Crypt
                 ICryptoTransform decryptor = aes.CreateDecryptor();
                 System.IO.MemoryStream msPlaintext = new System.IO.MemoryStream();
                 CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write);
-                csDecrypt.Write(b, 0, b.Length);
+                await csDecrypt.WriteAsync(b, 0, b.Length);
                 csDecrypt.Close();
                 plaintext = msPlaintext.ToArray();
             }
@@ -178,11 +173,11 @@ namespace VSL.Crypt
             return plaintext;
         }
 #if !WINDOWS_UWP
-        // TODO: Mark as deprecated
         /// <summary>
         /// Generates a new 256 bit AES key
         /// </summary>
-        /// <returns></returns>
+        [Obsolete("AES.GenerateKey() is deprecated, please use System.Random.NextBytes() with a 32byte buffer instead.", false)]
+        // TODO: Add error in v1.1.19.0
         public static byte[] GenerateKey()
         {
             byte[] key;
@@ -198,7 +193,8 @@ namespace VSL.Crypt
         /// <summary>
         /// Generates a new initialization vector.
         /// </summary>
-        /// <returns></returns>
+        [Obsolete("AES.GenerateIV() is deprecated, please use System.Random.NextBytes() with a 16byte buffer instead.", false)]
+        // TODO: Add error in v1.1.19.0
         public static byte[] GenerateIV()
         {
             byte[] iv;

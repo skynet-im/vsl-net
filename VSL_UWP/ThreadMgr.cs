@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Threading;
+using Windows.UI.Core;
 
 namespace VSL
 {
@@ -23,8 +23,8 @@ namespace VSL
         /// Gets whether the thread manager is started and ready for work.
         /// </summary>
         public bool Started { get; private set; }
-        private Thread thread;
-        private Dispatcher dispatcher;
+        private Task thread;
+        private CoreDispatcher dispatcher;
         private ConcurrentQueue<WorkItem> workQueue;
         private CancellationTokenSource cts;
         private CancellationToken ct;
@@ -42,7 +42,8 @@ namespace VSL
         }
         private void Init_Dispatcher()
         {
-            dispatcher = Dispatcher.CurrentDispatcher;
+            // TODO: Assign dispatcher
+            //dispatcher = new CoreDispatcher();
             Started = true;
         }
         private void Init_ManagedThread()
@@ -51,7 +52,7 @@ namespace VSL
             workQueue = new ConcurrentQueue<WorkItem>();
             cts = new CancellationTokenSource();
             ct = cts.Token;
-            thread = new Thread(ThreadWork);
+            thread = Task.Run(() => ThreadWork());
             thread.Start();
         }
         /// <summary>
@@ -73,8 +74,8 @@ namespace VSL
         {
             if (!Started)
                 throw new InvalidOperationException("You have to start the thread manager before using it.");
-            if (Mode == InvokeMode.Dispatcher)
-                dispatcher.Invoke(work);
+            //if (Mode == InvokeMode.Dispatcher)
+                //dispatcher.Invoke(work);
             else
             {
                 ManualResetEventSlim handle = new ManualResetEventSlim();
@@ -105,7 +106,7 @@ namespace VSL
                 throw new InvalidOperationException("You have to start the thread manager before using it.");
             if (Mode == InvokeMode.ManagedThread)
                 throw new InvalidOperationException("You can not use InvokeAsync(Action work) with InvokeMode.ManagedThread");
-            await dispatcher.InvokeAsync(() => work.Invoke(itemCt));
+            await dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => work.Invoke(itemCt));
         }
         /// <summary>
         /// Queues an <see cref="Action"/> on the associated thread. The <see cref="CancellationToken"/> will be canceled when VSL is shutting down.
@@ -152,17 +153,8 @@ namespace VSL
         public void SetInvokeThread()
         {
             if (Mode == InvokeMode.ManagedThread) throw new InvalidOperationException("You can not use SetInvokeThread() with InvokeMode.ManagedThread");
-            dispatcher = Dispatcher.CurrentDispatcher;
-            Started = true;
-        }
-        /// <summary>
-        /// Sets the specified thread as thread to invoke events on. This method is only available with <see cref="InvokeMode.Dispatcher"/>.
-        /// </summary>
-        /// <param name="invokeThread">Thread to invoke events on.</param>
-        public void SetInvokeThread(Thread invokeThread)
-        {
-            if (Mode == InvokeMode.ManagedThread) throw new InvalidOperationException("You can not use SetInvokeThread(Thread invokeThread) with InvokeMode.ManagedThread");
-            dispatcher = Dispatcher.FromThread(invokeThread);
+            // TODO: Assign Dispatcher
+            //dispatcher = Dispatcher.CurrentDispatcher;
             Started = true;
         }
         private void ThreadWork()

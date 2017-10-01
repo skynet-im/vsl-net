@@ -111,7 +111,9 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="NetworkChannel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ThreadMgr.cs" />
     <EmbeddedResource Include="Properties\VSL_UWP.rd.xml" />
   </ItemGroup>
   <ItemGroup>

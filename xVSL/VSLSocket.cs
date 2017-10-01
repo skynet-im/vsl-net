@@ -128,11 +128,15 @@ namespace VSL
             EventThread.ShuttingDown();
             ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
             if (!EventThread.QueueCriticalWorkItem((ct) => ConnectionClosed?.Invoke(this, args)))
-                ThreadPool.QueueUserWorkItem((state) => ConnectionClosed?.Invoke(this, args));
+#if WINDOWS_UWP
+                Task.Run(() => ConnectionClosed?.Invoke(this, args));
+#else
+                ThreadPool.QueueUserWorkItem((o) => ConnectionClosed?.Invoke(this, args));
+#endif
         }
-        #endregion
+#endregion
         // <functions
-        #region Send
+#region Send
         /// <summary>
         /// Sends a packet to the remotehost.
         /// </summary>
@@ -200,8 +204,8 @@ namespace VSL
             }
             return await manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
-        #endregion
-        #region Close
+#endregion
+#region Close
         /// <summary>
         /// Closes the TCP Connection, raises the related event and releases all associated resources.
         /// </summary>
@@ -237,8 +241,8 @@ namespace VSL
                     EventThread.Exit();
             }
         }
-        #endregion
-        #region IDisposable Support
+#endregion
+#region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
         /// <summary>
@@ -283,7 +287,7 @@ namespace VSL
             // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-        #endregion
+#endregion
         //  functions>
     }
 }
