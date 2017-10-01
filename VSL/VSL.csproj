@@ -60,54 +60,14 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Events.cs" />
-    <Compile Include="FileTransfer\Events.cs" />
-    <Compile Include="FileTransfer\FileTransferServer.cs" />
-    <Compile Include="FileTransfer\FileTransferSocket.cs" />
-    <Compile Include="FileTransfer\FileTransferClient.cs" />
-    <Compile Include="Net\CryptographicAlgorithm.cs" />
-    <Compile Include="Net\NetworkManager.cs" />
-    <Compile Include="Net\PacketHandlerClient.cs" />
-    <Compile Include="Net\NetworkChannel.cs" />
-    <Compile Include="Net\PacketHandler.cs" />
-    <Compile Include="Net\PacketHandlerServer.cs" />
-    <Compile Include="Packet\ConnectionType.cs" />
-    <Compile Include="Packet\P02Certificate.cs" />
-    <Compile Include="Packet\P01KeyExchange.cs" />
-    <Compile Include="Packet\P03FinishHandshake.cs" />
-    <Compile Include="Packet\P05KeepAlive.cs" />
-    <Compile Include="Packet\P04ChangeIV.cs" />
-    <Compile Include="Packet\P06Accepted.cs" />
-    <Compile Include="Packet\P07OpenFileTransfer.cs" />
-    <Compile Include="Packet\P08FileHeader.cs" />
-    <Compile Include="Packet\P09FileDataBlock.cs" />
-    <Compile Include="Packet\PacketLength.cs" />
-    <Compile Include="Packet\ProblemCategory.cs" />
-    <Compile Include="Packet\RequestType.cs" />
-    <Compile Include="Packet\IPacket.cs" />
-    <Compile Include="Packet\P00Handshake.cs" />
-    <Compile Include="FileTransfer\StreamMode.cs" />
-    <Compile Include="Util\Constants.cs" />
-    <Compile Include="Util\Crypt\AES.cs" />
-    <Compile Include="Util\Crypt\AesCsp.cs" />
-    <Compile Include="Util\Crypt\ECDH.cs" />
-    <Compile Include="Util\Crypt\Hash.cs" />
-    <Compile Include="Util\Crypt\RSA.cs" />
-    <Compile Include="Util\Crypt\ScryptCsp.cs" />
-    <Compile Include="Util\Crypt\Util.cs" />
-    <Compile Include="Util\ExceptionHandler.cs" />
-    <Compile Include="FileTransfer\Identifier.cs" />
-    <Compile Include="Util\Logger.cs" />
-    <Compile Include="Util\PacketBuffer.cs" />
-    <Compile Include="Util\Queue.cs" />
-    <Compile Include="Util\ThreadMgr.cs" />
-    <Compile Include="Util\ThreadSafeList.cs" />
-    <Compile Include="Util\VersionManager.cs" />
-    <Compile Include="VSLClient.cs" />
-    <Compile Include="VSLServer.cs" />
-    <Compile Include="VSLSocket.cs" />
+    <Compile Include="NetworkChannel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ThreadMgr.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Net\" />
+  </ItemGroup>
+  <Import Project="..\xVSL\xVSL.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

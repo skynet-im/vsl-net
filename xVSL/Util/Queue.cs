@@ -49,7 +49,7 @@ namespace VSL
         public void Enqeue(byte[] value)
         {
             queue.Enqueue(value);
-            refreshProperties();
+            RefreshProperties();
         }
         /// <summary>
         /// Dequeue a byte array from the queue
@@ -78,8 +78,7 @@ namespace VSL
             }
             while (done < count)
             {
-                byte[] buf;
-                if (queue.TryDequeue(out buf))
+                if (queue.TryDequeue(out byte[] buf))
                 {
                     int missing = count - done;
                     if (missing < buf.Length)
@@ -98,18 +97,18 @@ namespace VSL
                 else
                 {
                     target = buffer;
-                    refreshProperties();
+                    RefreshProperties();
                     return false;
                 }
             }
             target = buffer;
-            refreshProperties();
+            RefreshProperties();
             return true;
         }
         /// <summary>
         /// Refreshes the count of bytes for the property "Length"
         /// </summary>
-        private void refreshProperties()
+        private void RefreshProperties()
         {
             int i = 0;
             if (cache != null) i = cache.Length;

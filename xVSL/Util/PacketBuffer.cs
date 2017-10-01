@@ -30,6 +30,7 @@ namespace VSL
         /// Initializes a new instance of the PacketBuffer class.
         /// </summary>
         /// <param name="buffer">byte array to initialize</param>
+        /// <exception cref="ArgumentNullException"/>
         public PacketBuffer(byte[] buffer)
         {
             baseStream = new MemoryStream(buffer);
@@ -81,6 +82,7 @@ namespace VSL
         /// Reads a byte array from the buffer
         /// </summary>
         /// <param name="count">count of bytes to read</param>
+        /// <exception cref="ArgumentOutOfRangeException"/>
         /// <returns></returns>
         private byte[] ReadByteRaw(int count)
         {
@@ -236,18 +238,18 @@ namespace VSL
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects).
+                    // -TODO: dispose managed state (managed objects).
                     baseStream.Dispose();
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // TODO: set large fields to null.
+                // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // -TODO: set large fields to null.
 
                 disposedValue = true;
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // -TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
         // ~PacketBuffer() {
         //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
         //   Dispose(false);
@@ -262,7 +264,7 @@ namespace VSL
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
-            // TODO: uncomment the following line if the finalizer is overridden above.
+            // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
         #endregion
