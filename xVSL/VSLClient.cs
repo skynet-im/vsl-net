@@ -5,7 +5,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
+#if WINDOWS_UWP
+using Windows.Networking.Sockets;
+#else
 using System.Net.Sockets;
+#endif
 using VSL.FileTransfer;
 using VSL.Packet;
 
@@ -92,11 +96,18 @@ namespace VSL
             if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException();
             //  check args>
 
+#if WINDOWS_UWP
+            StreamSocket socket = new StreamSocket();
+            await socket.ConnectAsync(new Windows.Networking.EndpointPair(new Windows.Networking.HostName(""), "",
+                new Windows.Networking.HostName(address), port.ToString()));
+            channel = new NetworkChannel(this, socket);
+#else
             TcpClient tcp = new TcpClient();
             await tcp.ConnectAsync(address, port);
+            channel = new NetworkChannel(this, tcp.Client);
+#endif
 
             // <initialize component
-            channel = new NetworkChannel(this, tcp.Client);
             manager = new NetworkManager(this, serverKey);
             handler = new PacketHandlerClient(this);
             base.handler = handler;

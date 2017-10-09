@@ -62,12 +62,20 @@ namespace VSL
         {
             get
             {
+#if WINDOWS_UWP
+                return Convert.ToInt32(channel.ReceiveBufferSize);
+#else
                 return channel.ReceiveBufferSize;
+#endif
             }
             set
             {
                 if (!disposedValue)
+#if WINDOWS_UWP
+                    channel.ReceiveBufferSize = Convert.ToUInt32(value);
+#else
                     channel.ReceiveBufferSize = value;
+#endif
             }
         }
         /// <summary>
@@ -134,9 +142,10 @@ namespace VSL
                 ThreadPool.QueueUserWorkItem((o) => ConnectionClosed?.Invoke(this, args));
 #endif
         }
-#endregion
+        #endregion
         // <functions
-#region Send
+        #region Send
+#if !WINDOWS_UWP
         /// <summary>
         /// Sends a packet to the remotehost.
         /// </summary>
@@ -170,6 +179,7 @@ namespace VSL
             }
             return manager.SendPacket(Convert.ToByte(255 - id), content);
         }
+#endif
         /// <summary>
         /// Sends a packet to the remotehost asynchronously.
         /// </summary>
@@ -204,14 +214,18 @@ namespace VSL
             }
             return await manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
-#endregion
-#region Close
+        #endregion
+        #region Close
         /// <summary>
         /// Closes the TCP Connection, raises the related event and releases all associated resources.
         /// </summary>
         /// <param name="reason">The reason to print and share in the related event.</param>
         /// <exception cref="ObjectDisposedException"/>
+#if WINDOWS_UWP
+        public async Task CloseConnectionAsync(string reason)
+#else
         public void CloseConnection(string reason)
+#endif
         {
             if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
                 throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
@@ -220,7 +234,11 @@ namespace VSL
                 OnConnectionClosed(reason);
                 if (Logger.InitI)
                     Logger.I("Connection was forcibly closed: " + reason);
+#if WINDOWS_UWP
+                await channel.CloseConnectionAsync();
+#else
                 channel.CloseConnection();
+#endif
                 if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
                     EventThread.Exit();
                 Dispose();
@@ -231,18 +249,26 @@ namespace VSL
         /// Closes the TCP Connection and raises the related event.
         /// </summary>
         /// <param name="exception">The exception text to share in the related event.</param>
+#if WINDOWS_UWP
+        internal async Task CloseInternalAsync(string exception)
+#else
         internal void CloseInternal(string exception)
+#endif
         {
             if (connectionLost == DateTime.MinValue) // To detect redundant calls
             {
                 OnConnectionClosed(exception);
+#if WINDOWS_UWP
+                await channel.CloseConnectionAsync();
+#else
                 channel.CloseConnection();
+#endif
                 if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
                     EventThread.Exit();
             }
         }
-#endregion
-#region IDisposable Support
+        #endregion
+        #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
         /// <summary>
@@ -287,7 +313,7 @@ namespace VSL
             // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-#endregion
+        #endregion
         //  functions>
     }
 }

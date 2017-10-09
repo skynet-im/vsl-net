@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !WINDOWS_UWP && !__IOS__
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,6 +30,7 @@ namespace VSL.Crypt
             }
         }
 
+        // TODO: Add description
         /// <summary>
         /// Derives
         /// </summary>
@@ -54,3 +56,4 @@ namespace VSL.Crypt
         }
     }
 }
+#endif

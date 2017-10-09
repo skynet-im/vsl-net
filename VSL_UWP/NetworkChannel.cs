@@ -144,7 +144,7 @@ namespace VSL
         /// Compounds packets from the received data
         /// </summary>
         /// <returns></returns>
-        private void WorkerThread()
+        private async void WorkerThread()
         {
             try
             {
@@ -154,7 +154,7 @@ namespace VSL
                 {
                     if (cache.Length > 0)
                     {
-                        if (!parent.manager.OnDataReceive())
+                        if (!await parent.manager.OnDataReceiveAsync())
                             break;
                     }
                     else
@@ -176,30 +176,6 @@ namespace VSL
             }
         }
 
-        /// <summary>
-        /// Reads data from the buffer.
-        /// </summary>
-        /// <param name="count">count of bytes to read</param>
-        /// <exception cref="OperationCanceledException"/>
-        /// <exception cref="TimeoutException"/>
-        /// <returns></returns>
-        internal byte[] Read(int count)
-        {
-            const int wait = 10;
-            int cycles = (Constants.ReceiveTimeout + count / 8) / wait;
-            int cycle = 0;
-            while (cache.Length < count)
-            {
-                if (cycle >= cycles)
-                    throw new TimeoutException(string.Format("Waiting for {0} bytes took over {1} ms.", count, cycles * wait));
-                if (ct.WaitHandle.WaitOne(wait))
-                    throw new OperationCanceledException();
-                cycle++;
-            }
-            if (!cache.Dequeue(out byte[] buf, count))
-                throw new Exception("Error at dequeueing bytes");
-            return buf;
-        }
         /// <summary>
         /// Reads data from the buffer asynchronously.
         /// </summary>
@@ -228,7 +204,7 @@ namespace VSL
         /// Sends data to the remote client
         /// </summary>
         /// <param name="buf">data to send</param>
-        internal async Task<int> Send(byte[] buf)
+        internal async Task<int> SendAsync(byte[] buf)
         {
             try
             {
