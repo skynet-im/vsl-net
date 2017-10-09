@@ -135,7 +135,12 @@ namespace VSL.FileTransfer
             transfered += packet.DataBlock.Length;
             if (transfered == length)
             {
+#if WINDOWS_UWP
+                stream.Flush();
+                stream.Dispose();
+#else
                 stream.Close();
+#endif
                 SetHeaderPacket(Path, header);
                 ReceivingFile = false;
                 OnFileTransferFinished();
@@ -184,7 +189,12 @@ namespace VSL.FileTransfer
                 int count = await stream.ReadAsync(buf, 0, size);
                 if (count == 0)
                 {
+#if WINDOWS_UWP
+                    stream.Flush();
+                    stream.Dispose();
+#else
                     stream.Close();
+#endif
                     OnFileTransferFinished();
                     Reset();
                 }
@@ -198,7 +208,7 @@ namespace VSL.FileTransfer
                 }
             }
         }
-        #endregion
+#endregion
         internal async void Cancel()
         {
             if (!ReceivingFile)
@@ -218,7 +228,7 @@ namespace VSL.FileTransfer
             header = null;
         }
 
-        #region IDisposable Support
+#region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
         /// <summary>
@@ -260,7 +270,7 @@ namespace VSL.FileTransfer
             // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-        #endregion
+#endregion
         //  functions>
     }
 }
