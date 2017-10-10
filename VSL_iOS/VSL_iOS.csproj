@@ -45,7 +45,6 @@
     <Folder Include="Resources\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="NetworkChannel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThreadMgr.cs" />
   </ItemGroup>

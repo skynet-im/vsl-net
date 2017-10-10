@@ -23,7 +23,7 @@ namespace VSL
         /// Gets whether the thread manager is started and ready for work.
         /// </summary>
         public bool Started { get; private set; }
-        private Task thread;
+        private Thread thread;
         private CoreDispatcher dispatcher;
         private ConcurrentQueue<WorkItem> workQueue;
         private CancellationTokenSource cts;
@@ -52,7 +52,7 @@ namespace VSL
             workQueue = new ConcurrentQueue<WorkItem>();
             cts = new CancellationTokenSource();
             ct = cts.Token;
-            thread = Task.Run(() => ThreadWork());
+            thread = new Thread(ThreadWork);
             thread.Start();
         }
         /// <summary>
