@@ -2,13 +2,11 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Foundation;
-using Windows.Networking.Sockets;
-using Windows.Storage.Streams;
+using System.Net;
+using System.Net.Sockets;
 
 namespace VSL
 {
@@ -19,9 +17,12 @@ namespace VSL
     {
         // <fields
         private VSLSocket parent;
-        private StreamSocket socket;
+        private Socket socket;
         private Queue cache;
+        private int _receiveBufferSize = Constants.ReceiveBufferSize;
 
+        private Thread listenerThread;
+        private Thread workerThread;
         private bool threadsRunning = false;
         private CancellationTokenSource cts;
         private CancellationToken ct;
@@ -32,7 +33,27 @@ namespace VSL
         //  fields>
 
         // <properties
-        internal uint ReceiveBufferSize { get; set; } = Constants.ReceiveBufferSize;
+        internal int ReceiveBufferSize
+        {
+            get
+            {
+                return _receiveBufferSize;
+            }
+            set
+            {
+                _receiveBufferSize = value;
+                if (socket != null)
+                    try
+                    {
+                        socket.ReceiveBufferSize = value;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (parent.Logger.InitE)
+                            parent.Logger.E(ex.ToString());
+                    }
+            }
+        }
         //  properties>
 
         // <constructor
@@ -49,11 +70,12 @@ namespace VSL
         /// Initializes a new instance of the <see cref="NetworkChannel"/> class
         /// </summary>
         /// <param name="parent">Underlying <see cref="VSLSocket"/></param>
-        /// <param name="socket">Connected <see cref="StreamSocket"/></param>
-        internal NetworkChannel(VSLSocket parent, StreamSocket socket)
+        /// <param name="socket">Connected <see cref="Socket"/></param>
+        internal NetworkChannel(VSLSocket parent, Socket socket)
         {
             this.parent = parent;
             this.socket = socket;
+            ReceiveBufferSize = _receiveBufferSize;
             InitializeComponent();
         }
         /// <summary>
@@ -72,9 +94,10 @@ namespace VSL
         /// Sets a VSL socket for the specified client
         /// </summary>
         /// <param name="socket">Connected <see cref="Socket"/></param>
-        internal void Connect(StreamSocket socket)
+        internal void Connect(Socket socket)
         {
             this.socket = socket;
+            ReceiveBufferSize = _receiveBufferSize;
         }
 
         /// <summary>
@@ -84,8 +107,10 @@ namespace VSL
         {
             if (threadsRunning) throw new InvalidOperationException("Tasks are already running.");
             threadsRunning = true;
-            ListenerThread();
-            WorkerThread();
+            listenerThread = new Thread(ListenerThread);
+            listenerThread.Start();
+            workerThread = new Thread(WorkerThread);
+            workerThread.Start();
         }
 
         /// <summary>
@@ -102,41 +127,53 @@ namespace VSL
         /// Receives bytes from the socket to the cache
         /// </summary>
         /// <returns></returns>
-        private async void ListenerThread()
+        private void ListenerThread()
         {
-            lock (disposeLock)
-                listenerReady = false;
             try
             {
-                while (!ct.IsCancellationRequested)
-                {
-                    byte[] buf = new byte[ReceiveBufferSize];
-                    IBuffer ibuf = new Windows.Storage.Streams.Buffer(ReceiveBufferSize);
-                    await socket.InputStream.ReadAsync(ibuf, ReceiveBufferSize, InputStreamOptions.Partial);
-                    DataReader.FromBuffer(ibuf).ReadBytes(buf);
-                    if (buf.Length > 0)
-                    {
-                        cache.Enqeue(Crypt.Util.TakeBytes(buf, buf.Length));
-                        ReceivedBytes += buf.Length;
-                    }
-                    else
-                    {
-                        await Task.Delay(parent.SleepTime);
-                    }
-                }
-            }
-            catch (ObjectDisposedException ex)
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            finally
-            {
                 lock (disposeLock)
+                    listenerReady = false;
+                try
                 {
-                    listenerReady = true;
-                    if (disposePending && ReadyToDispose)
-                        Dispose();
+                    while (!ct.IsCancellationRequested)
+                    {
+                        byte[] buf = new byte[_receiveBufferSize];
+                        int len = socket.Receive(buf, _receiveBufferSize, SocketFlags.None);
+                        if (len > 0)
+                        {
+                            cache.Enqeue(Crypt.Util.TakeBytes(buf, len));
+                            ReceivedBytes += len;
+                            buf = null;
+                        }
+                        else
+                        {
+                            if (ct.WaitHandle.WaitOne(parent.SleepTime))
+                                return;
+                        }
+                    }
                 }
+                catch (SocketException ex)
+                {
+                    if (ex.SocketErrorCode != SocketError.Interrupted)
+                        parent.ExceptionHandler.CloseConnection(ex);
+                }
+                catch (ObjectDisposedException ex)
+                {
+                    parent.ExceptionHandler.CloseConnection(ex);
+                }
+                finally
+                {
+                    lock (disposeLock)
+                    {
+                        listenerReady = true;
+                        if (disposePending && ReadyToDispose)
+                            Dispose();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseUncaught(ex);
             }
         }
 
@@ -144,7 +181,7 @@ namespace VSL
         /// Compounds packets from the received data
         /// </summary>
         /// <returns></returns>
-        private async void WorkerThread()
+        private void WorkerThread()
         {
             try
             {
@@ -154,7 +191,7 @@ namespace VSL
                 {
                     if (cache.Length > 0)
                     {
-                        if (!await parent.manager.OnDataReceiveAsync())
+                        if (!parent.manager.OnDataReceive())
                             break;
                     }
                     else
@@ -176,6 +213,30 @@ namespace VSL
             }
         }
 
+        /// <summary>
+        /// Reads data from the buffer.
+        /// </summary>
+        /// <param name="count">count of bytes to read</param>
+        /// <exception cref="OperationCanceledException"/>
+        /// <exception cref="TimeoutException"/>
+        /// <returns></returns>
+        internal byte[] Read(int count)
+        {
+            const int wait = 10;
+            int cycles = (Constants.ReceiveTimeout + count / 8) / wait;
+            int cycle = 0;
+            while (cache.Length < count)
+            {
+                if (cycle >= cycles)
+                    throw new TimeoutException(string.Format("Waiting for {0} bytes took over {1} ms.", count, cycles * wait));
+                if (ct.WaitHandle.WaitOne(wait))
+                    throw new OperationCanceledException();
+                cycle++;
+            }
+            if (!cache.Dequeue(out byte[] buf, count))
+                throw new Exception("Error at dequeueing bytes");
+            return buf;
+        }
         /// <summary>
         /// Reads data from the buffer asynchronously.
         /// </summary>
@@ -204,15 +265,20 @@ namespace VSL
         /// Sends data to the remote client
         /// </summary>
         /// <param name="buf">data to send</param>
-        internal async Task<int> SendAsync(byte[] buf)
+        internal int Send(byte[] buf)
         {
             try
             {
-                int sent = Convert.ToInt32(await socket.OutputStream.WriteAsync(buf.AsBuffer()));
-                if (!await socket.OutputStream.FlushAsync())
+                int sent = socket.Send(buf);
+                if (ct.WaitHandle.WaitOne(1)) // Socket.Send() does not throw an Exception while having no connection
                     return 0;
                 SentBytes += sent;
                 return sent;
+            }
+            catch (SocketException ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+                return 0;
             }
             catch (ObjectDisposedException ex)
             {
@@ -224,13 +290,18 @@ namespace VSL
         /// <summary>
         /// Stops the network channel and closes the TCP connection without raising the related event
         /// </summary>
-        internal async Task CloseConnectionAsync()
+        internal void CloseConnection()
         {
             StopThreads();
-            await socket.CancelIOAsync();
+            socket?.Shutdown(SocketShutdown.Both);
+#if WINDOWS_UWP
+            socket?.Dispose();
+#else
+            socket?.Close();
+#endif
         }
 
-        #region IDisposable Support
+#region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
         private object disposeLock = new object();
         private bool listenerReady = true;
@@ -280,7 +351,7 @@ namespace VSL
             // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-        #endregion
+#endregion
         //  functions>
     }
 }

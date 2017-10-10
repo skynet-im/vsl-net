@@ -23,6 +23,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferSocket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Identifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\StreamMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\NetworkChannel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\CryptographicAlgorithm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetworkManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandler.cs" />
