@@ -23,6 +23,7 @@ namespace VSL
 
         private Thread listenerThread;
         private Thread workerThread;
+        private Timer timer;
         private bool threadsRunning = false;
         private CancellationTokenSource cts;
         private CancellationToken ct;
@@ -52,6 +53,13 @@ namespace VSL
                         if (parent.Logger.InitE)
                             parent.Logger.E(ex.ToString());
                     }
+            }
+        }
+        private SocketAsyncEventArgsPool argsPool
+        {
+            get
+            {
+                return null;
             }
         }
         //  properties>
@@ -86,6 +94,7 @@ namespace VSL
             cache = new Queue();
             cts = new CancellationTokenSource();
             ct = cts.Token;
+            timer = new Timer(TimerWork, null, -1, parent.SleepTime);
         }
         //  constructor>
 
@@ -107,10 +116,12 @@ namespace VSL
         {
             if (threadsRunning) throw new InvalidOperationException("Tasks are already running.");
             threadsRunning = true;
-            listenerThread = new Thread(ListenerThread);
-            listenerThread.Start();
-            workerThread = new Thread(WorkerThread);
-            workerThread.Start();
+            StartReceive();
+            timer.Change(0, parent.SleepTime);
+            //listenerThread = new Thread(ListenerThread);
+            //listenerThread.Start();
+            //workerThread = new Thread(WorkerThread);
+            //workerThread.Start();
         }
 
         /// <summary>
@@ -177,6 +188,34 @@ namespace VSL
             }
         }
 
+        private void StartReceive()
+        {
+            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+            args.SetBuffer(new byte[ReceiveBufferSize], 0, ReceiveBufferSize);
+            args.Completed += ReceiveAsync_Completed;
+            socket.ReceiveAsync(args);
+        }
+
+        private void ReceiveAsync_Completed(object sender, SocketAsyncEventArgs e)
+        {
+            int len = e.BytesTransferred;
+            if (len > 0)
+            {
+                cache.Enqeue(Crypt.Util.TakeBytes(e.Buffer, len));
+                ReceivedBytes += len;
+            }
+            else
+            {
+                if (e.SocketError != SocketError.Success)
+                    parent.ExceptionHandler.CloseConnection(e.SocketError, e.LastOperation);
+            }
+            if (!ct.IsCancellationRequested)
+            {
+                e.SetBuffer(0, ReceiveBufferSize);
+                socket.ReceiveAsync(e);
+            }
+        }
+
         /// <summary>
         /// Compounds packets from the received data
         /// </summary>
@@ -210,6 +249,15 @@ namespace VSL
             catch (Exception ex)
             {
                 parent.ExceptionHandler.CloseUncaught(ex);
+            }
+        }
+
+        private void TimerWork(object state)
+        {
+            while (cache.Length > 0)
+            {
+                if (!parent.manager.OnDataReceive())
+                    timer.Dispose();
             }
         }
 
@@ -301,7 +349,7 @@ namespace VSL
 #endif
         }
 
-#region IDisposable Support
+        #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
         private object disposeLock = new object();
         private bool listenerReady = true;
@@ -351,7 +399,7 @@ namespace VSL
             // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-#endregion
+        #endregion
         //  functions>
     }
 }

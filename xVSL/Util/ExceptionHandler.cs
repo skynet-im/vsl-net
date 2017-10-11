@@ -30,6 +30,19 @@ namespace VSL
             CloseInternal(ex.ToString());
         }
 
+        internal void CloseConnection(System.Net.Sockets.SocketError err, System.Net.Sockets.SocketAsyncOperation operation)
+        {
+            if (parent.Logger.InitI)
+                if (err == System.Net.Sockets.SocketError.OperationAborted)
+                    parent.Logger.I("Connection was interrupted");
+                else
+                    parent.Logger.I("A socket error occured");
+            string msg = "A socket error occured while trying to " + operation.ToString() + ": " + err.ToString();
+            if (parent.Logger.InitE)
+                parent.Logger.E(msg);
+            CloseInternal(msg);
+        }
+
         internal void CloseConnection(System.Net.Sockets.SocketException ex)
         {
             if (parent.Logger.InitI)

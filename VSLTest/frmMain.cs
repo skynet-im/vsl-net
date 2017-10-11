@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
@@ -46,7 +47,9 @@ namespace VSLTest
         {
             //TcpListener listener = new TcpListener(IPAddress.Any, 32771);
             TcpListener listener = new TcpListener(Dns.GetHostAddresses("127.0.0.1")[0], port);
+            TcpListener listener6 = new TcpListener(Dns.GetHostAddresses("::1")[0], port);
             listener.Start();
+            listener6.Start();
             btnStartServer.Text = "Beenden";
             btnStartServer.Enabled = true;
             serverRunning = true;
@@ -58,7 +61,16 @@ namespace VSLTest
                     Client c = new Client(native);
                     //lock (Program.WriteLock)
                     //    Program.Clients = Program.Clients.Add(c);
-                    Program.Connects++;
+                    Interlocked.Increment(ref Program.Connects);
+                }
+            });
+            Task.Run(delegate
+            {
+                while (running)
+                {
+                    Socket native = listener6.AcceptSocket();
+                    Client c = new Client(native);
+                    Interlocked.Increment(ref Program.Connects);
                 }
             });
         }
