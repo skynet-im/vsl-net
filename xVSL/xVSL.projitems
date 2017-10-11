@@ -29,6 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandlerClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandlerServer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Net\SocketAsyncEventArgsPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\ConnectionType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\IPacket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\P00Handshake.cs" />
@@ -44,6 +45,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Packet\PacketLength.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\ProblemCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\RequestType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Server\SharedServerHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AES.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AesCsp.cs" />
