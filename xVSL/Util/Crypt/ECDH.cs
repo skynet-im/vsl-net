@@ -30,12 +30,11 @@ namespace VSL.Crypt
             }
         }
 
-        // TODO: Add description
         /// <summary>
-        /// Derives
+        /// Derives an 256bit key using ECDH-P521 and SHA256 that can be used for cryptographic operations.
         /// </summary>
-        /// <param name="privateKey"></param>
-        /// <param name="publicKey"></param>
+        /// <param name="privateKey">My private key.</param>
+        /// <param name="publicKey">Counterpart public key.</param>
         /// <returns></returns>
         public static byte[] DeriveKey(byte[] privateKey, byte[] publicKey)
         {

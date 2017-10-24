@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Net;
 using VSL.Packet;
 
 namespace VSL
@@ -13,38 +14,17 @@ namespace VSL
     internal abstract class PacketHandler
     {
         // <fields
-        internal List<IPacket> RegisteredPackets;
         internal VSLSocket parent;
+        protected List<PacketRule> RegisteredPackets;
         //  fields>
-        // <constructor
-        /// <summary>
-        /// Initializes all non-child-specific components
-        /// </summary>
-        internal void InitializeComponent()
-        {
-            RegisteredPackets = new List<IPacket>
-            {
-                new P00Handshake(),
-                new P01KeyExchange(),
-                //new P02Certificate(),
-                new P03FinishHandshake(),
-                new P04ChangeIV(),
-                //new P05KeepAlive(),
-                new P06Accepted(),
-                new P07OpenFileTransfer(),
-                new P08FileHeader(),
-                new P09FileDataBlock()
-            };
-        }
-        //  constructor>
         // <functions
         internal bool TryGetPacket(byte id, out IPacket packet)
         {
-            foreach (IPacket p in RegisteredPackets)
+            foreach (PacketRule rule in RegisteredPackets)
             {
-                if (id == p.PacketID)
+                if (id == rule.Packet.PacketID)
                 {
-                    packet = p;
+                    packet = rule.Packet;
                     return true;
                 }
             }
@@ -54,26 +34,36 @@ namespace VSL
         }
 
         /// <summary>
-        /// Handles an internal VSL packet
+        /// Handles an internal VSL packet.
         /// </summary>
-        /// <param name="id">Packet ID</param>
-        /// <param name="content">Packet data</param>
+        /// <param name="id">Packet ID.</param>
+        /// <param name="content">Packet data.</param>
+        /// <param name="alg">Algorithm that was detected for this packet.</param>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <returns></returns>
-        internal void HandleInternalPacket(byte id, byte[] content)
+        internal bool HandleInternalPacket(byte id, byte[] content, CryptographicAlgorithm alg)
         {
-            foreach (IPacket p in RegisteredPackets)
+            foreach (PacketRule rule in RegisteredPackets)
             {
-                if (id == p.PacketID)
+                if (id == rule.Packet.PacketID)
                 {
-                    IPacket packet = p.New();
-                    PacketBuffer buf = new PacketBuffer(content);
-                    packet.ReadPacket(buf);
-                    buf.Dispose();
-                    packet.HandlePacket(this);
-                    return;
+                    if (rule.Algorithms.Contains(alg))
+                    {
+                        IPacket packet = rule.Packet.New();
+                        PacketBuffer buf = new PacketBuffer(content);
+                        packet.ReadPacket(buf);
+                        buf.Dispose();
+                        return packet.HandlePacket(this);
+                    }
+                    else
+                    {
+                        parent.ExceptionHandler.CloseConnection("WrongAlgorithm", $"Received {rule.Packet.ToString()} with {alg.ToString()} which is not allowed.");
+                        return false;
+                    }
                 }
             }
+            parent.ExceptionHandler.CloseConnection("UnknownPacket", $"Packet id {id} is not an internal packet and cannot be handled\r\n\tat PacketHandler.HandleInternalPacket()");
+            return false;
         }
 
         internal abstract bool HandleP00Handshake(P00Handshake p);

@@ -35,6 +35,11 @@ namespace VSL.Crypt
             if (plaintext.Length > 214) throw new ArgumentOutOfRangeException("One block must measure 214 bytes");
             byte[] ciphertext = null;
 #if WINDOWS_UWP
+            using (var rsa = System.Security.Cryptography.RSA.Create())
+            {
+                
+            }
+            
             CryptographicKey ckey = AsymmetricKeyAlgorithmProvider.OpenAlgorithm("RSA_OAEP_SHA1").ImportPublicKey(ConvertToBlob(key).AsBuffer());
             DataReader dr = DataReader.FromBuffer(CryptographicEngine.Encrypt(ckey, plaintext.AsBuffer(), null));
             ciphertext = new byte[dr.UnconsumedBufferLength];
@@ -230,7 +235,7 @@ namespace VSL.Crypt
             uint count = dr.UnconsumedBufferLength;
             byte[] keyblob = new byte[count];
             dr.ReadBytes(keyblob);
-            key = ConvertToXmlString(keyblob);
+            key = ToXmlString(keyblob);
 #else
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048))
             {
@@ -257,7 +262,7 @@ namespace VSL.Crypt
             uint count = dr.UnconsumedBufferLength;
             byte[] keyblob = new byte[count];
             dr.ReadBytes(keyblob);
-            key = ConvertToXmlString(keyblob);
+            key = ToXmlString(keyblob);
 #else
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {
@@ -288,17 +293,28 @@ namespace VSL.Crypt
 #else
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {
-                rsa.FromXmlString(ConvertToXmlString(privateKey));
+                rsa.FromXmlString(ToXmlString(privateKey));
                 key = ConvertToBlob(rsa.ToXmlString(false));
             }
 #endif
             return key;
         }
-        public static string ConvertToXmlString(byte[] rsaKeyBlob)
+        /// <summary>
+        /// Converts a RSA key blob to the .NET XML format.
+        /// </summary>
+        /// <param name="rsaKeyBlob"></param>
+        /// <returns></returns>
+        public static string ToXmlString(RSAParameters parameters)
         {
+            System.Security.Cryptography.RSA.Create().;
             // TODO: Implement conversion
             return "";
         }
+        /// <summary>
+        /// Converts a .NET XML formatted key to the blob format.
+        /// </summary>
+        /// <param name="xmlKeyString"></param>
+        /// <returns></returns>
         public static byte[] ConvertToBlob(string xmlKeyString)
         {
             // TODO: Implement conversion

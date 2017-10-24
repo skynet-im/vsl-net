@@ -21,12 +21,14 @@ namespace VSL
         private Queue cache;
         private int _receiveBufferSize = Constants.ReceiveBufferSize;
 
-        private Thread listenerThread;
-        private Thread workerThread;
         private Timer timer;
-        private bool threadsRunning = false;
+        private volatile bool threadsRunning = false;
         private CancellationTokenSource cts;
         private CancellationToken ct;
+        /// <summary>
+        /// Blocks disposing until the <see cref="NetworkChannel"/> was started.
+        /// </summary>
+        private ManualResetEventSlim disposeHandle;
         //  <stats
         internal long ReceivedBytes;
         internal long SentBytes;
@@ -55,14 +57,6 @@ namespace VSL
                     }
             }
         }
-        private SocketAsyncEventArgsPool argsPool
-        {
-            get
-            {
-                return null;
-            }
-        }
-        //  properties>
 
         // <constructor
         /// <summary>
@@ -94,7 +88,8 @@ namespace VSL
             cache = new Queue();
             cts = new CancellationTokenSource();
             ct = cts.Token;
-            timer = new Timer(TimerWork, null, -1, parent.SleepTime);
+            disposeHandle = new ManualResetEventSlim();
+            timer = new Timer(TimerWork, null, -1, -1);
         }
         //  constructor>
 
@@ -114,14 +109,14 @@ namespace VSL
         /// </summary>
         internal void StartThreads()
         {
-            if (threadsRunning) throw new InvalidOperationException("Tasks are already running.");
+            if (disposedValue)
+                throw new ObjectDisposedException("VSL.NetworkChannel");
+            if (threadsRunning)
+                throw new InvalidOperationException("Threads are already running.");
             threadsRunning = true;
             StartReceive();
-            timer.Change(0, parent.SleepTime);
-            //listenerThread = new Thread(ListenerThread);
-            //listenerThread.Start();
-            //workerThread = new Thread(WorkerThread);
-            //workerThread.Start();
+            timer.Change(0, -1);
+            disposeHandle.Set();
         }
 
         /// <summary>
@@ -134,60 +129,6 @@ namespace VSL
                 cts.Cancel();
         }
 
-        /// <summary>
-        /// Receives bytes from the socket to the cache
-        /// </summary>
-        /// <returns></returns>
-        private void ListenerThread()
-        {
-            try
-            {
-                lock (disposeLock)
-                    listenerReady = false;
-                try
-                {
-                    while (!ct.IsCancellationRequested)
-                    {
-                        byte[] buf = new byte[_receiveBufferSize];
-                        int len = socket.Receive(buf, _receiveBufferSize, SocketFlags.None);
-                        if (len > 0)
-                        {
-                            cache.Enqeue(Crypt.Util.TakeBytes(buf, len));
-                            ReceivedBytes += len;
-                            buf = null;
-                        }
-                        else
-                        {
-                            if (ct.WaitHandle.WaitOne(parent.SleepTime))
-                                return;
-                        }
-                    }
-                }
-                catch (SocketException ex)
-                {
-                    if (ex.SocketErrorCode != SocketError.Interrupted)
-                        parent.ExceptionHandler.CloseConnection(ex);
-                }
-                catch (ObjectDisposedException ex)
-                {
-                    parent.ExceptionHandler.CloseConnection(ex);
-                }
-                finally
-                {
-                    lock (disposeLock)
-                    {
-                        listenerReady = true;
-                        if (disposePending && ReadyToDispose)
-                            Dispose();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                parent.ExceptionHandler.CloseUncaught(ex);
-            }
-        }
-
         private void StartReceive()
         {
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
@@ -198,52 +139,32 @@ namespace VSL
 
         private void ReceiveAsync_Completed(object sender, SocketAsyncEventArgs e)
         {
-            int len = e.BytesTransferred;
-            if (len > 0)
-            {
-                cache.Enqeue(Crypt.Util.TakeBytes(e.Buffer, len));
-                ReceivedBytes += len;
-            }
-            else
-            {
-                if (e.SocketError != SocketError.Success)
-                    parent.ExceptionHandler.CloseConnection(e.SocketError, e.LastOperation);
-            }
-            if (!ct.IsCancellationRequested)
-            {
-                e.SetBuffer(0, ReceiveBufferSize);
-                socket.ReceiveAsync(e);
-            }
-        }
-
-        /// <summary>
-        /// Compounds packets from the received data
-        /// </summary>
-        /// <returns></returns>
-        private void WorkerThread()
-        {
             try
             {
-                lock (disposeLock)
-                    workerReady = false;
-                while (!ct.IsCancellationRequested)
+                if (e.SocketError != SocketError.Success)
                 {
-                    if (cache.Length > 0)
-                    {
-                        if (!parent.manager.OnDataReceive())
-                            break;
-                    }
-                    else
-                    {
-                        if (ct.WaitHandle.WaitOne(parent.SleepTime))
-                            break;
-                    }
+                    threadsRunning = false;
+                    if (e.SocketError != SocketError.OperationAborted)
+                        parent.ExceptionHandler.CloseConnection(e.SocketError, e.LastOperation);
                 }
-                lock (disposeLock)
+
+                int len = e.BytesTransferred;
+                if (len > 0)
                 {
-                    workerReady = true;
-                    if (disposePending && ReadyToDispose)
-                        Dispose();
+                    cache.Enqeue(Crypt.Util.TakeBytes(e.Buffer, len));
+                    ReceivedBytes += len;
+                }
+                else
+                {
+                    threadsRunning = false;
+                    parent.ExceptionHandler.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
+                }
+
+                if (threadsRunning)
+                {
+                    e.SetBuffer(0, ReceiveBufferSize);
+                    if (socket != null && !socket.ReceiveAsync(e))
+                        threadsRunning = false;
                 }
             }
             catch (Exception ex)
@@ -254,11 +175,13 @@ namespace VSL
 
         private void TimerWork(object state)
         {
-            while (cache.Length > 0)
+            while (threadsRunning && cache.Length > 0)
             {
                 if (!parent.manager.OnDataReceive())
-                    timer.Dispose();
+                    return;
             }
+            if (threadsRunning)
+                timer.Change(parent.SleepTime, -1);
         }
 
         /// <summary>
@@ -340,8 +263,16 @@ namespace VSL
         /// </summary>
         internal void CloseConnection()
         {
+            if (disposedValue) throw new ObjectDisposedException("VSL.NetworkChannel");
             StopThreads();
-            socket?.Shutdown(SocketShutdown.Both);
+            try
+            {
+                socket?.Shutdown(SocketShutdown.Both);
+            }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseUncaught(ex);
+            }
 #if WINDOWS_UWP
             socket?.Dispose();
 #else
@@ -351,30 +282,19 @@ namespace VSL
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
-        private object disposeLock = new object();
-        private bool listenerReady = true;
-        private bool workerReady = true;
-        private bool ReadyToDispose => listenerReady && workerReady;
-        private bool disposePending = false;
 
         private void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                lock (disposeLock)
-                {
-                    if (!ReadyToDispose)
-                    {
-                        disposePending = true;
-                        return;
-                    }
-                }
-
                 if (disposing)
                 {
                     // -TODO: dispose managed state (managed objects).
                     StopThreads();
+                    disposeHandle.Wait(1000); // wait up to 1 second for the NetworkChannel to start
+                    timer?.Dispose();
                     cts?.Dispose();
+                    disposeHandle?.Dispose();
                     socket?.Dispose();
                 }
 

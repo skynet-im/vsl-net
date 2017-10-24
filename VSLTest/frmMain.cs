@@ -24,7 +24,7 @@ namespace VSLTest
         private const int port = 32761;
         private bool clientConnected = false;
         private bool serverRunning = false;
-        private bool running = true;
+        private volatile bool running = true;
         public frmMain()
         {
             InitializeComponent();
@@ -45,30 +45,19 @@ namespace VSLTest
 
         private void ListenerTask()
         {
+            //Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
             //TcpListener listener = new TcpListener(IPAddress.Any, 32771);
-            TcpListener listener = new TcpListener(Dns.GetHostAddresses("127.0.0.1")[0], port);
-            TcpListener listener6 = new TcpListener(Dns.GetHostAddresses("::1")[0], port);
+            TcpListener listener = new TcpListener(IPAddress.IPv6Loopback, port);
+            listener.Server.DualMode = true;
             listener.Start();
-            listener6.Start();
             btnStartServer.Text = "Beenden";
             btnStartServer.Enabled = true;
             serverRunning = true;
-            Task.Run(delegate
+            ThreadPool.QueueUserWorkItem((o) => 
             {
                 while (running)
                 {
                     Socket native = listener.AcceptSocket();
-                    Client c = new Client(native);
-                    //lock (Program.WriteLock)
-                    //    Program.Clients = Program.Clients.Add(c);
-                    Interlocked.Increment(ref Program.Connects);
-                }
-            });
-            Task.Run(delegate
-            {
-                while (running)
-                {
-                    Socket native = listener6.AcceptSocket();
                     Client c = new Client(native);
                     Interlocked.Increment(ref Program.Connects);
                 }
@@ -169,7 +158,7 @@ namespace VSLTest
             btnSendFile.Enabled = false;
         }
 
-        private bool runningPT = false;
+        private volatile bool runningPT = false;
         private void BtnPenetrationTest_Click(object sender, EventArgs e)
         {
             if (runningPT)
@@ -181,7 +170,7 @@ namespace VSLTest
             {
                 runningPT = true;
                 btnPenetrationTest.Text = "Stoppen";
-                Task.Run(delegate
+                ThreadPool.QueueUserWorkItem((o) =>
                 {
                     System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
                     stopwatch.Start();
@@ -190,15 +179,15 @@ namespace VSLTest
                     {
                         try
                         {
-                            TcpClient tcp = new TcpClient();
-                            tcp.Connect("127.0.0.1", port);
+                            TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
+                            tcp.Connect("::1", port);
                             Random rand = new Random();
                             byte[] buf = new byte[rand.Next(2048)];
                             rand.NextBytes(buf);
                             tcp.Client.Send(buf);
                             tcp.Close();
                             done++;
-                            //System.Threading.Thread.Sleep(100);
+                            Thread.Sleep(10);
                         }
                         catch { }
                     }
@@ -243,14 +232,6 @@ namespace VSLTest
 
         private void CloseServer()
         {
-            //foreach (Client c in Program.Clients)
-            //{
-            //    try
-            //    {
-            //        c.Vsl.CloseConnection("");
-            //    }
-            //    catch { }
-            //}
             Program.Clients.ParallelForEach((c) =>
             {
                 try

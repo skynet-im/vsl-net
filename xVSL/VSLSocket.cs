@@ -20,7 +20,9 @@ namespace VSL
         /// Specifies if a working and secure connection is available.
         /// </summary>
         private bool connectionAvailable = false;
-        private DateTime connectionLost = DateTime.MinValue;
+        private object connectionLostLock;
+        private bool connectionLost = false;
+        private DateTime connectionLostTime = DateTime.MinValue;
         private DateTime disposingTime = DateTime.MinValue;
         internal NetworkChannel channel;
         internal NetworkManager manager;
@@ -48,6 +50,7 @@ namespace VSL
             EventThread = new ThreadMgr(this, mode);
             ExceptionHandler = new ExceptionHandler(this);
             Logger = new Logger(this);
+            connectionLostLock = new object();
         }
         //  constructor>
         #region properties
@@ -62,20 +65,12 @@ namespace VSL
         {
             get
             {
-#if WINDOWS_UWP
-                return Convert.ToInt32(channel.ReceiveBufferSize);
-#else
                 return channel.ReceiveBufferSize;
-#endif
             }
             set
             {
                 if (!disposedValue)
-#if WINDOWS_UWP
-                    channel.ReceiveBufferSize = Convert.ToUInt32(value);
-#else
                     channel.ReceiveBufferSize = value;
-#endif
             }
         }
         /// <summary>
@@ -126,20 +121,17 @@ namespace VSL
         /// </summary>
         public event EventHandler<ConnectionClosedEventArgs> ConnectionClosed;
         /// <summary>
-        /// Raises the ConnectionClosed event
+        /// Raises the ConnectionClosed event.
         /// </summary>
-        /// <param name="reason">Reason why the connection was closed</param>
-        internal virtual void OnConnectionClosed(string reason)
+        /// <param name="e"></param>
+        internal virtual void OnConnectionClosed(ConnectionClosedEventArgs e)
         {
-            connectionAvailable = false;
-            connectionLost = DateTime.Now;
-            EventThread.ShuttingDown();
-            ConnectionClosedEventArgs args = new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
-            if (!EventThread.QueueCriticalWorkItem((ct) => ConnectionClosed?.Invoke(this, args)))
+            if (!EventThread.QueueCriticalWorkItem((ct) => ConnectionClosed?.Invoke(this, e)))
 #if WINDOWS_UWP
-                Task.Run(() => ConnectionClosed?.Invoke(this, args));
+                Task.Run(() => ConnectionClosed?.Invoke(this, e));
 #else
-                ThreadPool.QueueUserWorkItem((o) => ConnectionClosed?.Invoke(this, args));
+                //ThreadPool.QueueUserWorkItem((o) => ConnectionClosed?.Invoke(this, e));
+                ConnectionClosed?.Invoke(this, e);
 #endif
         }
         #endregion
@@ -162,11 +154,11 @@ namespace VSL
                 throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
             if (!ConnectionAvailable)
             {
-                if (connectionLost == DateTime.MinValue)
+                if (!connectionLost)
                     throw new InvalidOperationException("You have to wait until a secure connection is established before you send a packet.");
                 else
                 {
-                    double spanMilliseconds = (DateTime.Now - connectionLost).TotalMilliseconds;
+                    double spanMilliseconds = (DateTime.Now - connectionLostTime).TotalMilliseconds;
                     string spanText;
                     if (spanMilliseconds < 100)
                         return false;
@@ -197,11 +189,11 @@ namespace VSL
                 throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
             if (!ConnectionAvailable)
             {
-                if (connectionLost == DateTime.MinValue)
+                if (!connectionLost)
                     throw new InvalidOperationException("You have to wait until a secure connection is established before you send a packet.");
                 else
                 {
-                    double spanMilliseconds = (DateTime.Now - connectionLost).TotalMilliseconds;
+                    double spanMilliseconds = (DateTime.Now - connectionLostTime).TotalMilliseconds;
                     string spanText;
                     if (spanMilliseconds < 100)
                         return false;
@@ -221,51 +213,52 @@ namespace VSL
         /// </summary>
         /// <param name="reason">The reason to print and share in the related event.</param>
         /// <exception cref="ObjectDisposedException"/>
-#if WINDOWS_UWP
-        public async Task CloseConnectionAsync(string reason)
-#else
         public void CloseConnection(string reason)
-#endif
         {
             if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
                 throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
-            if (connectionLost == DateTime.MinValue) // To detect redundant calls
-            {
-                OnConnectionClosed(reason);
-                if (Logger.InitI)
-                    Logger.I("Connection was forcibly closed: " + reason);
-#if WINDOWS_UWP
-                await channel.CloseConnectionAsync();
-#else
-                channel.CloseConnection();
-#endif
-                if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
-                    EventThread.Exit();
-                Dispose();
-            }
+            lock (connectionLostLock)
+                if (!connectionLost) // To detect redundant calls
+                {
+                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(reason);
+                    if (Logger.InitI)
+                        Logger.I("Connection was forcibly closed: " + reason);
+                    channel.CloseConnection();
+                    if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
+                        EventThread.Exit();
+                    OnConnectionClosed(e);
+                    Dispose();
+                }
         }
 
         /// <summary>
         /// Closes the TCP Connection and raises the related event.
         /// </summary>
         /// <param name="exception">The exception text to share in the related event.</param>
-#if WINDOWS_UWP
-        internal async Task CloseInternalAsync(string exception)
-#else
         internal void CloseInternal(string exception)
-#endif
         {
-            if (connectionLost == DateTime.MinValue) // To detect redundant calls
-            {
-                OnConnectionClosed(exception);
-#if WINDOWS_UWP
-                await channel.CloseConnectionAsync();
-#else
-                channel.CloseConnection();
-#endif
-                if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
-                    EventThread.Exit();
-            }
+            lock (connectionLostLock)
+                if (!connectionLost) // To detect redundant calls
+                {
+                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(exception);
+                    channel.CloseConnection();
+                    if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
+                        EventThread.Exit();
+                    OnConnectionClosed(e);
+                }
+        }
+
+        /// <summary>
+        /// Sets all variables to the closed state.
+        /// </summary>
+        /// <returns>Returns the <see cref="ConnectionClosedEventArgs"/> for the upcoming event.</returns>
+        private ConnectionClosedEventArgs PrepareOnConnectionClosed(string reason)
+        {
+            connectionAvailable = false;
+            connectionLost = true;
+            connectionLostTime = DateTime.Now;
+            EventThread.ShuttingDown();
+            return new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
         }
         #endregion
         #region IDisposable Support
