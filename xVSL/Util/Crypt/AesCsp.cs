@@ -1,5 +1,4 @@
-﻿#if WINDOWS_UWP
-#else
+﻿#if !WINDOWS_UWP
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +16,14 @@ namespace VSL.Crypt
         // © 2017 Daniel Lerch
         private AesCryptoServiceProvider csp;
         /// <summary>
-        /// Initializes a new instance of the AesCsp class which is more efficient than the static <see cref="AES"/> class for multiple operations with the same key.
+        /// Initializes a new instance of the <see cref="AesCsp"/> class without key of iv. This class is more efficient than the static <see cref="AES"/> class for multiple operations with the same key.
+        /// </summary>
+        public AesCsp()
+        {
+            csp = new AesCryptoServiceProvider();
+        }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AesCsp"/> class with the specified key and iv. This class is more efficient than the static <see cref="AES"/> class for multiple operations with the same key.
         /// </summary>
         /// <param name="key">AES key (256 bit)</param>
         /// <param name="iv">Optional initialization vector (128 bit)</param>
@@ -38,6 +44,7 @@ namespace VSL.Crypt
         /// </summary>
         public byte[] Key
         {
+            get => csp.Key;
             set
             {
                 if (value.Length != 32) throw new ArgumentOutOfRangeException("The key must have a length of 256 bit");
@@ -49,6 +56,7 @@ namespace VSL.Crypt
         /// </summary>
         public byte[] IV
         {
+            get => csp.IV;
             set
             {
                 if (value == null) value = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };

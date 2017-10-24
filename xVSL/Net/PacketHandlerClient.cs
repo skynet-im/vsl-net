@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Net;
 using VSL.Packet;
 
 namespace VSL
@@ -18,7 +19,19 @@ namespace VSL
         {
             this.parent = parent;
             base.parent = parent;
-            InitializeComponent();
+            RegisteredPackets = new List<PacketRule>
+            {
+                // P00Handshake     -   Server only
+                // P01KeyExchange   -   Server only
+                // P02Certificate   -   Not supported in VSL 1.1
+                new PacketRule(new P03FinishHandshake(), CryptographicAlgorithm.None, CryptographicAlgorithm.AES_256),
+                new PacketRule(new P04ChangeIV(), CryptographicAlgorithm.AES_256),
+                // P05KeepAlive     -   Not supported in VSL 1.1
+                new PacketRule(new P06Accepted(), CryptographicAlgorithm.AES_256),
+                // P07OpenFileTransfer - Server only
+                new PacketRule(new P08FileHeader(), CryptographicAlgorithm.AES_256),
+                new PacketRule(new P09FileDataBlock(), CryptographicAlgorithm.AES_256)
+            };
         }
         //  constructor>
 

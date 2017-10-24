@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
@@ -35,15 +36,11 @@ namespace VSLTest
             //MessageBox.Show(string.Format("[Server] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
             Vsl.Dispose();
             if (!Program.Clients.Remove(this))
-                MessageBox.Show("Could not remove!!!");
-            lock (Program.WriteLock)
-            {
-                //Program.Clients = Program.Clients.Remove(this);
-                Program.Disconnects++;
-            }
+                throw new Exception("Second ConnectionClosed event");
+            Interlocked.Increment(ref Program.Disconnects);
 #if DEBUG
-            if (Program.Clients.Count == 0)
-                Console.WriteLine("Empty");
+            //if (Program.Clients.Count == 0)
+            //    Console.WriteLine("Empty");
 #endif
         }
 

@@ -172,39 +172,43 @@ namespace VSL.Crypt
 #endif
             return plaintext;
         }
-#if !WINDOWS_UWP
         /// <summary>
         /// Generates a new 256 bit AES key
         /// </summary>
-        [Obsolete("AES.GenerateKey() is deprecated, please use System.Random.NextBytes() with a 32byte buffer instead.", false)]
-        // TODO: Add error in v1.1.19.0
         public static byte[] GenerateKey()
         {
             byte[] key;
+#if WINDOWS_UWP
+            key = new byte[32];
+            DataReader.FromBuffer(CryptographicBuffer.GenerateRandom(32)).ReadBytes(key);
+#else
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
                 aes.KeySize = 256;
                 aes.GenerateKey();
                 key = aes.Key;
             }
+#endif
             return key;
         }
 
         /// <summary>
         /// Generates a new initialization vector.
         /// </summary>
-        [Obsolete("AES.GenerateIV() is deprecated, please use System.Random.NextBytes() with a 16byte buffer instead.", false)]
-        // TODO: Add error in v1.1.19.0
         public static byte[] GenerateIV()
         {
             byte[] iv;
+#if WINDOWS_UWP
+            iv = new byte[16];
+            DataReader.FromBuffer(CryptographicBuffer.GenerateRandom(16)).ReadBytes(iv);
+#else
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
                 aes.GenerateIV();
                 iv = aes.IV;
             }
+#endif
             return iv;
         }
-#endif
     }
 }

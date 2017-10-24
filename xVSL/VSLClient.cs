@@ -5,11 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
-#if WINDOWS_UWP
-using Windows.Networking.Sockets;
-#else
 using System.Net.Sockets;
-#endif
 using VSL.FileTransfer;
 using VSL.Packet;
 
@@ -95,17 +91,12 @@ namespace VSL
             if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException();
             if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException();
             //  check args>
-
-#if WINDOWS_UWP
-            StreamSocket socket = new StreamSocket();
-            await socket.ConnectAsync(new Windows.Networking.EndpointPair(new Windows.Networking.HostName(""), "",
-                new Windows.Networking.HostName(address), port.ToString()));
-            channel = new NetworkChannel(this, socket);
-#else
-            TcpClient tcp = new TcpClient();
-            await tcp.ConnectAsync(address, port);
+            
+            IPAddress[] ipaddr = await Dns.GetHostAddressesAsync(address);
+            TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
+            tcp.Client.DualMode = true;
+            await tcp.ConnectAsync(ipaddr, port);
             channel = new NetworkChannel(this, tcp.Client);
-#endif
 
             // <initialize component
             manager = new NetworkManager(this, serverKey);
@@ -116,17 +107,7 @@ namespace VSL
 
             // <key exchange
             Task s = manager.SendPacketAsync(CryptographicAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey));
-            Random random = new Random();
-            byte[] key = new byte[32];
-            random.NextBytes(key);
-            manager.AesKey = key;
-            byte[] siv = new byte[16];
-            random.NextBytes(siv);
-            manager.SendIV = siv;
-            byte[] riv = new byte[16];
-            random.NextBytes(riv);
-            manager.ReceiveIV = riv;
-            manager.Ready4Aes = true;
+            manager.GenerateKeys();
             await s;
             await manager.SendPacketAsync(CryptographicAlgorithm.RSA_2048, new P01KeyExchange(manager.AesKey, manager.SendIV,
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct));
