@@ -60,6 +60,7 @@ Partial Class frmMain
         Me.tbShaPlainText = New System.Windows.Forms.TextBox()
         Me.Label6 = New System.Windows.Forms.Label()
         Me.tpECDH = New System.Windows.Forms.TabPage()
+        Me.tbECDHBobKey = New System.Windows.Forms.TextBox()
         Me.Label16 = New System.Windows.Forms.Label()
         Me.tbECDHBobPub = New System.Windows.Forms.TextBox()
         Me.Label15 = New System.Windows.Forms.Label()
@@ -76,7 +77,9 @@ Partial Class frmMain
         Me.tpTest = New System.Windows.Forms.TabPage()
         Me.pbTest = New System.Windows.Forms.ProgressBar()
         Me.btnTestStart = New System.Windows.Forms.Button()
-        Me.tbECDHBobKey = New System.Windows.Forms.TextBox()
+        Me.EncodingUTF8Rb = New System.Windows.Forms.RadioButton()
+        Me.GroupBox1 = New System.Windows.Forms.GroupBox()
+        Me.EncodingHexRb = New System.Windows.Forms.RadioButton()
         Me.mainTabControl.SuspendLayout()
         Me.tpRSA.SuspendLayout()
         Me.tpAES.SuspendLayout()
@@ -84,6 +87,7 @@ Partial Class frmMain
         Me.gbShaMode.SuspendLayout()
         Me.tpECDH.SuspendLayout()
         Me.tpTest.SuspendLayout()
+        Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
         '
         'mainTabControl
@@ -225,6 +229,7 @@ Partial Class frmMain
         '
         'tpAES
         '
+        Me.tpAES.Controls.Add(Me.GroupBox1)
         Me.tpAES.Controls.Add(Me.btnAesGenerateIV)
         Me.tpAES.Controls.Add(Me.tbAesIV)
         Me.tpAES.Controls.Add(Me.Label14)
@@ -470,6 +475,13 @@ Partial Class frmMain
         Me.tpECDH.Text = "ECDH"
         Me.tpECDH.UseVisualStyleBackColor = True
         '
+        'tbECDHBobKey
+        '
+        Me.tbECDHBobKey.Location = New System.Drawing.Point(69, 177)
+        Me.tbECDHBobKey.Name = "tbECDHBobKey"
+        Me.tbECDHBobKey.Size = New System.Drawing.Size(100, 20)
+        Me.tbECDHBobKey.TabIndex = 13
+        '
         'Label16
         '
         Me.Label16.AutoSize = True
@@ -605,12 +617,38 @@ Partial Class frmMain
         Me.btnTestStart.Text = "Start"
         Me.btnTestStart.UseVisualStyleBackColor = True
         '
-        'tbECDHBobKey
+        'EncodingUTF8Rb
         '
-        Me.tbECDHBobKey.Location = New System.Drawing.Point(69, 177)
-        Me.tbECDHBobKey.Name = "tbECDHBobKey"
-        Me.tbECDHBobKey.Size = New System.Drawing.Size(100, 20)
-        Me.tbECDHBobKey.TabIndex = 13
+        Me.EncodingUTF8Rb.AutoSize = True
+        Me.EncodingUTF8Rb.Checked = True
+        Me.EncodingUTF8Rb.Location = New System.Drawing.Point(6, 19)
+        Me.EncodingUTF8Rb.Name = "EncodingUTF8Rb"
+        Me.EncodingUTF8Rb.Size = New System.Drawing.Size(55, 17)
+        Me.EncodingUTF8Rb.TabIndex = 12
+        Me.EncodingUTF8Rb.TabStop = True
+        Me.EncodingUTF8Rb.Text = "UTF-8"
+        Me.EncodingUTF8Rb.UseVisualStyleBackColor = True
+        '
+        'GroupBox1
+        '
+        Me.GroupBox1.Controls.Add(Me.EncodingHexRb)
+        Me.GroupBox1.Controls.Add(Me.EncodingUTF8Rb)
+        Me.GroupBox1.Location = New System.Drawing.Point(9, 121)
+        Me.GroupBox1.Name = "GroupBox1"
+        Me.GroupBox1.Size = New System.Drawing.Size(200, 68)
+        Me.GroupBox1.TabIndex = 13
+        Me.GroupBox1.TabStop = False
+        Me.GroupBox1.Text = "Kodierung"
+        '
+        'EncodingHexRb
+        '
+        Me.EncodingHexRb.AutoSize = True
+        Me.EncodingHexRb.Location = New System.Drawing.Point(6, 42)
+        Me.EncodingHexRb.Name = "EncodingHexRb"
+        Me.EncodingHexRb.Size = New System.Drawing.Size(85, 17)
+        Me.EncodingHexRb.TabIndex = 13
+        Me.EncodingHexRb.Text = "Hexadezimal"
+        Me.EncodingHexRb.UseVisualStyleBackColor = True
         '
         'frmMain
         '
@@ -633,6 +671,8 @@ Partial Class frmMain
         Me.tpECDH.ResumeLayout(False)
         Me.tpECDH.PerformLayout()
         Me.tpTest.ResumeLayout(False)
+        Me.GroupBox1.ResumeLayout(False)
+        Me.GroupBox1.PerformLayout()
         Me.ResumeLayout(False)
 
     End Sub
@@ -692,4 +732,7 @@ Partial Class frmMain
     Friend WithEvents Label15 As Label
     Friend WithEvents tbECDHAlicePub As TextBox
     Friend WithEvents tbECDHBobKey As TextBox
+    Friend WithEvents GroupBox1 As GroupBox
+    Friend WithEvents EncodingHexRb As RadioButton
+    Friend WithEvents EncodingUTF8Rb As RadioButton
 End Class
