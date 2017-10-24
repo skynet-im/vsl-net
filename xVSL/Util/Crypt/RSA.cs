@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
-#if WINDOWS_UWP
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Security.Cryptography;
-using Windows.Security.Cryptography.Core;
-using Windows.Storage.Streams;
-#endif
+using System.Xml;
 
 namespace VSL.Crypt
 {
@@ -33,17 +29,13 @@ namespace VSL.Crypt
             if (plaintext == null) throw new ArgumentNullException("Plaintext must not be null");
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
             if (plaintext.Length > 214) throw new ArgumentOutOfRangeException("One block must measure 214 bytes");
-            byte[] ciphertext = null;
+            byte[] ciphertext;
 #if WINDOWS_UWP
             using (var rsa = System.Security.Cryptography.RSA.Create())
             {
-                
-            }
-            
-            CryptographicKey ckey = AsymmetricKeyAlgorithmProvider.OpenAlgorithm("RSA_OAEP_SHA1").ImportPublicKey(ConvertToBlob(key).AsBuffer());
-            DataReader dr = DataReader.FromBuffer(CryptographicEngine.Encrypt(ckey, plaintext.AsBuffer(), null));
-            ciphertext = new byte[dr.UnconsumedBufferLength];
-            dr.ReadBytes(ciphertext);
+                rsa.ImportParameters(GetParameters(key));
+                ciphertext = rsa.Encrypt(plaintext, RSAEncryptionPadding.OaepSHA1);
+            }          
 #else
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {
@@ -55,10 +47,10 @@ namespace VSL.Crypt
         }
 
         /// <summary>
-        /// Encrypts data using RSA with OAEP
+        /// Encrypts data using RSA with OAEP.
         /// </summary>
-        /// <param name="plaintext">data to encrypt</param>
-        /// <param name="key">Public key (xmlstring)</param>
+        /// <param name="plaintext">Data to encrypt with any length.</param>
+        /// <param name="key">Public key (xmlstring).</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
@@ -66,12 +58,16 @@ namespace VSL.Crypt
         {
             if (plaintext == null) throw new ArgumentNullException("Plaintext must not be null");
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
-            byte[] ciphertext = new byte[0];
-            foreach (byte[] block in Util.SplitBytes(plaintext, 214))
+            int blocks = Convert.ToInt32(Math.Ceiling(plaintext.Length / Convert.ToSingle(214)));
+            byte[] ciphertext = new byte[blocks * 256];
+            Parallel.For(0, blocks - 1, (i) =>
             {
-                byte[] cipherblock = EncryptBlock(block, key);
-                ciphertext = ciphertext.Concat(cipherblock).ToArray();
-            }
+                byte[] buf = EncryptBlock(Util.TakeBytes(plaintext, 214, i * 214), key);
+                Array.Copy(buf, 0, ciphertext, i * 256, 256);
+            });
+            int mod = blocks % 214;
+            byte[] lbuf = EncryptBlock(Util.TakeBytes(plaintext, mod != 0 ? mod : 214, (blocks - 1) * 214), key);
+            Array.Copy(lbuf, 0, ciphertext, (blocks - 1) * 256, 256);
             return ciphertext;
         }
         /// <summary>
@@ -82,6 +78,8 @@ namespace VSL.Crypt
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
+        [Obsolete("RSA.EncryptAsync is deprecated, please use Task.Run with RSA.Encrypt instead.", false)]
+        // TODO: Add error in v1.1.19.0
         public async static Task<byte[]> EncryptAsync(byte[] plaintext, string key)
         {
             if (plaintext == null) throw new ArgumentNullException("Plaintext must not be null");
@@ -117,10 +115,11 @@ namespace VSL.Crypt
             if (ciphertext.Length != 256) throw new ArgumentOutOfRangeException("One block must measure 256 bytes");
             byte[] plaintext = null;
 #if WINDOWS_UWP
-            CryptographicKey ckey = AsymmetricKeyAlgorithmProvider.OpenAlgorithm("RSA_OAEP_SHA1").ImportPublicKey(ConvertToBlob(key).AsBuffer());
-            DataReader dr = DataReader.FromBuffer(CryptographicEngine.Decrypt(ckey, plaintext.AsBuffer(), null));
-            ciphertext = new byte[dr.UnconsumedBufferLength];
-            dr.ReadBytes(ciphertext);
+            using (var rsa = System.Security.Cryptography.RSA.Create())
+            {
+                rsa.ImportParameters(GetParameters(key));
+                plaintext = rsa.Decrypt(ciphertext, RSAEncryptionPadding.OaepSHA1);
+            }
 #else
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {
@@ -136,21 +135,26 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="ciphertext">data to decrypt</param>
         /// <param name="key">Private key (xmlstring)</param>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        /// <exception cref="CryptographicException"></exception>
+        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentOutOfRangeException"/>
+        /// <exception cref="CryptographicException"/>
         /// <returns></returns>
         public static byte[] Decrypt(byte[] ciphertext, string key)
         {
             if (ciphertext == null) throw new ArgumentNullException("Plaintext must not be null");
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
             if (ciphertext.Length % 256 != 0) throw new ArgumentOutOfRangeException("The blocksize must be 256 bytes");
-            byte[] plaintext = new byte[0];
-            foreach (byte[] block in Util.SplitBytes(ciphertext, 256))
+            int blocks = ciphertext.Length / 256;
+            byte[] tmp_plaintext = new byte[(blocks - 1) * 214];
+            Parallel.For(0, blocks - 1, (i) =>
             {
-                byte[] cipherblock = DecryptBlock(block, key);
-                plaintext = plaintext.Concat(cipherblock).ToArray();
-            }
+                byte[] buf = DecryptBlock(Util.TakeBytes(ciphertext, 256, i * 256), key);
+                Array.Copy(buf, 0, tmp_plaintext, i * 214, buf.Length);
+            });
+            byte[] lbuf = DecryptBlock(Util.TakeBytes(ciphertext, 256, (blocks - 1) * 256), key);
+            byte[] plaintext = new byte[(blocks - 1) * 214 + lbuf.Length];
+            Array.Copy(tmp_plaintext, plaintext, (blocks - 1) * 214);
+            Array.Copy(lbuf, 0, plaintext, (blocks - 1) * 214, lbuf.Length);
             return plaintext;
         }
         /// <summary>
@@ -162,6 +166,8 @@ namespace VSL.Crypt
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
+        [Obsolete("RSA.DecryptAsync is deprecated, please use Task.Run with RSA.Decrypt instead.", false)]
+        // TODO: Add error in v1.1.19.0
         public async static Task<byte[]> DecryptAsync(byte[] ciphertext, string key)
         {
             if (ciphertext == null) throw new ArgumentNullException("Plaintext must not be null");
@@ -188,7 +194,7 @@ namespace VSL.Crypt
         /// Generates a random RSA keypair
         /// </summary>
         /// <returns></returns>
-        [Obsolete("RSA.GenerateKeyPair() is deprecated, please use RSA.GenerateKeyPairXml or RSA.GenerateKeyPairBlob instead.", false)]
+        [Obsolete("RSA.GenerateKeyPair() is deprecated, please use RSA.GenerateKeyPairXml or RSA.GenerateKeyPairParams instead.", false)]
         // TODO: Add error in v1.1.19.0
         public static string GenerateKeyPair()
         {
@@ -201,22 +207,22 @@ namespace VSL.Crypt
         }
 #endif
         /// <summary>
-        /// Generates a random RSA keypair as a blob.
+        /// Generates a random RSA keypair as a <see cref="RSAParameters"/> struct.
         /// </summary>
         /// <returns></returns>
-        public static byte[] GenerateKeyPairBlob()
+        public static RSAParameters GenerateKeyPairParams()
         {
-            byte[] key;
+            RSAParameters key;
 #if WINDOWS_UWP
-            CryptographicKey ckey = AsymmetricKeyAlgorithmProvider.OpenAlgorithm("RSA_OAEP_SHA1").CreateKeyPair(2048);
-            DataReader dr = DataReader.FromBuffer(ckey.Export());
-            uint count = dr.UnconsumedBufferLength;
-            key = new byte[count];
-            dr.ReadBytes(key);
+            using (var rsa = System.Security.Cryptography.RSA.Create())
+            {
+                rsa.KeySize = 2048;
+                key = rsa.ExportParameters(true);
+            }
 #else
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048))
             {
-                key = ConvertToBlob(rsa.ToXmlString(true));
+                key = rsa.ExportParameters(true);
             }
 #endif
             return key;
@@ -230,12 +236,11 @@ namespace VSL.Crypt
         {
             string key;
 #if WINDOWS_UWP
-            CryptographicKey ckey = AsymmetricKeyAlgorithmProvider.OpenAlgorithm("RSA_OAEP_SHA1").CreateKeyPair(2048);
-            DataReader dr = DataReader.FromBuffer(ckey.Export());
-            uint count = dr.UnconsumedBufferLength;
-            byte[] keyblob = new byte[count];
-            dr.ReadBytes(keyblob);
-            key = ToXmlString(keyblob);
+            using (var rsa = System.Security.Cryptography.RSA.Create())
+            {
+                rsa.KeySize = 2048;
+                key = ToXmlString(rsa.ExportParameters(true));
+            }
 #else
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048))
             {
@@ -246,7 +251,7 @@ namespace VSL.Crypt
         }
 
         /// <summary>
-        /// Extracts the parameters for a public key
+        /// Extracts the parameters for a public key.
         /// </summary>
         /// <param name="privateKey">Keypair (xmlstring)</param>
         /// <exception cref="ArgumentNullException"></exception>
@@ -257,12 +262,11 @@ namespace VSL.Crypt
             if (privateKey == null) throw new ArgumentNullException("PrivateKey must not be null");
             string key;
 #if WINDOWS_UWP
-            CryptographicKey ckey = AsymmetricKeyAlgorithmProvider.OpenAlgorithm("RSA_OAEP_SHA1").ImportKeyPair(ConvertToBlob(privateKey).AsBuffer());
-            DataReader dr = DataReader.FromBuffer(ckey.ExportPublicKey());
-            uint count = dr.UnconsumedBufferLength;
-            byte[] keyblob = new byte[count];
-            dr.ReadBytes(keyblob);
-            key = ToXmlString(keyblob);
+            using (var rsa = System.Security.Cryptography.RSA.Create())
+            {
+                rsa.ImportParameters(GetParameters(privateKey));
+                key = ToXmlString(rsa.ExportParameters(false));
+            }
 #else
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {
@@ -274,51 +278,118 @@ namespace VSL.Crypt
         }
 
         /// <summary>
-        /// Extracts the parameters for a public key
+        /// Extracts the parameters for a public key.
         /// </summary>
-        /// <param name="privateKey">Keypair (blob)</param>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <param name="privateKey">Keypair (params)</param>
         /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
-        public static byte[] ExtractPublicKey(byte[] privateKey)
+        public static RSAParameters ExtractPublicKey(RSAParameters privateKey)
         {
-            if (privateKey == null) throw new ArgumentNullException("PrivateKey must not be null");
-            byte[] key;
+            RSAParameters key;
 #if WINDOWS_UWP
-            CryptographicKey ckey = AsymmetricKeyAlgorithmProvider.OpenAlgorithm("RSA_OAEP_SHA1").ImportKeyPair(privateKey.AsBuffer());
-            DataReader dr = DataReader.FromBuffer(ckey.ExportPublicKey());
-            uint count = dr.UnconsumedBufferLength;
-            key = new byte[count];
-            dr.ReadBytes(key);
+            using (var rsa = System.Security.Cryptography.RSA.Create())
+            {
+                rsa.ImportParameters(privateKey);
+                key = rsa.ExportParameters(false);
+            }
 #else
             using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {
                 rsa.FromXmlString(ToXmlString(privateKey));
-                key = ConvertToBlob(rsa.ToXmlString(false));
+                key = GetParameters(rsa.ToXmlString(false));
             }
 #endif
             return key;
         }
+
         /// <summary>
-        /// Converts a RSA key blob to the .NET XML format.
+        /// Converts a <see cref="RSAParameters"/> struct RSA key to the .NET XML format.
         /// </summary>
-        /// <param name="rsaKeyBlob"></param>
+        /// <param name="parameters"></param>
         /// <returns></returns>
         public static string ToXmlString(RSAParameters parameters)
         {
-            System.Security.Cryptography.RSA.Create().;
-            // TODO: Implement conversion
-            return "";
+            StringBuilder result = new StringBuilder();
+            using (XmlWriter writer = XmlWriter.Create(result))
+            {
+                writer.WriteStartElement("RSAKeyValue");
+                if (ValidByteArray(parameters.Modulus))
+                    writer.WriteElementString("Modulus", Convert.ToBase64String(parameters.Modulus));
+                if (ValidByteArray(parameters.Exponent))
+                    writer.WriteElementString("Exponent", Convert.ToBase64String(parameters.Exponent));
+                if (ValidByteArray(parameters.P))
+                    writer.WriteElementString("P", Convert.ToBase64String(parameters.P));
+                if (ValidByteArray(parameters.Q))
+                    writer.WriteElementString("Q", Convert.ToBase64String(parameters.Q));
+                if (ValidByteArray(parameters.DP))
+                    writer.WriteElementString("DP", Convert.ToBase64String(parameters.DP));
+                if (ValidByteArray(parameters.DQ))
+                    writer.WriteElementString("DQ", Convert.ToBase64String(parameters.DQ));
+                if (ValidByteArray(parameters.InverseQ))
+                    writer.WriteElementString("InverseQ", Convert.ToBase64String(parameters.InverseQ));
+                if (ValidByteArray(parameters.D))
+                    writer.WriteElementString("D", Convert.ToBase64String(parameters.D));
+                writer.WriteEndElement();
+            }
+            return result.ToString();
         }
+
         /// <summary>
-        /// Converts a .NET XML formatted key to the blob format.
+        /// Gets a <see cref="RSAParameters"/> struct from a .NET XML formatted key.
         /// </summary>
         /// <param name="xmlKeyString"></param>
         /// <returns></returns>
-        public static byte[] ConvertToBlob(string xmlKeyString)
+        public static RSAParameters GetParameters(string xmlKeyString)
         {
-            // TODO: Implement conversion
-            return new byte[0];
+            RSAParameters parameters = new RSAParameters();
+            using (XmlReader reader = XmlReader.Create(new StringReader(xmlKeyString)))
+            {
+                string open = "";
+                reader.MoveToContent();
+                while (reader.Read())
+                {
+                    if (reader.NodeType == XmlNodeType.Element)
+                        open = reader.Name;
+                    if (reader.NodeType == XmlNodeType.Text)
+                    {
+                        string val = reader.Value;
+                        byte[] valB = Convert.FromBase64String(val);
+                        switch (open)
+                        {
+                            case "Modulus":
+                                parameters.Modulus = valB;
+                                break;
+                            case "Exponent":
+                                parameters.Exponent = valB;
+                                break;
+                            case "P":
+                                parameters.P = valB;
+                                break;
+                            case "Q":
+                                parameters.Q = valB;
+                                break;
+                            case "DP":
+                                parameters.DP = valB;
+                                break;
+                            case "DQ":
+                                parameters.DQ = valB;
+                                break;
+                            case "InverseQ":
+                                parameters.InverseQ = valB;
+                                break;
+                            case "D":
+                                parameters.D = valB;
+                                break;
+                        }
+                    }
+                }
+            }
+            return parameters;
+        }
+
+        private static bool ValidByteArray(byte[] bt)
+        {
+            return bt != null && bt.Length > 0;
         }
     }
 }

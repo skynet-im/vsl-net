@@ -1,4 +1,5 @@
-﻿Imports VSL.Crypt
+﻿Imports System.Text
+Imports VSL.Crypt
 Public Class frmMain
 #Region "RSA"
     Private Async Sub btnRsaExtract_Click(sender As Object, e As EventArgs) Handles btnRsaExtract.Click
@@ -34,30 +35,33 @@ Public Class frmMain
         tbAesIV.Text = Util.ToHexString(AES.GenerateIV())
     End Sub
 
-    Private Async Sub btnAesDecrypt_Click(sender As Object, e As EventArgs) Handles btnAesDecrypt.Click
-        Dim enc As New Text.UTF8Encoding
-        Dim ct As Byte() = Util.GetBytes(tbAesCipherText.Text)
-        'Dim pt As Byte() = Await AES.DecryptAsync(ct, Util.GetBytes(tbAesKey.Text), If(String.IsNullOrEmpty(tbAesIV.Text), Nothing, Util.GetBytes(tbAesIV.Text)))
-        Dim pt As Byte()
+    Private Sub btnAesDecrypt_Click(sender As Object, e As EventArgs) Handles btnAesDecrypt.Click
         If decryptCsp Is Nothing Then
             decryptCsp = New AesCsp(Util.GetBytes(tbAesKey.Text), Util.GetBytes(tbAesIV.Text))
         End If
-        pt = Await decryptCsp.DecryptAsync(ct)
-        'tbAesPlainText.Text = enc.GetString(pt)
-        tbAesPlainText.Text = Util.ToHexString(pt)
+        Dim ct As Byte() = Util.GetBytes(tbAesCipherText.Text)
+        If EncodingUTF8Rb.Checked Then
+            Dim pt As Byte() = decryptCsp.Decrypt(ct)
+            tbAesPlainText.Text = Encoding.UTF8.GetString(pt)
+        Else
+            Dim pt As Byte() = decryptCsp.Decrypt(ct)
+            tbAesPlainText.Text = Util.ToHexString(pt)
+        End If
         tbAesCipherText.Text = ""
     End Sub
 
     Private Async Sub btnAesEncrypt_Click(sender As Object, e As EventArgs) Handles btnAesEncrypt.Click
-        Dim enc As New Text.UTF8Encoding
-        'Dim pt As Byte() = enc.GetBytes(tbAesPlainText.Text)
-        Dim pt As Byte() = Util.GetBytes(tbAesPlainText.Text)
-        'Dim ct As Byte() = Await AES.EncryptAsync(pt, Util.GetBytes(tbAesKey.Text), If(String.IsNullOrEmpty(tbAesIV.Text), Nothing, Util.GetBytes(tbAesIV.Text)))
-        Dim ct As Byte()
         If encryptCsp Is Nothing Then
             encryptCsp = New AesCsp(Util.GetBytes(tbAesKey.Text), Util.GetBytes(tbAesIV.Text))
         End If
-        ct = Await encryptCsp.EncryptAsync(pt)
+        Dim ct As Byte()
+        If EncodingUTF8Rb.Checked Then
+            Dim pt As Byte() = Encoding.UTF8.GetBytes(tbAesPlainText.Text)
+            ct = Await encryptCsp.EncryptAsync(pt)
+        Else
+            Dim pt As Byte() = Util.GetBytes(tbAesPlainText.Text)
+            ct = Await encryptCsp.EncryptAsync(pt)
+        End If
         tbAesCipherText.Text = Util.ToHexString(ct)
         tbAesPlainText.Text = ""
     End Sub
