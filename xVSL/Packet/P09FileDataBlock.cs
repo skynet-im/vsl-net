@@ -24,7 +24,7 @@ namespace VSL.Packet
 
         public byte PacketID { get; } = 9;
 
-        public PacketLength PacketLength { get; } = new VariableLength();
+        public uint? ConstantLength => null;
 
         public IPacket New()
         {

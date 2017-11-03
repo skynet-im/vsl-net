@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VSL.Packet;
 
 namespace VSL.Packet
 {
@@ -16,7 +15,7 @@ namespace VSL.Packet
 
         public byte PacketID { get; } = 2;
 
-        public PacketLength PacketLength { get; } = new VariableLength();
+        public uint? ConstantLength => null;
 
         public IPacket New()
         {

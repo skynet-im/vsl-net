@@ -16,9 +16,9 @@ namespace VSL.Packet
         /// </summary>
         byte PacketID { get; }
         /// <summary>
-        /// Returns the length characteristics of the packet.
+        /// Gets the constant length of this packet or if the length is dynamic.
         /// </summary>
-        PacketLength PacketLength { get; }
+        uint? ConstantLength { get; }
         /// <summary>
         /// Creates a new packet of the specified instance.
         /// </summary>

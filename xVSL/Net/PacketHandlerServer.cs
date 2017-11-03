@@ -22,15 +22,15 @@ namespace VSL
             RegisteredPackets = new List<PacketRule>
             {
                 new PacketRule(new P00Handshake(), CryptographicAlgorithm.None),
-                new PacketRule(new P01KeyExchange(), CryptographicAlgorithm.RSA_2048),
+                new PacketRule(new P01KeyExchange(), CryptographicAlgorithm.RSA_2048_OAEP),
                 // P02Certificate   -   Not supported in VSL 1.1
                 // P03FinishHandshake - Client only
-                new PacketRule(new P04ChangeIV(), CryptographicAlgorithm.AES_256),
+                new PacketRule(new P04ChangeIV(), CryptographicAlgorithm.Insecure_AES_256_CBC),
                 // P05KeepAlive     -   Not supported in VSL 1.1
-                new PacketRule(new P06Accepted(), CryptographicAlgorithm.AES_256),
-                new PacketRule(new P07OpenFileTransfer(), CryptographicAlgorithm.AES_256),
-                new PacketRule(new P08FileHeader(), CryptographicAlgorithm.AES_256),
-                new PacketRule(new P09FileDataBlock(), CryptographicAlgorithm.AES_256)
+                new PacketRule(new P06Accepted(), CryptographicAlgorithm.Insecure_AES_256_CBC),
+                new PacketRule(new P07OpenFileTransfer(), CryptographicAlgorithm.Insecure_AES_256_CBC),
+                new PacketRule(new P08FileHeader(), CryptographicAlgorithm.Insecure_AES_256_CBC),
+                new PacketRule(new P09FileDataBlock(), CryptographicAlgorithm.Insecure_AES_256_CBC)
             };
         }
         //  constructor>
@@ -55,7 +55,7 @@ namespace VSL
                 parent.manager.SendIV = p.ServerIV;
                 parent.manager.ReceiveIV = p.ClientIV;
                 parent.manager.Ready4Aes = true;
-                parent.manager.SendPacket(CryptographicAlgorithm.AES_256, new P03FinishHandshake(ConnectionType.Compatible));
+                parent.manager.SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, new P03FinishHandshake(ConnectionType.Compatible));
                 parent.OnConnectionEstablished();
             }
             else

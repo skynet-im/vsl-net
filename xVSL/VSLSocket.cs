@@ -31,6 +31,7 @@ namespace VSL
         /// Gets the manager for event invocation and load balancing.
         /// </summary>
         public ThreadMgr EventThread { get; internal set; }
+        public ThreadManager ThreadManager { get; internal set; }
         /// <summary>
         /// Access file transfer functions.
         /// </summary>
@@ -137,7 +138,6 @@ namespace VSL
         #endregion
         // <functions
         #region Send
-#if !WINDOWS_UWP
         /// <summary>
         /// Sends a packet to the remotehost.
         /// </summary>
@@ -171,7 +171,6 @@ namespace VSL
             }
             return manager.SendPacket(Convert.ToByte(255 - id), content);
         }
-#endif
         /// <summary>
         /// Sends a packet to the remotehost asynchronously.
         /// </summary>
@@ -204,7 +203,7 @@ namespace VSL
                     throw new InvalidOperationException(string.Format("VSL has lost its connection {0} ago. Build up a new connection before sending a packet.", spanText));
                 }
             }
-            return await manager.SendPacketAsync(Convert.ToByte(255 - id), content);
+            return await Task.Run(() => manager.SendPacket(Convert.ToByte(255 - id), content));
         }
         #endregion
         #region Close

@@ -173,6 +173,10 @@ namespace VSL
             }
         }
 
+        /// <summary>
+        /// Compounds, decrypts and handles packets. This is a ThreadPool/Timer implementation of the former worker thread.
+        /// </summary>
+        /// <param name="state"></param>
         private void TimerWork(object state)
         {
             while (threadsRunning && cache.Length > 0)
@@ -185,7 +189,7 @@ namespace VSL
         }
 
         /// <summary>
-        /// Reads data from the buffer.
+        /// Reads data from the buffer. This function is not threadsafe!
         /// </summary>
         /// <param name="count">count of bytes to read</param>
         /// <exception cref="OperationCanceledException"/>
@@ -208,28 +212,39 @@ namespace VSL
                 throw new Exception("Error at dequeueing bytes");
             return buf;
         }
+
         /// <summary>
-        /// Reads data from the buffer asynchronously.
+        /// Reads data from the buffer. This function is not threadsafe!
         /// </summary>
-        /// <param name="count">Count of bytes to read.</param>
-        /// <exception cref="TaskCanceledException"/>
-        /// <exception cref="TimeoutException"/>
-        /// <returns></returns>
-        internal async Task<byte[]> ReadAsync(int count)
+        /// <param name="buf">Buffer to store read bytes.</param>
+        /// <param name="count">Count of bytes to read. This function will return false if not all bytes could be read.</param>
+        /// <returns>Returns whether the function could successfully read all requested bytes.</returns>
+        internal bool TryRead(out byte[] buf, int count)
         {
-            const int wait = 10;
-            int cycles = (Constants.ReceiveTimeout + count / 8) / wait;
+            const int wait = 10; // frequency to look for new data
+            int cycles = (Constants.ReceiveTimeout + count / 8) / wait; // assuming 64 kbit/s or 8 B/s and a latency of 5 sek => Constants.ReceiveTimeout
             int cycle = 0;
             while (cache.Length < count)
             {
                 if (cycle >= cycles)
-                    throw new TimeoutException(string.Format("Waiting for {0} bytes took over {1} ms.", count, cycles * wait));
-                await Task.Delay(10, ct);
+                {
+                    parent.ExceptionHandler.CloseConnection("Timeout", $"Waiting for {count} bytes took over {cycles * wait} ms.\r\n\tat NetworkChannel.TryRead()");
+                    buf = null;
+                    return false;
+                }
+                if (ct.WaitHandle.WaitOne(wait))
+                {
+                    buf = null;
+                    return false;
+                }
                 cycle++;
             }
-            if (!cache.Dequeue(out byte[] buf, count))
-                throw new Exception("Error at dequeueing bytes");
-            return buf;
+            if (!cache.Dequeue(out buf, count))
+            {
+                parent.ExceptionHandler.CloseConnection("DequeuingError", $"Could not dequeue {count} bytes.\r\n\tat NetworkChannel.TryRead()");
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
