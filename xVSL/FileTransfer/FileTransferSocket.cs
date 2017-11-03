@@ -111,7 +111,7 @@ namespace VSL.FileTransfer
         }
         internal virtual async void OnHeaderReceived(P08FileHeader packet)
         {
-            Task t = parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
+            Task t = Task.Run(() => parent.manager.SendPacket(new P06Accepted(true, 8, ProblemCategory.None)));
             length = Convert.ToInt64(packet.Length);
             header = packet;
             OnFileTransferProgress();
@@ -127,7 +127,7 @@ namespace VSL.FileTransfer
             }
             if (parent.Logger.InitD)
                 parent.Logger.D("Stream initialized");
-            Task r = parent.manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
+            Task r = Task.Run(() => parent.manager.SendPacket(new P06Accepted(true, 9, ProblemCategory.None)));
             Task w = stream.WriteAsync(packet.DataBlock, 0, packet.DataBlock.Length);
             OnFileTransferProgress();
             await r;
@@ -154,7 +154,7 @@ namespace VSL.FileTransfer
             SendingFile = true;
             header = GetHeaderPacket(Path);
             length = Convert.ToInt64(header.Length);
-            Task t = parent.manager.SendPacketAsync(header);
+            Task t = Task.Run(() => parent.manager.SendPacket(header));
             try
             {
                 stream = new FileStream(Path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -200,7 +200,7 @@ namespace VSL.FileTransfer
                 }
                 else
                 {
-                    Task t = parent.manager.SendPacketAsync(new P09FileDataBlock(startPos, Crypt.Util.TakeBytes(buf, count)));
+                    Task t = Task.Run(() => parent.manager.SendPacket(new P09FileDataBlock(startPos, Crypt.Util.TakeBytes(buf, count))));
                     transfered += count;
                     OnFileTransferProgress();
                     await t;
@@ -208,12 +208,12 @@ namespace VSL.FileTransfer
                 }
             }
         }
-#endregion
-        internal async void Cancel()
+        #endregion
+        internal void Cancel()
         {
             if (!ReceivingFile)
                 throw new InvalidOperationException("You can not cancel a not existing file transfer");
-            await parent.manager.SendPacketAsync(new P06Accepted(false, 7, ProblemCategory.None));
+            parent.manager.SendPacket(new P06Accepted(false, 7, ProblemCategory.None));
             Reset();
         }
         internal virtual void Reset()
@@ -228,7 +228,7 @@ namespace VSL.FileTransfer
             header = null;
         }
 
-#region IDisposable Support
+        #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
         /// <summary>
@@ -270,7 +270,7 @@ namespace VSL.FileTransfer
             // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-#endregion
+        #endregion
         //  functions>
     }
 }

@@ -43,7 +43,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Packet\P07OpenFileTransfer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\P08FileHeader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\P09FileDataBlock.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Packet\PacketLength.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\ProblemCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\RequestType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Server\SharedServerHelper.cs" />
@@ -59,6 +58,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util\Logger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\PacketBuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Queue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\AsyncMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\ThreadManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\ThreadManagerAsyncAwait.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\ThreadManagerMangedThread.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\ThreadManagerThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\ThreadSafeList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\VersionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)VSLClient.cs" />

@@ -46,7 +46,7 @@ namespace VSL.FileTransfer
         /// <param name="mode">StreamMode for the VSL file request.</param>
         public async void RequestFile(Identifier id, StreamMode mode)
         {
-            Task t = parent.manager.SendPacketAsync(new P07OpenFileTransfer(id, mode));
+            Task t = Task.Run(() => parent.manager.SendPacket(new P07OpenFileTransfer(id, mode)));
             ID = id;
             Mode = mode;
             await t;

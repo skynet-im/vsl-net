@@ -91,7 +91,7 @@ namespace VSL
             if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException();
             if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException();
             //  check args>
-            
+
             IPAddress[] ipaddr = await Dns.GetHostAddressesAsync(address);
             TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
             tcp.Client.DualMode = true;
@@ -106,11 +106,11 @@ namespace VSL
             //  initialize component>
 
             // <key exchange
-            Task s = manager.SendPacketAsync(CryptographicAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey));
+            Task s = Task.Run(() => manager.SendPacket(CryptographicAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey)));
             manager.GenerateKeys();
             await s;
-            await manager.SendPacketAsync(CryptographicAlgorithm.RSA_2048, new P01KeyExchange(manager.AesKey, manager.SendIV,
-                manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct));
+            await Task.Run(() => manager.SendPacket(CryptographicAlgorithm.RSA_2048_OAEP, new P01KeyExchange(manager.AesKey, manager.SendIV,
+                manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct)));
             //  key exchange>
         }
         //  functions>

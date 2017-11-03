@@ -51,11 +51,11 @@ namespace VSL.FileTransfer
                 throw new FileNotFoundException("The file for the VSL file transfer could not be found @" + Path);
             else
             {
-                await parent.manager.SendPacketAsync(new P06Accepted(true, 7, ProblemCategory.None));
+                await Task.Run(() => parent.manager.SendPacket(new P06Accepted(true, 7, ProblemCategory.None)));
                 switch (Mode)
                 {
                     case StreamMode.GetHeader:
-                        await parent.manager.SendPacketAsync(GetHeaderPacket(Path));
+                        await Task.Run(() => parent.manager.SendPacket(GetHeaderPacket(Path)));
                         break;
                     case StreamMode.GetFile:
                         SendFile();
@@ -71,9 +71,9 @@ namespace VSL.FileTransfer
         /// <summary>
         /// Denies a pending VSL file transfer request.
         /// </summary>
-        public async void Deny()
+        public void Deny()
         {
-            await parent.manager.SendPacketAsync(new P06Accepted(false, 7, ProblemCategory.None));
+            parent.manager.SendPacket(new P06Accepted(false, 7, ProblemCategory.None));
             Reset();
         }
         internal override void Reset()

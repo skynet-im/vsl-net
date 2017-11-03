@@ -9,7 +9,8 @@ namespace VSL
     internal enum CryptographicAlgorithm : byte
     {
         None,
-        RSA_2048,
-        AES_256
+        RSA_2048_OAEP,
+        Insecure_AES_256_CBC,
+        AES_256_CBC_MP2
     }
 }

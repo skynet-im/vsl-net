@@ -24,13 +24,13 @@ namespace VSL
                 // P00Handshake     -   Server only
                 // P01KeyExchange   -   Server only
                 // P02Certificate   -   Not supported in VSL 1.1
-                new PacketRule(new P03FinishHandshake(), CryptographicAlgorithm.None, CryptographicAlgorithm.AES_256),
-                new PacketRule(new P04ChangeIV(), CryptographicAlgorithm.AES_256),
+                new PacketRule(new P03FinishHandshake(), CryptographicAlgorithm.None, CryptographicAlgorithm.Insecure_AES_256_CBC),
+                new PacketRule(new P04ChangeIV(), CryptographicAlgorithm.Insecure_AES_256_CBC),
                 // P05KeepAlive     -   Not supported in VSL 1.1
-                new PacketRule(new P06Accepted(), CryptographicAlgorithm.AES_256),
+                new PacketRule(new P06Accepted(), CryptographicAlgorithm.Insecure_AES_256_CBC),
                 // P07OpenFileTransfer - Server only
-                new PacketRule(new P08FileHeader(), CryptographicAlgorithm.AES_256),
-                new PacketRule(new P09FileDataBlock(), CryptographicAlgorithm.AES_256)
+                new PacketRule(new P08FileHeader(), CryptographicAlgorithm.Insecure_AES_256_CBC),
+                new PacketRule(new P09FileDataBlock(), CryptographicAlgorithm.Insecure_AES_256_CBC)
             };
         }
         //  constructor>
