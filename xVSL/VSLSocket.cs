@@ -60,6 +60,23 @@ namespace VSL
         /// </summary>
         public bool ConnectionAvailable => connectionAvailable;
         /// <summary>
+        /// Gets the protocol version that is used for this connection as <see cref="string"/>.
+        /// </summary>
+        public string ConnectionVersionString { get; private set; }
+        private ushort _connectionVersion;
+        /// <summary>
+        /// Gets the protocol version that is used for this connection.
+        /// </summary>
+        public ushort ConnectionVersion
+        {
+            get => _connectionVersion;
+            internal set
+            {
+                _connectionVersion = value;
+                ConnectionVersionString = VersionManager.GetVersion(value);
+            }
+        }
+        /// <summary>
         /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
         /// </summary>
         public virtual int ReceiveBufferSize
