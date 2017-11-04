@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace VSL.Packet
 {
-    internal enum ConnectionType : byte
+    internal enum ConnectionState : byte
     {
-        Compatible,
+        CompatibilityMode,
         Redirect,
-        NotCompatible
+        NotCompatible,
+        Compatible
     }
 }

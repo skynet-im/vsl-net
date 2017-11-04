@@ -43,23 +43,37 @@ namespace VSL
                 case RequestType.DirectPublicKey:
                     return true;
                 default:
-                    parent.manager.SendPacket(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));
+                    parent.manager.SendPacket(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
                     return true;
             }
         }
         internal override bool HandleP01KeyExchange(P01KeyExchange p)
         {
-            if (VersionManager.IsVSLVersionSupported(p.LatestVSL, p.OldestVSL) && VersionManager.IsProductVersionSupported(parent.LatestProduct, parent.OldestProduct, p.LatestProduct, p.OldestProduct))
+            ushort? vslVersion = VersionManager.GetSharedVSLVersion(p.LatestVSL, p.OldestVSL);
+            ushort? productVersion = VersionManager.GetSharedProductVersion(parent.LatestProduct, parent.OldestProduct, p.LatestProduct, p.OldestProduct);
+
+            if (!vslVersion.HasValue || !productVersion.HasValue)
+                return parent.manager.SendPacket(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
+
+            parent.manager.AesKey = p.AesKey;
+            parent.manager.SendIV = p.ServerIV;
+            parent.manager.ReceiveIV = p.ClientIV;
+            parent.manager.Ready4Aes = true;
+            parent.ConnectionVersion = vslVersion.Value;
+
+            if (vslVersion.Value < 2)
             {
-                parent.manager.AesKey = p.AesKey;
-                parent.manager.SendIV = p.ServerIV;
-                parent.manager.ReceiveIV = p.ClientIV;
-                parent.manager.Ready4Aes = true;
-                parent.manager.SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, new P03FinishHandshake(ConnectionType.Compatible));
+                if (!parent.manager.SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
+                    return false;
                 parent.OnConnectionEstablished();
             }
-            else
-                parent.manager.SendPacket(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionType.NotCompatible));
+
+            if (vslVersion.Value == 2)
+            {
+                if (!parent.manager.SendPacket(CryptographicAlgorithm.AES_256_CBC_MP2, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
+                    return false;
+                parent.OnConnectionEstablished();
+            }
             return true;
         }
         internal override bool HandleP02Certificate(P02Certificate p)

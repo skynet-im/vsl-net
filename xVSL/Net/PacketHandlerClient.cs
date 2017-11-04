@@ -52,17 +52,21 @@ namespace VSL
         }
         internal override bool HandleP03FinishHandshake(P03FinishHandshake p)
         {
-            switch (p.ConnectionType)
+            switch (p.ConnectionState)
             {
-                case ConnectionType.Compatible:
+                case ConnectionState.CompatibilityMode:
                     parent.OnConnectionEstablished();
                     return true;
-                case ConnectionType.Redirect:
+                case ConnectionState.Redirect:
                     parent.ExceptionHandler.CloseConnection("NotSupported", "This VSL version does not support redirects.");
                     return false;
-                case ConnectionType.NotCompatible:
+                case ConnectionState.NotCompatible:
                     parent.ExceptionHandler.CloseConnection("ConnectionDenied", "The specified server denied the connection to this VSL/application version client.");
                     return false;
+                case ConnectionState.Compatible:
+                    parent.ConnectionVersion = p.VSLVersion;
+                    parent.OnConnectionEstablished();
+                    return true;
                 default:
                     return false;
             }

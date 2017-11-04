@@ -45,17 +45,33 @@ namespace VSL
                     case CryptographicAlgorithm.RSA_2048_OAEP:
                         return ReceivePacket_RSA_2048_OAEP();
                     case CryptographicAlgorithm.Insecure_AES_256_CBC:
-                        if (Ready4Aes)
-                        {
-                            return ReceivePacket_Insecure_AES_256_CBC();
-                        }
-                        else
+                        if (!Ready4Aes)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidOperation", "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
+                        if (parent.ConnectionVersion >= 2)
+                        {
+                            parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", "VSL versions 1.2 and later are not allowed to use an old, insecure algorithm.\r\n\tat NetworkManager.OnDataReceive()");
+                            return false;
+                        }
+                        return ReceivePacket_Insecure_AES_256_CBC();
+
+                    case CryptographicAlgorithm.AES_256_CBC_MP2:
+                        if (!Ready4Aes)
+                        {
+                            parent.ExceptionHandler.CloseConnection("InvalidOperation", "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n\tat NetworkManager.OnDataReceive()");
+                            return false;
+                        }
+                        if (parent.ConnectionVersion < 2)
+                        {
+                            parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", "VSL versions older than 1.2 should not be able to use CryptographicAlgorithm.AES_256_CBC_MP2.\r\n\tat NetworkManager.OnDataReceive()");
+                            return false;
+                        }
+                        return ReceivePacket_AES_256_CBC_MP2();
+
                     default:
-                        parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", string.Format("Received packet with unknown algorithm ({0}).\r\n\tat NetworkManager.OnDataReceive()", algorithm.ToString()));
+                        parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", $"Received packet with unknown algorithm ({algorithm}).\r\n\tat NetworkManager.OnDataReceive()");
                         return false;
                 }
             }
@@ -280,15 +296,22 @@ namespace VSL
         }
         #endregion receive
         #region send
-        // TODO: Versioning
         internal bool SendPacket(byte id, byte[] content)
         {
             byte[] head = Util.ConnectBytesPA(new byte[1] { id }, BitConverter.GetBytes(Convert.ToUInt32(content.Length)));
-            return SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, head, content);
+            if (parent.ConnectionVersion < 2)
+                return SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, head, content);
+            if (parent.ConnectionVersion == 2)
+                return SendPacket(CryptographicAlgorithm.AES_256_CBC_MP2, head, content);
+            return false;
         }
         internal bool SendPacket(Packet.IPacket packet)
         {
-            return SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, packet);
+            if (parent.ConnectionVersion < 2)
+                return SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, packet);
+            if (parent.ConnectionVersion == 2)
+                return SendPacket(CryptographicAlgorithm.AES_256_CBC_MP2, packet);
+            return false;
         }
         internal bool SendPacket(CryptographicAlgorithm alg, Packet.IPacket packet)
         {
