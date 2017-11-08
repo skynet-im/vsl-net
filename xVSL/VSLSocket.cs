@@ -30,7 +30,12 @@ namespace VSL
         /// <summary>
         /// Gets the manager for event invocation and load balancing.
         /// </summary>
+        [Obsolete("VSLSocket.EventThread is deprecated, please use VSLSocket.ThreadManager instead.", false)]
+        // TODO: Add error in v1.1.19.0
         public ThreadMgr EventThread { get; internal set; }
+        /// <summary>
+        /// Gets the manager for event invocation and load balancing.
+        /// </summary>
         public ThreadManager ThreadManager { get; internal set; }
         /// <summary>
         /// Access file transfer functions.
