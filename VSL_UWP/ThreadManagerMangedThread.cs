@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace VSL.Threading
 {
-    internal class ThreadManagerMangedThread : ThreadManager
+    internal sealed class ThreadManagerMangedThread : ThreadManager
     {
-        internal ThreadManagerMangedThread(VSLSocket parent) : base(parent, AsyncMode.ManagedThread)
+        internal ThreadManagerMangedThread() : base(AsyncMode.ManagedThread)
         {
 
         }

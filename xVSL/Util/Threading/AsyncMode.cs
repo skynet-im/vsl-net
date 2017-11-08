@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace VSL
+namespace VSL.Threading
 {
     /// <summary>
     /// Specifies how work is executed by the <see cref="ThreadManager"/>.

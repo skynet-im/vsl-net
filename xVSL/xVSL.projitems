@@ -61,7 +61,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\AsyncMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\ThreadManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\ThreadManagerAsyncAwait.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\ThreadManagerMangedThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Threading\ThreadManagerThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\ThreadSafeList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\VersionManager.cs" />
