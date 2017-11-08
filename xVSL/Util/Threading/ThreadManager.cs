@@ -12,36 +12,39 @@ namespace VSL
     /// </summary>
     public abstract class ThreadManager : IDisposable
     {
-        internal static ThreadManager Create(VSLSocket parent, AsyncMode mode)
+        /// <summary>
+        /// Creates a ThreadManager that executes work items on the ThreadPool using the <see cref="Timer"/> class.
+        /// </summary>
+        /// <returns></returns>
+        public static ThreadManager CreateThreadPool()
         {
-            switch (mode)
-            {
-                case AsyncMode.ThreadPool:
-                    return new ThreadManagerThreadPool(parent);
-                case AsyncMode.ManagedThread:
-                    return new ThreadManagerMangedThread(parent);
-                case AsyncMode.AsyncAwait:
-                    return new ThreadManagerAsyncAwait(parent);
-                default:
-                    throw new ArgumentException("Unknown async mode " + mode.ToString(), "mode");
-            }
+            return new ThreadManagerThreadPool();
+        }
+
+        // TODO: Managed thread
+
+        /// <summary>
+        /// Creates a ThreadManager that executes work items on the main thread using async/await.
+        /// </summary>
+        /// <returns></returns>
+        public static ThreadManager CreateAsyncAwait()
+        {
+            return new ThreadManagerAsyncAwait();
         }
 
         /// <summary>
         /// The underlying <see cref="VSLSocket"/>.
         /// </summary>
-        protected readonly VSLSocket parent;
-        protected CancellationTokenSource cts;
-        protected CancellationToken ct;
+        internal protected VSLSocket parent;
+        internal protected CancellationTokenSource cts;
+        internal protected CancellationToken ct;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ThreadManager"/> class.
         /// </summary>
-        /// <param name="parent">The underlying <see cref="VSLSocket"/>.</param>
         /// <param name="mode">The <see cref="AsyncMode"/> to specify how the <see cref="ThreadManager"/> should work.</param>
-        protected ThreadManager(VSLSocket parent, AsyncMode mode)
+        internal protected ThreadManager(AsyncMode mode)
         {
-            this.parent = parent;
             Mode = mode;
             cts = new CancellationTokenSource();
             ct = cts.Token;
@@ -52,6 +55,17 @@ namespace VSL
         /// </summary>
         public AsyncMode Mode { get; }
 
+        /// <summary>
+        /// Assigns this ThreadManager to a specific VSLSocket.
+        /// </summary>
+        /// <param name="parent"></param>
+        internal abstract void Assign(VSLSocket parent);
+
+        /// <summary>
+        /// Starts an assigned ThreadManager.
+        /// </summary>
+        internal abstract void Start();
+        
         /// <summary>
         /// Invokes an <see cref="Action"/> synchronously.
         /// </summary>
@@ -73,6 +87,18 @@ namespace VSL
         /// <param name="callback">Work to execute. The <see cref="CancellationToken"/> is going to be canceled when VSL is shutting down.</param>
         /// <exception cref="ArgumentNullException"/>
         public abstract void QueueWorkItem(Action<CancellationToken> callback);
+
+        internal class WorkItem
+        {
+            internal WorkItem(Action<CancellationToken> work, ManualResetEventSlim waitHandle)
+            {
+                Work = work;
+                WaitHandle = waitHandle;
+            }
+
+            internal Action<CancellationToken> Work { get; }
+            internal ManualResetEventSlim WaitHandle { get; }
+        }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
