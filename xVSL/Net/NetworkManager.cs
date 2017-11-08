@@ -208,9 +208,9 @@ namespace VSL
                     if (!parent.channel.TryRead(out ciphertext, pendingBlocks * 16))
                         return false;
 #if WINDOWS_UWP
-                    plaintext = Util.ConnectBytesPA(plaintext, AES.Decrypt(ciphertext, _aesKey, _receiveIV));
+                    plaintext = Util.ConnectBytes(plaintext, AES.Decrypt(ciphertext, _aesKey, _receiveIV));
 #else
-                    plaintext = Util.ConnectBytesPA(plaintext, dec.Decrypt(ciphertext));
+                    plaintext = Util.ConnectBytes(plaintext, dec.Decrypt(ciphertext));
 #endif
                 }
                 int startIndex = Convert.ToInt32(plaintext.Length - length);
@@ -298,7 +298,7 @@ namespace VSL
         #region send
         internal bool SendPacket(byte id, byte[] content)
         {
-            byte[] head = Util.ConnectBytesPA(new byte[1] { id }, BitConverter.GetBytes(Convert.ToUInt32(content.Length)));
+            byte[] head = Util.ConnectBytes(new byte[1] { id }, BitConverter.GetBytes(Convert.ToUInt32(content.Length)));
             if (parent.ConnectionVersion < 2)
                 return SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, head, content);
             if (parent.ConnectionVersion == 2)
@@ -321,7 +321,7 @@ namespace VSL
             byte[] content = buf.ToArray();
             buf.Dispose();
             if (!packet.ConstantLength.HasValue)
-                head = Util.ConnectBytesPA(head, BitConverter.GetBytes(Convert.ToUInt32(content.Length)));
+                head = Util.ConnectBytes(head, BitConverter.GetBytes(Convert.ToUInt32(content.Length)));
             return SendPacket(alg, head, content);
         }
         internal bool SendPacket(CryptographicAlgorithm alg, byte[] head, byte[] content)
@@ -342,15 +342,15 @@ namespace VSL
         }
         private bool SendPacket_Plaintext(byte[] head, byte[] content)
         {
-            byte[] buf = Util.ConnectBytesPA(GetPrefix(CryptographicAlgorithm.None), head, content);
+            byte[] buf = Util.ConnectBytes(GetPrefix(CryptographicAlgorithm.None), head, content);
             return buf.Length == parent.channel.Send(buf);
         }
         private bool SendPacket_RSA_2048_OAEP(byte[] head, byte[] content)
         {
             try
             {
-                byte[] ciphertext = RSA.EncryptBlock(Util.ConnectBytesPA(head, content), rsaKey);
-                byte[] buf = Util.ConnectBytesPA(GetPrefix(CryptographicAlgorithm.RSA_2048_OAEP), ciphertext);
+                byte[] ciphertext = RSA.EncryptBlock(Util.ConnectBytes(head, content), rsaKey);
+                byte[] buf = Util.ConnectBytes(GetPrefix(CryptographicAlgorithm.RSA_2048_OAEP), ciphertext);
                 return buf.Length == parent.channel.Send(buf);
             }
             catch (System.Security.Cryptography.CryptographicException ex)
@@ -382,7 +382,7 @@ namespace VSL
                 byte[] salt = new byte[saltLength];
                 Random random = new Random();
                 random.NextBytes(salt);
-                byte[] plaintext = Util.ConnectBytesPA(head, salt, content);
+                byte[] plaintext = Util.ConnectBytes(head, salt, content);
 #if WINDOWS_UWP
                 byte[] headBlock = AES.Encrypt(Util.TakeBytes(plaintext, 15), _aesKey, _sendIV);
 #else
@@ -398,7 +398,7 @@ namespace VSL
                     tailBlock = enc.Encrypt(plaintext);
 #endif
                 }
-                byte[] buf = Util.ConnectBytesPA(GetPrefix(CryptographicAlgorithm.Insecure_AES_256_CBC), headBlock, tailBlock);
+                byte[] buf = Util.ConnectBytes(GetPrefix(CryptographicAlgorithm.Insecure_AES_256_CBC), headBlock, tailBlock);
                 bool success = buf.Length == parent.channel.Send(buf);
                 if (head[0] <= 9 && parent.Logger.InitD)
                     parent.Logger.D(string.Format("Sent internal AES packet: ID={0} Length={1} {2}b", head[0], buf.Length, blocks));
@@ -416,13 +416,13 @@ namespace VSL
         {
 #if WINDOWS_UWP
             byte[] iv = AES.GenerateIV();
-            byte[] ciphertext = AES.Encrypt(Util.ConnectBytesPA(head, content), _aesKey, iv);
+            byte[] ciphertext = AES.Encrypt(Util.ConnectBytes(head, content), _aesKey, iv);
 #else
             byte[] iv = enc.GenerateIV(true);
-            byte[] ciphertext = enc.Encrypt(Util.ConnectBytesPA(head, content));
+            byte[] ciphertext = enc.Encrypt(Util.ConnectBytes(head, content));
 #endif
             byte[] blocks = BitConverter.GetBytes(Convert.ToUInt16(ciphertext.Length / 16));
-            byte[] buf = Util.ConnectBytesPA(GetPrefix(CryptographicAlgorithm.AES_256_CBC_MP2), blocks, iv, ciphertext);
+            byte[] buf = Util.ConnectBytes(GetPrefix(CryptographicAlgorithm.AES_256_CBC_MP2), blocks, iv, ciphertext);
             return buf.Length == parent.channel.Send(buf);
         }
         #endregion send
