@@ -17,12 +17,12 @@ namespace VSLTest
         public VSLServer Vsl;
         public Client(Socket native)
         {
-            Vsl = new VSLServer(native, 0, 0, Program.Keypair, ThreadMgr.InvokeMode.ManagedThread);
+            Vsl = new VSLServer(native, 0, 0, Program.Keypair, ThreadManager.CreateManagedThread());
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
             Vsl.FileTransfer.FileTransferRequested += Vsl_FileTransferRequested;
-            //Vsl.Logger.PrintDebugMessages = true;
-            //Vsl.Logger.PrintExceptionMessages = true;
-            //Vsl.Logger.PrintInfoMessages = true;
+            Vsl.Logger.PrintDebugMessages = true;
+            Vsl.Logger.PrintExceptionMessages = true;
+            Vsl.Logger.PrintInfoMessages = true;
             Vsl.Logger.PrintUncaughtExceptions = true;
             Vsl.Logger.InvokeDebugMessages = false;
             Vsl.Logger.InvokeExceptionMessages = false;

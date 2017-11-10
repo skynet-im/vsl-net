@@ -28,23 +28,25 @@ namespace VSL
         //  fields>
 
         // <constructor
+#if !__IOS__
         /// <summary>
-        /// Creates a VSL Client that has to be connected.
+        /// Creates a VSL Client using <see cref="Threading.AsyncMode"/> that has to be connected.
         /// </summary>
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
         public VSLClient(ushort latestProduct, ushort oldestProduct)
-            : this(latestProduct, oldestProduct, ThreadMgr.InvokeMode.Dispatcher) { }
+            : this(latestProduct, oldestProduct, ThreadManager.CreateManagedThread()) { }
+#endif
 
         /// <summary>
         /// Creates a VSL Client that has to be connected.
         /// </summary>
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
-        /// <param name="mode">The way how events are invoked.</param>
-        public VSLClient(ushort latestProduct, ushort oldestProduct, ThreadMgr.InvokeMode mode)
+        /// <param name="threadManager">Used to raise events and execute work items.</param>
+        public VSLClient(ushort latestProduct, ushort oldestProduct, ThreadManager threadManager)
         {
-            InitializeComponent(mode);
+            InitializeComponent(threadManager);
 
             LatestProduct = latestProduct;
             OldestProduct = oldestProduct;
@@ -102,6 +104,7 @@ namespace VSL
             manager = new NetworkManager(this, serverKey);
             handler = new PacketHandlerClient(this);
             base.handler = handler;
+            StartInternal();
             channel.StartThreads();
             //  initialize component>
 

@@ -72,6 +72,7 @@ namespace VSLTest
                 vslClient.Logger.PrintDebugMessages = true;
                 vslClient.Logger.PrintExceptionMessages = true;
                 vslClient.Logger.PrintInfoMessages = true;
+                vslClient.Logger.PrintUncaughtExceptions = true;
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
                 vslClient.PacketReceived += vslClient_Received;

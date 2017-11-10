@@ -195,7 +195,7 @@ namespace VSL.Crypt
         /// </summary>
         /// <returns></returns>
         [Obsolete("RSA.GenerateKeyPair() is deprecated, please use RSA.GenerateKeyPairXml or RSA.GenerateKeyPairParams instead.", false)]
-        // TODO: Add error in v1.1.19.0
+        // TODO: Add error in v1.2.1
         public static string GenerateKeyPair()
         {
             string key;

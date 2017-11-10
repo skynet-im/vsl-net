@@ -13,7 +13,12 @@ namespace VSL.Threading
 
         internal ThreadManagerMangedThread() : base(AsyncMode.ManagedThread)
         {
-            
+
+        }
+
+        internal ThreadManagerMangedThread(Dispatcher dispatcher) : base(AsyncMode.ManagedThread)
+        {
+            this.dispatcher = dispatcher;
         }
 
         internal override void Assign(VSLSocket parent)
@@ -23,22 +28,28 @@ namespace VSL.Threading
 
         internal override void Start()
         {
-            dispatcher = Dispatcher.CurrentDispatcher;
+            if (dispatcher == null)
+                dispatcher = Dispatcher.CurrentDispatcher;
+        }
+
+        internal override void Close()
+        {
+
         }
 
         public override void Invoke(Action<CancellationToken> callback)
         {
-            dispatcher.Invoke(() => callback(ct));
+            dispatcher.Invoke(() => callback(itemCt));
         }
 
         public override async Task InvokeAsync(Action<CancellationToken> callback)
         {
-            await dispatcher.InvokeAsync(() => callback(ct));
+            await dispatcher.InvokeAsync(() => callback(itemCt));
         }
 
         public override void QueueWorkItem(Action<CancellationToken> callback)
         {
-            dispatcher.InvokeAsync(() => callback(ct));
+            ThreadPool.QueueUserWorkItem((o) => dispatcher.Invoke(() => callback(itemCt)));
         }
     }
 }

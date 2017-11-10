@@ -10,16 +10,30 @@ namespace VSL.Threading
     internal sealed class ThreadManagerAsyncAwait : ThreadManager
     {
         private ConcurrentQueue<WorkItem> queue;
+        private CancellationTokenSource mainCts;
+        private CancellationToken mainCt;
 
         internal ThreadManagerAsyncAwait() : base(AsyncMode.AsyncAwait)
         {
             queue = new ConcurrentQueue<WorkItem>();
-            Work();
+            mainCts = new CancellationTokenSource();
+            mainCt = mainCts.Token;
         }
 
         internal override void Assign(VSLSocket parent)
         {
             this.parent = parent;
+        }
+
+        internal override void Start()
+        {
+            Start();
+        }
+
+        internal override void Close()
+        {
+            mainCts.Cancel();
+            Dispose();
         }
 
         public override void Invoke(Action<CancellationToken> callback)
@@ -47,15 +61,37 @@ namespace VSL.Threading
 
         private async void Work()
         {
-            while (true)
+            try
             {
-                while (queue.TryDequeue(out WorkItem workItem))
+                while (true)
                 {
-                    workItem.Work(ct);
-                    workItem.WaitHandle?.Set();
+                    while (queue.TryDequeue(out WorkItem workItem))
+                    {
+                        workItem.Work(itemCt);
+                        workItem.WaitHandle?.Set();
+                        if (mainCt.IsCancellationRequested)
+                            return;
+                    }
+                    await Task.Delay(parent.SleepTime, mainCt);
                 }
-                await Task.Delay(parent.SleepTime);
             }
+            catch (TaskCanceledException)
+            {
+                // shutting down
+            }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseUncaught(ex);
+            }
+            
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                mainCts.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }

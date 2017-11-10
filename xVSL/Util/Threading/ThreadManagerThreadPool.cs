@@ -11,16 +11,30 @@ namespace VSL.Threading
     {
         private ConcurrentQueue<WorkItem> queue; 
         private Timer timer;
+        private CancellationTokenSource mainCts;
+        private CancellationToken mainCt;
 
         internal ThreadManagerThreadPool() : base(AsyncMode.ThreadPool)
         {
             queue = new ConcurrentQueue<WorkItem>();
-            timer = new Timer(TimerCallback, null, 0, -1);
+            timer = new Timer(TimerCallback, null, -1, -1);
+            mainCts = new CancellationTokenSource();
+            mainCt = mainCts.Token;
         }
 
         internal override void Assign(VSLSocket parent)
         {
             this.parent = parent;
+        }
+
+        internal override void Start()
+        {
+            timer.Change(0, -1);
+        }
+
+        internal override void Close()
+        {
+            mainCts.Cancel();
         }
 
         public override void Invoke(Action<CancellationToken> callback)
@@ -48,9 +62,11 @@ namespace VSL.Threading
 
         private void TimerCallback(object state)
         {
+            if (mainCt.IsCancellationRequested)
+                return;
             while (queue.TryDequeue(out WorkItem workItem))
             {
-                workItem.Work(ct);
+                workItem.Work(itemCt);
                 workItem.WaitHandle?.Set();
             }
             timer.Change(parent.SleepTime, -1);
@@ -61,6 +77,7 @@ namespace VSL.Threading
             if (disposing)
             {
                 timer.Dispose();
+                mainCts.Dispose();
             }
             base.Dispose(disposing);
         }

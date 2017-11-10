@@ -218,13 +218,13 @@ namespace VSL
                 if (success)
                 {
                     if (parent.Logger.InitD)
-                        parent.Logger.D(string.Format("Received internal AES packet: ID={0} Length={1}", id, content.Length));
+                        parent.Logger.D($"Received internal insecure AES packet: ID={id} Length={content.Length}");
                     return parent.handler.HandleInternalPacket(id, content, CryptographicAlgorithm.Insecure_AES_256_CBC);
                 }
                 else
                 {
                     if (parent.Logger.InitD)
-                        parent.Logger.D(string.Format("Received external AES packet: ID={0} Length={1}", 255 - id, content.Length));
+                        parent.Logger.D($"Received external insecure AES packet: ID={255-id} Length={content.Length}");
                     parent.OnPacketReceived(id, content);
                     return true;
                 }
@@ -239,6 +239,7 @@ namespace VSL
             }
             return false;
         }
+        // TODO: Check to big packets
         private bool ReceivePacket_AES_256_CBC_MP2()
         {
             try
@@ -271,13 +272,15 @@ namespace VSL
                             byte[] content = plaintext.ReadBytes(Convert.ToInt32(length));
                             if (success)
                             {
-                                // TODO: Log
+                                if (parent.Logger.InitD)
+                                    parent.Logger.D($"Received internal AES packet: ID={id} Length={content.Length}");
                                 if (!parent.handler.HandleInternalPacket(id, content, CryptographicAlgorithm.AES_256_CBC_MP2))
                                     return false;
                             }
                             else
                             {
-                                // TODO: Log
+                                if (parent.Logger.InitD)
+                                    parent.Logger.D($"Received external insecure AES packet: ID={255 - id} Length={content.Length}");
                                 parent.OnPacketReceived(id, content);
                             }
                         }

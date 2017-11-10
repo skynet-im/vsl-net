@@ -22,6 +22,47 @@ namespace VSL
         }
 
         // TODO: Managed thread
+#if !__IOS__
+        /// <summary>
+        /// Creates a ThreadManager that executes work items on the thread, that starts this <see cref="VSLSocket"/>.
+        /// </summary>
+        /// <returns></returns>
+        public static ThreadManager CreateManagedThread()
+        {
+            return new ThreadManagerMangedThread();
+        }
+#endif
+#if __IOS__
+        /// <summary>
+        /// Creates a ThreadManager that executes work items on the UI thread.
+        /// </summary>
+        /// <param name="threadAccess">Object to access its UI thread.</param>
+        /// <returns></returns>
+        public static ThreadManager CreateManagedThread(Foundation.NSObject threadAccess)
+        {
+            return new ThreadManagerMangedThread(threadAccess);
+        }
+#elif WINDOWS_UWP
+        /// <summary>
+        /// Creates a ThreadManager that executes work items on the UI thread.
+        /// </summary>
+        /// <param name="window">Window to access its UI thread.</param>
+        /// <returns></returns>
+        public static ThreadManager CreateManagedThread(Windows.UI.Core.CoreWindow window)
+        {
+            return new ThreadManagerMangedThread(window);
+        }
+#else
+        /// <summary>
+        /// Creates a ThreadManager that executes work items on the UI thread.
+        /// </summary>
+        /// <param name="dispatcher">Dispatcher that should be used to execute work items.</param>
+        /// <returns></returns>
+        public static ThreadManager CreateManagedThread(System.Windows.Threading.Dispatcher dispatcher)
+        {
+            return new ThreadManagerMangedThread(dispatcher);
+        }
+#endif
 
         /// <summary>
         /// Creates a ThreadManager that executes work items on the main thread using async/await.
@@ -36,8 +77,16 @@ namespace VSL
         /// The underlying <see cref="VSLSocket"/>.
         /// </summary>
         internal protected VSLSocket parent;
-        internal protected CancellationTokenSource cts;
-        internal protected CancellationToken ct;
+
+        /// <summary>
+        /// Informs the work items when this VSLSocket is shutting down.
+        /// </summary>
+        internal protected CancellationTokenSource itemCts;
+
+        /// <summary>
+        /// Informs the work items when this VSLSocket is shutting down.
+        /// </summary>
+        internal protected CancellationToken itemCt;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ThreadManager"/> class.
@@ -46,8 +95,8 @@ namespace VSL
         internal protected ThreadManager(AsyncMode mode)
         {
             Mode = mode;
-            cts = new CancellationTokenSource();
-            ct = cts.Token;
+            itemCts = new CancellationTokenSource();
+            itemCt = itemCts.Token;
         }
 
         /// <summary>
@@ -65,7 +114,20 @@ namespace VSL
         /// Starts an assigned ThreadManager.
         /// </summary>
         internal abstract void Start();
-        
+
+        /// <summary>
+        /// Requests the work items to stop work.
+        /// </summary>
+        internal virtual void Shutdown()
+        {
+            itemCts.Cancel();
+        }
+
+        /// <summary>
+        /// Stops all running threads and disposes all associated resources.
+        /// </summary>
+        internal abstract void Close();
+
         /// <summary>
         /// Invokes an <see cref="Action"/> synchronously.
         /// </summary>
@@ -114,7 +176,7 @@ namespace VSL
                 if (disposing)
                 {
                     // -TODO: dispose managed state (managed objects).
-                    cts.Dispose();
+                    itemCts.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
