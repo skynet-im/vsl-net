@@ -26,7 +26,7 @@ namespace VSL.Packet
         internal P03FinishHandshake(ConnectionState connectionState)
         {
             if (connectionState != ConnectionState.CompatibilityMode || connectionState != ConnectionState.NotCompatible)
-                throw new InvalidOperationException("P03FinishHandshake.P03FinishHandshake(ConnectionState) is only allow with ConnectionState.CompatibilityMode or onnectionState.NotCompatible");
+                throw new InvalidOperationException("P03FinishHandshake.P03FinishHandshake(ConnectionState) is only allowed with ConnectionState.CompatibilityMode or onnectionState.NotCompatible");
             ConnectionState = connectionState;
         }
 

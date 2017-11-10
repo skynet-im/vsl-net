@@ -30,12 +30,6 @@ namespace VSL
         /// <summary>
         /// Gets the manager for event invocation and load balancing.
         /// </summary>
-        [Obsolete("VSLSocket.EventThread is deprecated, please use VSLSocket.ThreadManager instead.", false)]
-        // TODO: Add error in v1.1.19.0
-        public ThreadMgr EventThread { get; internal set; }
-        /// <summary>
-        /// Gets the manager for event invocation and load balancing.
-        /// </summary>
         public ThreadManager ThreadManager { get; internal set; }
         /// <summary>
         /// Access file transfer functions.
@@ -51,12 +45,20 @@ namespace VSL
         /// <summary>
         /// Initializes all non-child-specific components.
         /// </summary>
-        internal void InitializeComponent(ThreadMgr.InvokeMode mode)
+        protected void InitializeComponent(ThreadManager threadManager)
         {
-            EventThread = new ThreadMgr(this, mode);
+            ThreadManager = threadManager;
+            threadManager.Assign(this);
             ExceptionHandler = new ExceptionHandler(this);
             Logger = new Logger(this);
             connectionLostLock = new object();
+        }
+        /// <summary>
+        /// Starts the assigned ThreadManager.
+        /// </summary>
+        protected void StartInternal()
+        {
+            ThreadManager.Start();
         }
         //  constructor>
         #region properties
@@ -120,10 +122,10 @@ namespace VSL
         internal virtual void OnConnectionEstablished()
         {
             connectionAvailable = true;
-            EventThread.Start();
-            EventThread.QueueWorkItem((ct) => ConnectionEstablished?.Invoke(this, new EventArgs()));
+            ThreadManager.Start();
+            ThreadManager.QueueWorkItem((ct) => ConnectionEstablished?.Invoke(this, new EventArgs()));
             if (Logger.InitI)
-                Logger.I("New connection established");
+                Logger.I("New connection established using VSL " + ConnectionVersionString);
         }
         /// <summary>
         /// The PacketReceived event occurs when a packet with an external ID was received
@@ -137,7 +139,7 @@ namespace VSL
         internal virtual void OnPacketReceived(byte id, byte[] content)
         {
             PacketReceivedEventArgs args = new PacketReceivedEventArgs(Convert.ToByte(255 - id), content);
-            EventThread.QueueWorkItem((ct) => PacketReceived?.Invoke(this, args));
+            ThreadManager.QueueWorkItem((ct) => PacketReceived?.Invoke(this, args));
         }
         /// <summary>
         /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it.
@@ -149,13 +151,7 @@ namespace VSL
         /// <param name="e"></param>
         internal virtual void OnConnectionClosed(ConnectionClosedEventArgs e)
         {
-            if (!EventThread.QueueCriticalWorkItem((ct) => ConnectionClosed?.Invoke(this, e)))
-#if WINDOWS_UWP
-                Task.Run(() => ConnectionClosed?.Invoke(this, e));
-#else
-                //ThreadPool.QueueUserWorkItem((o) => ConnectionClosed?.Invoke(this, e));
-                ConnectionClosed?.Invoke(this, e);
-#endif
+            ThreadManager.QueueWorkItem((ct) => ConnectionClosed?.Invoke(this, e));
         }
         #endregion
         // <functions
@@ -245,9 +241,8 @@ namespace VSL
                     if (Logger.InitI)
                         Logger.I("Connection was forcibly closed: " + reason);
                     channel.CloseConnection();
-                    if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
-                        EventThread.Exit();
                     OnConnectionClosed(e);
+                    ThreadManager.Close();
                     Dispose();
                 }
         }
@@ -263,8 +258,6 @@ namespace VSL
                 {
                     ConnectionClosedEventArgs e = PrepareOnConnectionClosed(exception);
                     channel.CloseConnection();
-                    if (EventThread.Mode == ThreadMgr.InvokeMode.ManagedThread)
-                        EventThread.Exit();
                     OnConnectionClosed(e);
                 }
         }
@@ -278,7 +271,7 @@ namespace VSL
             connectionAvailable = false;
             connectionLost = true;
             connectionLostTime = DateTime.Now;
-            EventThread.ShuttingDown();
+            ThreadManager.Shutdown();
             return new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
         }
         #endregion
@@ -298,7 +291,7 @@ namespace VSL
                     // -TODO: dispose managed state (managed objects).
                     channel?.Dispose();
                     manager?.Dispose();
-                    EventThread?.Dispose();
+                    ThreadManager?.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.

@@ -14,11 +14,11 @@ namespace VSL
         /// <summary>
         /// The installed version of VSL.
         /// </summary>
-        public const string ProductVersion = "1.1.16.0";
+        public const string ProductVersion = "1.2.0.0";
         /// <summary>
         /// The installed version as ushort.
         /// </summary>
-        public const ushort VersionNumber = 1;
+        public const ushort VersionNumber = 2;
         /// <summary>
         /// The oldest supported version of VSL.
         /// </summary>

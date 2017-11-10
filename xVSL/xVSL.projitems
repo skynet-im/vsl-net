@@ -45,7 +45,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Packet\P09FileDataBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\ProblemCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\RequestType.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Server\SharedServerHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AES.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AesCsp.cs" />
