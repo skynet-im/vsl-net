@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using VSL.FileTransfer;
+using VSL.Net;
 using VSL.Packet;
 
 namespace VSL
@@ -109,10 +109,10 @@ namespace VSL
             //  initialize component>
 
             // <key exchange
-            Task s = Task.Run(() => manager.SendPacket(CryptographicAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey)));
+            Task s = Task.Run(() => manager.SendPacket(CryptoAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey)));
             manager.GenerateKeys();
             await s;
-            await Task.Run(() => manager.SendPacket(CryptographicAlgorithm.RSA_2048_OAEP, new P01KeyExchange(manager.AesKey, manager.SendIV,
+            await Task.Run(() => manager.SendPacket(CryptoAlgorithm.RSA_2048_OAEP, new P01KeyExchange(manager.AesKey, manager.SendIV,
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct)));
             //  key exchange>
         }

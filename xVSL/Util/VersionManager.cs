@@ -8,10 +8,10 @@ namespace VSL
 {
     internal static class VersionManager
     {
-        private static Dictionary<ushort, string> versions;
+        private static Dictionary<ushort?, string> versions;
         static VersionManager()
         {
-            versions = new Dictionary<ushort, string>()
+            versions = new Dictionary<ushort?, string>()
             {
                 { 0, "1.0" },
                 { 1, "1.1" },
@@ -19,9 +19,11 @@ namespace VSL
             };
         }
 
-        internal static string GetVersion(ushort versionCode)
+        internal static string GetVersion(ushort? versionCode)
         {
-            if (versions.TryGetValue(versionCode, out string value))
+            if (!versionCode.HasValue)
+                return "waiting for version";
+            else if (versions.TryGetValue(versionCode, out string value))
                 return value;
             else
                 return "unknown version";

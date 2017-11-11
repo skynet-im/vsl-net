@@ -21,16 +21,16 @@ namespace VSL
             base.parent = parent;
             RegisteredPackets = new List<PacketRule>
             {
-                new PacketRule(new P00Handshake(), CryptographicAlgorithm.None),
-                new PacketRule(new P01KeyExchange(), CryptographicAlgorithm.RSA_2048_OAEP),
+                new PacketRule(new P00Handshake(), CryptoAlgorithm.None),
+                new PacketRule(new P01KeyExchange(), CryptoAlgorithm.RSA_2048_OAEP),
                 // P02Certificate   -   Not supported in VSL 1.1
                 // P03FinishHandshake - Client only
-                new PacketRule(new P04ChangeIV(), CryptographicAlgorithm.Insecure_AES_256_CBC),
+                new PacketRule(new P04ChangeIV(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2),
                 // P05KeepAlive     -   Not supported in VSL 1.1
-                new PacketRule(new P06Accepted(), CryptographicAlgorithm.Insecure_AES_256_CBC),
-                new PacketRule(new P07OpenFileTransfer(), CryptographicAlgorithm.Insecure_AES_256_CBC),
-                new PacketRule(new P08FileHeader(), CryptographicAlgorithm.Insecure_AES_256_CBC),
-                new PacketRule(new P09FileDataBlock(), CryptographicAlgorithm.Insecure_AES_256_CBC)
+                new PacketRule(new P06Accepted(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2),
+                new PacketRule(new P07OpenFileTransfer(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2),
+                new PacketRule(new P08FileHeader(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2),
+                new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2)
             };
         }
         //  constructor>
@@ -43,7 +43,7 @@ namespace VSL
                 case RequestType.DirectPublicKey:
                     return true;
                 default:
-                    parent.manager.SendPacket(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
+                    parent.manager.SendPacket(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
                     return true;
             }
         }
@@ -53,24 +53,28 @@ namespace VSL
             ushort? productVersion = VersionManager.GetSharedProductVersion(parent.LatestProduct, parent.OldestProduct, p.LatestProduct, p.OldestProduct);
 
             if (!vslVersion.HasValue || !productVersion.HasValue)
-                return parent.manager.SendPacket(CryptographicAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
+                return parent.manager.SendPacket(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
 
             parent.manager.AesKey = p.AesKey;
-            parent.manager.SendIV = p.ServerIV;
-            parent.manager.ReceiveIV = p.ClientIV;
-            parent.manager.Ready4Aes = true;
             parent.ConnectionVersion = vslVersion.Value;
 
             if (vslVersion.Value < 2)
             {
-                if (!parent.manager.SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
+                parent.manager.SendIV = p.ServerIV;
+                parent.manager.ReceiveIV = p.ClientIV;
+                parent.manager.Ready4Aes = true;
+
+                if (!parent.manager.SendPacket(CryptoAlgorithm.AES_256_CBC_SP, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
                     return false;
                 parent.OnConnectionEstablished();
             }
 
             if (vslVersion.Value == 2)
             {
-                if (!parent.manager.SendPacket(CryptographicAlgorithm.AES_256_CBC_MP2, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
+                parent.manager.HmacKey = Crypt.Util.ConnectBytes(p.ClientIV, p.ServerIV);
+                parent.manager.Ready4Aes = true;
+
+                if (!parent.manager.SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
                     return false;
                 parent.OnConnectionEstablished();
             }

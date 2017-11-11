@@ -25,7 +25,7 @@ namespace VSL.Packet
         /// <param name="connectionState"></param>
         internal P03FinishHandshake(ConnectionState connectionState)
         {
-            if (connectionState != ConnectionState.CompatibilityMode || connectionState != ConnectionState.NotCompatible)
+            if (connectionState != ConnectionState.CompatibilityMode && connectionState != ConnectionState.NotCompatible)
                 throw new InvalidOperationException("P03FinishHandshake.P03FinishHandshake(ConnectionState) is only allowed with ConnectionState.CompatibilityMode or onnectionState.NotCompatible");
             ConnectionState = connectionState;
         }
@@ -51,6 +51,7 @@ namespace VSL.Packet
         /// <param name="productVersion"></param>
         internal P03FinishHandshake(ConnectionState connectionState, ushort vslVersion, ushort productVersion)
         {
+            ConnectionState = connectionState;
             VSLVersion = vslVersion;
             ProductVersion = productVersion;
         }

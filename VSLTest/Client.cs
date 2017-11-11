@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Threading;
 using VSL;
 using VSL.FileTransfer;
 
@@ -15,9 +16,9 @@ namespace VSLTest
     public class Client
     {
         public VSLServer Vsl;
-        public Client(Socket native)
+        public Client(Socket native, Dispatcher dispatcher)
         {
-            Vsl = new VSLServer(native, 0, 0, Program.Keypair, ThreadManager.CreateManagedThread());
+            Vsl = new VSLServer(native, 0, 0, Program.Keypair, ThreadManager.CreateManagedThread(dispatcher));
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
             Vsl.FileTransfer.FileTransferRequested += Vsl_FileTransferRequested;
             Vsl.Logger.PrintDebugMessages = true;

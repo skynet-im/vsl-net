@@ -24,13 +24,13 @@ namespace VSL
                 // P00Handshake     -   Server only
                 // P01KeyExchange   -   Server only
                 // P02Certificate   -   Not supported in VSL 1.1
-                new PacketRule(new P03FinishHandshake(), CryptographicAlgorithm.None, CryptographicAlgorithm.Insecure_AES_256_CBC),
-                new PacketRule(new P04ChangeIV(), CryptographicAlgorithm.Insecure_AES_256_CBC),
+                new PacketRule(new P03FinishHandshake(), CryptoAlgorithm.None, CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2),
+                new PacketRule(new P04ChangeIV(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2),
                 // P05KeepAlive     -   Not supported in VSL 1.1
-                new PacketRule(new P06Accepted(), CryptographicAlgorithm.Insecure_AES_256_CBC),
+                new PacketRule(new P06Accepted(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2),
                 // P07OpenFileTransfer - Server only
-                new PacketRule(new P08FileHeader(), CryptographicAlgorithm.Insecure_AES_256_CBC),
-                new PacketRule(new P09FileDataBlock(), CryptographicAlgorithm.Insecure_AES_256_CBC)
+                new PacketRule(new P08FileHeader(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2),
+                new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2)
             };
         }
         //  constructor>
@@ -55,6 +55,7 @@ namespace VSL
             switch (p.ConnectionState)
             {
                 case ConnectionState.CompatibilityMode:
+                    parent.ConnectionVersion = 1; // VSL 1.1 is the last version that uses this mode.
                     parent.OnConnectionEstablished();
                     return true;
                 case ConnectionState.Redirect:

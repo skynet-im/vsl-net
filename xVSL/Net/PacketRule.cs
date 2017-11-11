@@ -8,9 +8,9 @@ namespace VSL.Net
     internal class PacketRule
     {
         internal readonly IPacket Packet;
-        internal readonly CryptographicAlgorithm[] Algorithms;
+        internal readonly CryptoAlgorithm[] Algorithms;
 
-        internal PacketRule(IPacket packet, params CryptographicAlgorithm[] algorithms)
+        internal PacketRule(IPacket packet, params CryptoAlgorithm[] algorithms)
         {
             Packet = packet;
             Algorithms = algorithms;
