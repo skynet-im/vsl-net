@@ -113,7 +113,6 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThreadManagerMangedThread.cs" />
-    <Compile Include="ThreadMgr.cs" />
     <EmbeddedResource Include="Properties\VSL_UWP.rd.xml" />
   </ItemGroup>
   <ItemGroup>

@@ -21,7 +21,6 @@ namespace VSL
             return new ThreadManagerThreadPool();
         }
 
-        // TODO: Managed thread
 #if !__IOS__
         /// <summary>
         /// Creates a ThreadManager that executes work items on the thread, that starts this <see cref="VSLSocket"/>.

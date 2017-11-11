@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
 using VSL.Crypt;
+using VSL.Net;
 
 namespace VSL
 {
@@ -21,6 +23,7 @@ namespace VSL
         private AesCsp enc;
         private AesCsp dec;
 #endif
+        private HMACSHA256 hmacProvider;
         //  fields>
         // <constructor
         internal NetworkManager(VSLSocket parent, string rsaKey)
@@ -37,38 +40,38 @@ namespace VSL
             {
                 if (!parent.channel.TryRead(out byte[] buf, 1))
                     return false;
-                CryptographicAlgorithm algorithm = (CryptographicAlgorithm)buf[0];
+                CryptoAlgorithm algorithm = (CryptoAlgorithm)buf[0];
                 switch (algorithm)
                 {
-                    case CryptographicAlgorithm.None:
+                    case CryptoAlgorithm.None:
                         return ReceivePacket_Plaintext();
-                    case CryptographicAlgorithm.RSA_2048_OAEP:
+                    case CryptoAlgorithm.RSA_2048_OAEP:
                         return ReceivePacket_RSA_2048_OAEP();
-                    case CryptographicAlgorithm.Insecure_AES_256_CBC:
+                    case CryptoAlgorithm.AES_256_CBC_SP:
                         if (!Ready4Aes)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidOperation", "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
-                        if (parent.ConnectionVersion >= 2)
+                        if (parent.ConnectionVersion.HasValue && parent.ConnectionVersion.Value >= 2)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", "VSL versions 1.2 and later are not allowed to use an old, insecure algorithm.\r\n\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
-                        return ReceivePacket_Insecure_AES_256_CBC();
+                        return ReceivePacket_AES_256_CBC_SP();
 
-                    case CryptographicAlgorithm.AES_256_CBC_MP2:
+                    case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2:
                         if (!Ready4Aes)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidOperation", "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
-                        if (parent.ConnectionVersion < 2)
+                        if (parent.ConnectionVersion.HasValue && parent.ConnectionVersion.Value < 2)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", "VSL versions older than 1.2 should not be able to use CryptographicAlgorithm.AES_256_CBC_MP2.\r\n\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
-                        return ReceivePacket_AES_256_CBC_MP2();
+                        return ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP2();
 
                     default:
                         parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", $"Received packet with unknown algorithm ({algorithm}).\r\n\tat NetworkManager.OnDataReceive()");
@@ -121,7 +124,7 @@ namespace VSL
                 {
                     if (!parent.channel.TryRead(out byte[] buf, Convert.ToInt32(length))) // read packet content
                         return false;
-                    return parent.handler.HandleInternalPacket(id, buf, CryptographicAlgorithm.None);
+                    return parent.handler.HandleInternalPacket(id, buf, CryptoAlgorithm.None);
                 }
             }
             catch (ArgumentOutOfRangeException ex) // PacketHandler.HandleInternalPacket() => IPacket.ReadPacket()
@@ -137,7 +140,7 @@ namespace VSL
                 int index = 1;
                 if (!parent.channel.TryRead(out byte[] ciphertext, 256))
                     return false;
-                byte[] plaintext = RSA.DecryptBlock(ciphertext, rsaKey);
+                byte[] plaintext = Crypt.RSA.DecryptBlock(ciphertext, rsaKey);
                 byte id = plaintext[0]; // index = 1
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 if (success)
@@ -155,7 +158,7 @@ namespace VSL
                         }
                         index += 4;
                     }
-                    return parent.handler.HandleInternalPacket(id, Util.TakeBytes(plaintext, Convert.ToInt32(length), index), CryptographicAlgorithm.RSA_2048_OAEP);
+                    return parent.handler.HandleInternalPacket(id, Util.TakeBytes(plaintext, Convert.ToInt32(length), index), CryptoAlgorithm.RSA_2048_OAEP);
                 }
                 else
                 {
@@ -167,13 +170,13 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (System.Security.Cryptography.CryptographicException ex) // RSA.DecryptBlock()
+            catch (CryptographicException ex) // RSA.DecryptBlock()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
             return false;
         }
-        private bool ReceivePacket_Insecure_AES_256_CBC()
+        private bool ReceivePacket_AES_256_CBC_SP()
         {
             try
             {
@@ -219,12 +222,12 @@ namespace VSL
                 {
                     if (parent.Logger.InitD)
                         parent.Logger.D($"Received internal insecure AES packet: ID={id} Length={content.Length}");
-                    return parent.handler.HandleInternalPacket(id, content, CryptographicAlgorithm.Insecure_AES_256_CBC);
+                    return parent.handler.HandleInternalPacket(id, content, CryptoAlgorithm.AES_256_CBC_SP);
                 }
                 else
                 {
                     if (parent.Logger.InitD)
-                        parent.Logger.D($"Received external insecure AES packet: ID={255-id} Length={content.Length}");
+                        parent.Logger.D($"Received external insecure AES packet: ID={255 - id} Length={content.Length}");
                     parent.OnPacketReceived(id, content);
                     return true;
                 }
@@ -239,17 +242,23 @@ namespace VSL
             }
             return false;
         }
-        // TODO: Check to big packets
-        private bool ReceivePacket_AES_256_CBC_MP2()
+        private bool ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP2()
         {
             try
             {
-                if (!parent.channel.TryRead(out byte[] buf, 18))
+                if (!parent.channel.TryRead(out byte[] buf, 34)) // 2 (length) + 32 (HMAC)
                     return false;
                 ushort blocks = BitConverter.ToUInt16(buf, 0);
-                byte[] iv = Util.TakeBytes(buf, 16, 2);
-                if (!parent.channel.TryRead(out byte[] ciphertext, (blocks + 1) * 16))
+                byte[] hmac = Util.TakeBytes(buf, 32, 2);
+                if (!parent.channel.TryRead(out byte[] cipherblock, (blocks + 2) * 16)) // inclusive iv
                     return false;
+                if (!hmac.SequenceEqual(hmacProvider.ComputeHash(cipherblock)))
+                {
+                    parent.ExceptionHandler.CloseConnection("MessageCorrupted", "The integrity checking resulted in a corrupted message.\r\n\tat NetworkManager.ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP2()");
+                    return false;
+                }
+                byte[] iv = Util.TakeBytes(cipherblock, 16);
+                byte[] ciphertext = Util.SkipBytes(cipherblock, 16);
 #if WINDOWS_UWP
                 byte[] b_plaintext = AES.Decrypt(ciphertext, _aesKey, iv);
 #else
@@ -269,12 +278,18 @@ namespace VSL
                                 length = packet.ConstantLength.Value;
                             else
                                 length = plaintext.ReadUInt32();
+                            long pending = ms_plaintext.Length - ms_plaintext.Position;
+                            if (length > pending)
+                            {
+                                parent.ExceptionHandler.CloseConnection("TooBigPacket", $"Tried to receive a packet with {length} bytes length although only {pending} bytes are available.\r\n\tat NetworkManager.ReceivePacket_AES_256_CBC_MP2()");
+                                return false;
+                            }
                             byte[] content = plaintext.ReadBytes(Convert.ToInt32(length));
                             if (success)
                             {
                                 if (parent.Logger.InitD)
                                     parent.Logger.D($"Received internal AES packet: ID={id} Length={content.Length}");
-                                if (!parent.handler.HandleInternalPacket(id, content, CryptographicAlgorithm.AES_256_CBC_MP2))
+                                if (!parent.handler.HandleInternalPacket(id, content, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2))
                                     return false;
                             }
                             else
@@ -291,7 +306,7 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (System.Security.Cryptography.CryptographicException ex) // AES.Decrypt()
+            catch (CryptographicException ex) // AES.Decrypt()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -303,20 +318,20 @@ namespace VSL
         {
             byte[] head = Util.ConnectBytes(new byte[1] { id }, BitConverter.GetBytes(Convert.ToUInt32(content.Length)));
             if (parent.ConnectionVersion < 2)
-                return SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, head, content);
+                return SendPacket(CryptoAlgorithm.AES_256_CBC_SP, head, content);
             if (parent.ConnectionVersion == 2)
-                return SendPacket(CryptographicAlgorithm.AES_256_CBC_MP2, head, content);
+                return SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2, head, content);
             return false;
         }
         internal bool SendPacket(Packet.IPacket packet)
         {
             if (parent.ConnectionVersion < 2)
-                return SendPacket(CryptographicAlgorithm.Insecure_AES_256_CBC, packet);
+                return SendPacket(CryptoAlgorithm.AES_256_CBC_SP, packet);
             if (parent.ConnectionVersion == 2)
-                return SendPacket(CryptographicAlgorithm.AES_256_CBC_MP2, packet);
+                return SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2, packet);
             return false;
         }
-        internal bool SendPacket(CryptographicAlgorithm alg, Packet.IPacket packet)
+        internal bool SendPacket(CryptoAlgorithm alg, Packet.IPacket packet)
         {
             byte[] head = new byte[1] { packet.PacketID };
             PacketBuffer buf = new PacketBuffer();
@@ -327,36 +342,36 @@ namespace VSL
                 head = Util.ConnectBytes(head, BitConverter.GetBytes(Convert.ToUInt32(content.Length)));
             return SendPacket(alg, head, content);
         }
-        internal bool SendPacket(CryptographicAlgorithm alg, byte[] head, byte[] content)
+        internal bool SendPacket(CryptoAlgorithm alg, byte[] head, byte[] content)
         {
             switch (alg)
             {
-                case CryptographicAlgorithm.None:
+                case CryptoAlgorithm.None:
                     return SendPacket_Plaintext(head, content);
-                case CryptographicAlgorithm.RSA_2048_OAEP:
+                case CryptoAlgorithm.RSA_2048_OAEP:
                     return SendPacket_RSA_2048_OAEP(head, content);
-                case CryptographicAlgorithm.Insecure_AES_256_CBC:
-                    return SendPacket_Insecure_AES_256_CBC(head, content);
-                case CryptographicAlgorithm.AES_256_CBC_MP2:
-                    return SendPacket_AES_256_CBC_MP2(head, content);
+                case CryptoAlgorithm.AES_256_CBC_SP:
+                    return SendPacket_AES_256_CBC_SP(head, content);
+                case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2:
+                    return SendPacket_AES_256_CBC_HMAC_SH256_MP2(head, content);
                 default:
                     throw new InvalidOperationException();
             }
         }
         private bool SendPacket_Plaintext(byte[] head, byte[] content)
         {
-            byte[] buf = Util.ConnectBytes(GetPrefix(CryptographicAlgorithm.None), head, content);
+            byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.None), head, content);
             return buf.Length == parent.channel.Send(buf);
         }
         private bool SendPacket_RSA_2048_OAEP(byte[] head, byte[] content)
         {
             try
             {
-                byte[] ciphertext = RSA.EncryptBlock(Util.ConnectBytes(head, content), rsaKey);
-                byte[] buf = Util.ConnectBytes(GetPrefix(CryptographicAlgorithm.RSA_2048_OAEP), ciphertext);
+                byte[] ciphertext = Crypt.RSA.EncryptBlock(Util.ConnectBytes(head, content), rsaKey);
+                byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.RSA_2048_OAEP), ciphertext);
                 return buf.Length == parent.channel.Send(buf);
             }
-            catch (System.Security.Cryptography.CryptographicException ex)
+            catch (CryptographicException ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
@@ -367,7 +382,7 @@ namespace VSL
                 return false;
             }
         }
-        private bool SendPacket_Insecure_AES_256_CBC(byte[] head, byte[] content)
+        private bool SendPacket_AES_256_CBC_SP(byte[] head, byte[] content)
         {
             try
             {
@@ -401,7 +416,7 @@ namespace VSL
                     tailBlock = enc.Encrypt(plaintext);
 #endif
                 }
-                byte[] buf = Util.ConnectBytes(GetPrefix(CryptographicAlgorithm.Insecure_AES_256_CBC), headBlock, tailBlock);
+                byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.AES_256_CBC_SP), headBlock, tailBlock);
                 bool success = buf.Length == parent.channel.Send(buf);
                 if (head[0] <= 9 && parent.Logger.InitD)
                     parent.Logger.D(string.Format("Sent internal AES packet: ID={0} Length={1} {2}b", head[0], buf.Length, blocks));
@@ -415,7 +430,7 @@ namespace VSL
                 return false;
             }
         }
-        private bool SendPacket_AES_256_CBC_MP2(byte[] head, byte[] content)
+        private bool SendPacket_AES_256_CBC_HMAC_SH256_MP2(byte[] head, byte[] content)
         {
 #if WINDOWS_UWP
             byte[] iv = AES.GenerateIV();
@@ -424,8 +439,10 @@ namespace VSL
             byte[] iv = enc.GenerateIV(true);
             byte[] ciphertext = enc.Encrypt(Util.ConnectBytes(head, content));
 #endif
-            byte[] blocks = BitConverter.GetBytes(Convert.ToUInt16(ciphertext.Length / 16));
-            byte[] buf = Util.ConnectBytes(GetPrefix(CryptographicAlgorithm.AES_256_CBC_MP2), blocks, iv, ciphertext);
+            byte[] blocks = BitConverter.GetBytes(Convert.ToUInt16(ciphertext.Length / 16 - 1));
+            byte[] cipherblock = Util.ConnectBytes(iv, ciphertext);
+            byte[] hmac = hmacProvider.ComputeHash(cipherblock);
+            byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2), blocks, hmac, cipherblock);
             return buf.Length == parent.channel.Send(buf);
         }
         #endregion send
@@ -444,6 +461,7 @@ namespace VSL
             _receiveIV = enc.GenerateIV(false);
             _sendIV = enc.GenerateIV(true);
             dec = new AesCsp(_aesKey, _receiveIV);
+            HmacKey = Util.ConnectBytes(_sendIV, _receiveIV);
 #endif
             Ready4Aes = true;
         }
@@ -469,6 +487,19 @@ namespace VSL
 #endif
             }
         }
+        private byte[] _hmacKey;
+        internal byte[] HmacKey
+        {
+            get => _hmacKey;
+            set
+            {
+                _hmacKey = value;
+                if (hmacProvider == null)
+                    hmacProvider = new HMACSHA256(value);
+                else
+                    hmacProvider.Key = value;
+            }
+        }
         private byte[] _receiveIV;
         internal byte[] ReceiveIV
         {
@@ -481,7 +512,6 @@ namespace VSL
 #if WINDOWS_UWP
                 _receiveIV = value;
 #else
-                // TODO: Fix crash because of this exception
                 if (dec == null) throw new InvalidOperationException("You have to asign the key before the iv");
                 _receiveIV = value;
                 dec.IV = value;
@@ -500,7 +530,6 @@ namespace VSL
 #if WINDOWS_UWP
                 _sendIV = value;
 #else
-                // TODO: Fix crash because of this exception
                 if (enc == null) throw new InvalidOperationException("You have to asign the key before the iv");
                 _sendIV = value;
                 enc.IV = value;
@@ -508,7 +537,7 @@ namespace VSL
             }
         }
 
-        private byte[] GetPrefix(CryptographicAlgorithm algorithm)
+        private byte[] GetPrefix(CryptoAlgorithm algorithm)
         {
             return new byte[1] { (byte)algorithm };
         }

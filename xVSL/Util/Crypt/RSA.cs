@@ -79,7 +79,7 @@ namespace VSL.Crypt
         /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
         [Obsolete("RSA.EncryptAsync is deprecated, please use Task.Run with RSA.Encrypt instead.", false)]
-        // TODO: Add error in v1.1.19.0
+        // TODO: Add error in v1.2.1
         public async static Task<byte[]> EncryptAsync(byte[] plaintext, string key)
         {
             if (plaintext == null) throw new ArgumentNullException("Plaintext must not be null");
@@ -167,7 +167,7 @@ namespace VSL.Crypt
         /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
         [Obsolete("RSA.DecryptAsync is deprecated, please use Task.Run with RSA.Decrypt instead.", false)]
-        // TODO: Add error in v1.1.19.0
+        // TODO: Add error in v1.2.1
         public async static Task<byte[]> DecryptAsync(byte[] ciphertext, string key)
         {
             if (ciphertext == null) throw new ArgumentNullException("Plaintext must not be null");

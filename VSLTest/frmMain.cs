@@ -35,7 +35,7 @@ namespace VSLTest
             if (!serverRunning)
             {
                 btnStartServer.Enabled = false;
-                ListenerTask();
+                Listener();
             }
             else
             {
@@ -43,25 +43,30 @@ namespace VSLTest
             }
         }
 
-        private void ListenerTask()
+        private void Listener()
         {
             //Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
             //TcpListener listener = new TcpListener(IPAddress.Any, 32771);
-            TcpListener listener = new TcpListener(IPAddress.IPv6Loopback, port);
-            listener.Server.DualMode = true;
-            listener.Start();
+            var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            TcpListener listener4 = new TcpListener(IPAddress.Loopback, port);
+            TcpListener listener6 = new TcpListener(IPAddress.IPv6Loopback, port);
+            listener4.Start();
+            listener6.Start();
             btnStartServer.Text = "Beenden";
             btnStartServer.Enabled = true;
             serverRunning = true;
-            ThreadPool.QueueUserWorkItem((o) => 
+            WaitCallback waitCallback = (state) =>
             {
+                TcpListener listener = (TcpListener)state;
                 while (running)
                 {
                     Socket native = listener.AcceptSocket();
-                    Client c = new Client(native);
+                    Client c = new Client(native, dispatcher);
                     Interlocked.Increment(ref Program.Connects);
                 }
-            });
+            };
+            ThreadPool.QueueUserWorkItem(waitCallback, listener4);
+            ThreadPool.QueueUserWorkItem(waitCallback, listener6);
         }
 
         private async void btnConnect_Click(object sender, EventArgs e)

@@ -70,11 +70,11 @@ namespace VSL
         /// Gets the protocol version that is used for this connection as <see cref="string"/>.
         /// </summary>
         public string ConnectionVersionString { get; private set; }
-        private ushort _connectionVersion;
+        private ushort? _connectionVersion;
         /// <summary>
         /// Gets the protocol version that is used for this connection.
         /// </summary>
-        public ushort ConnectionVersion
+        public ushort? ConnectionVersion
         {
             get => _connectionVersion;
             internal set

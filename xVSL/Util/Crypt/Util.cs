@@ -68,7 +68,7 @@ namespace VSL.Crypt
         /// <param name="b">byte arrays to connect</param>
         /// <returns></returns>
         [Obsolete("Util.ConnectBytesPA is deprecated, please use Util.ConnectBytes instead.", false)]
-        // TODO: Add error in v1.1.19.0
+        // TODO: Add error in v1.2.1
         public static byte[] ConnectBytesPA(params byte[][] b)
         {
             return ConnectBytes(b);

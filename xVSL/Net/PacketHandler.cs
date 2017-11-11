@@ -41,7 +41,7 @@ namespace VSL
         /// <param name="alg">Algorithm that was detected for this packet.</param>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <returns></returns>
-        internal bool HandleInternalPacket(byte id, byte[] content, CryptographicAlgorithm alg)
+        internal bool HandleInternalPacket(byte id, byte[] content, CryptoAlgorithm alg)
         {
             foreach (PacketRule rule in RegisteredPackets)
             {
