@@ -21,8 +21,8 @@ namespace VSL.Net
         /// </summary>
         AES_256_CBC_SP,
         /// <summary>
-        /// AES-256 CBC with HMAC-SHA256, multipacket mode and 2byte length marker.
+        /// AES-256 CBC with HMAC-SHA256, multipacket mode and 3byte length marker.
         /// </summary>
-        AES_256_CBC_HMAC_SHA256_MP2
+        AES_256_CBC_HMAC_SHA256_MP3
     }
 }
