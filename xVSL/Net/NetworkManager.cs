@@ -60,7 +60,7 @@ namespace VSL
                         }
                         return ReceivePacket_AES_256_CBC_SP();
 
-                    case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2:
+                    case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
                         if (!Ready4Aes)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidOperation", "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n\tat NetworkManager.OnDataReceive()");
@@ -71,7 +71,7 @@ namespace VSL
                             parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", "VSL versions older than 1.2 should not be able to use CryptographicAlgorithm.AES_256_CBC_MP2.\r\n\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
-                        return ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP2();
+                        return ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3();
 
                     default:
                         parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", $"Received packet with unknown algorithm ({algorithm}).\r\n\tat NetworkManager.OnDataReceive()");
@@ -242,19 +242,22 @@ namespace VSL
             }
             return false;
         }
-        private bool ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP2()
+        private bool ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3()
         {
             try
             {
-                if (!parent.channel.TryRead(out byte[] buf, 34)) // 2 (length) + 32 (HMAC)
+                if (!parent.channel.TryRead(out byte[] buf, 35)) // 3 (length) + 32 (HMAC)
                     return false;
-                ushort blocks = BitConverter.ToUInt16(buf, 0);
-                byte[] hmac = Util.TakeBytes(buf, 32, 2);
+                int blocks = Convert.ToInt32(UInt24.FromBytes(buf, 0));
+                byte[] hmac = Util.TakeBytes(buf, 32, 3);
                 if (!parent.channel.TryRead(out byte[] cipherblock, (blocks + 2) * 16)) // inclusive iv
                     return false;
                 if (!hmac.SequenceEqual(hmacProvider.ComputeHash(cipherblock)))
                 {
-                    parent.ExceptionHandler.CloseConnection("MessageCorrupted", "The integrity checking resulted in a corrupted message.\r\n\tat NetworkManager.ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP2()");
+                    parent.ExceptionHandler.CloseConnection("MessageCorrupted",
+                        "The integrity checking resulted in a corrupted message.\r\n\t" +
+                        "at NetworkManager.ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3()\r\n\t" +
+                        "block count: " + blocks);
                     return false;
                 }
                 byte[] iv = Util.TakeBytes(cipherblock, 16);
@@ -289,7 +292,7 @@ namespace VSL
                             {
                                 if (parent.Logger.InitD)
                                     parent.Logger.D($"Received internal AES packet: ID={id} Length={content.Length}");
-                                if (!parent.handler.HandleInternalPacket(id, content, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2))
+                                if (!parent.handler.HandleInternalPacket(id, content, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3))
                                     return false;
                             }
                             else
@@ -320,7 +323,7 @@ namespace VSL
             if (parent.ConnectionVersion < 2)
                 return SendPacket(CryptoAlgorithm.AES_256_CBC_SP, head, content);
             if (parent.ConnectionVersion == 2)
-                return SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2, head, content);
+                return SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, head, content);
             return false;
         }
         internal bool SendPacket(Packet.IPacket packet)
@@ -328,7 +331,7 @@ namespace VSL
             if (parent.ConnectionVersion < 2)
                 return SendPacket(CryptoAlgorithm.AES_256_CBC_SP, packet);
             if (parent.ConnectionVersion == 2)
-                return SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2, packet);
+                return SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, packet);
             return false;
         }
         internal bool SendPacket(CryptoAlgorithm alg, Packet.IPacket packet)
@@ -352,8 +355,8 @@ namespace VSL
                     return SendPacket_RSA_2048_OAEP(head, content);
                 case CryptoAlgorithm.AES_256_CBC_SP:
                     return SendPacket_AES_256_CBC_SP(head, content);
-                case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2:
-                    return SendPacket_AES_256_CBC_HMAC_SH256_MP2(head, content);
+                case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
+                    return SendPacket_AES_256_CBC_HMAC_SH256_MP3(head, content);
                 default:
                     throw new InvalidOperationException();
             }
@@ -430,7 +433,7 @@ namespace VSL
                 return false;
             }
         }
-        private bool SendPacket_AES_256_CBC_HMAC_SH256_MP2(byte[] head, byte[] content)
+        private bool SendPacket_AES_256_CBC_HMAC_SH256_MP3(byte[] head, byte[] content)
         {
 #if WINDOWS_UWP
             byte[] iv = AES.GenerateIV();
@@ -439,13 +442,14 @@ namespace VSL
             byte[] iv = enc.GenerateIV(true);
             byte[] ciphertext = enc.Encrypt(Util.ConnectBytes(head, content));
 #endif
-            byte[] blocks = BitConverter.GetBytes(Convert.ToUInt16(ciphertext.Length / 16 - 1));
+            byte[] blocks = UInt24.ToBytes(Convert.ToUInt32(ciphertext.Length / 16 - 1));
             byte[] cipherblock = Util.ConnectBytes(iv, ciphertext);
             byte[] hmac = hmacProvider.ComputeHash(cipherblock);
-            byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP2), blocks, hmac, cipherblock);
+            byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3), blocks, hmac, cipherblock);
             return buf.Length == parent.channel.Send(buf);
         }
         #endregion send
+        #region keys
         /// <summary>
         /// Generates all keys and ivs and sets them.
         /// </summary>
@@ -536,7 +540,7 @@ namespace VSL
 #endif
             }
         }
-
+        #endregion
         private byte[] GetPrefix(CryptoAlgorithm algorithm)
         {
             return new byte[1] { (byte)algorithm };
