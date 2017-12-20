@@ -17,6 +17,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Events.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\ReadAesFileStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Events.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileMeta.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferClient.cs" />
@@ -54,6 +55,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AES.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AesCsp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ECDH.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Hash.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\RSA.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ScryptCsp.cs" />

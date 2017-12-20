@@ -41,17 +41,20 @@ Public Class frmMain
         End If
         Dim ct As Byte() = Util.GetBytes(tbAesCipherText.Text)
         Dim pt As Byte() = New Byte(ct.Length - 1) {}
+        Dim decryptedLength As Integer = 0
+        Dim encryptedIndex As Integer = 0
         Dim last As Integer = ct.Length Mod 16
         If last = 0 Then last = 16
-        Dim between As Integer = ct.Length - last
         Using aes As New Security.Cryptography.AesCryptoServiceProvider()
             aes.Key = Util.GetBytes(tbAesKey.Text)
             aes.IV = Util.GetBytes(tbAesIV.Text)
             Using trans As Security.Cryptography.ICryptoTransform = aes.CreateDecryptor()
-                Dim length As Integer = trans.TransformBlock(ct, 0, 16, pt, 0)
-                length += trans.TransformBlock(ct, 16, 16, pt, 0)
-                Dim lastB As Byte() = trans.TransformFinalBlock(ct, 16, ct.Length - length)
-                pt = Util.TakeBytes(pt, length)
+                decryptedLength = trans.TransformBlock(ct, 0, 16, pt, 0)
+                encryptedIndex += 16
+                decryptedLength += trans.TransformBlock(ct, encryptedIndex, 16, pt, decryptedLength)
+                encryptedIndex += 16
+                Dim lastB As Byte() = trans.TransformFinalBlock(ct, encryptedIndex, ct.Length - encryptedIndex)
+                pt = Util.TakeBytes(pt, decryptedLength)
                 pt = Util.ConnectBytes(pt, lastB)
             End Using
         End Using

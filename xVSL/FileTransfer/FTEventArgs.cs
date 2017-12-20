@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using VSL.Crypt;
 
 namespace VSL.FileTransfer
 {
@@ -21,6 +22,9 @@ namespace VSL.FileTransfer
         public FileMeta FileMeta { get; set; }
         public string Path { get; set; } // If not assigned, the downloads folder should be used automatically
         public byte[] Key { get; set; }
-
+        public ContentAlgorithm HeaderAlgorithm { get; private set; }
+        public ContentAlgorithm FileAlgorithm { get; private set; }
+        internal byte[] FileKey { get; set; }
+        internal byte[] FileIV { get; set; }
     }
 }

@@ -1,5 +1,4 @@
-﻿#if !WINDOWS_UWP
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,30 +13,40 @@ namespace VSL.Crypt
     public class AesCsp : IDisposable
     {
         // © 2017 Daniel Lerch
-        private AesCryptoServiceProvider csp;
+        private Aes csp;
         /// <summary>
         /// Initializes a new instance of the <see cref="AesCsp"/> class without key of iv. This class is more efficient than the static <see cref="AES"/> class for multiple operations with the same key.
         /// </summary>
         public AesCsp()
         {
+#if WINDOWS_UWP
+            csp = Aes.Create();
+#else
             csp = new AesCryptoServiceProvider();
+#endif
         }
         /// <summary>
         /// Initializes a new instance of the <see cref="AesCsp"/> class with the specified key and iv. This class is more efficient than the static <see cref="AES"/> class for multiple operations with the same key.
         /// </summary>
         /// <param name="key">AES key (256 bit)</param>
-        /// <param name="iv">Optional initialization vector (128 bit)</param>
+        /// <param name="iv">Initialization vector (128 bit)</param>
         /// <exception cref="ArgumentOutOfRangeException"/>
         public AesCsp(byte[] key, byte[] iv = null)
         {
             if (key.Length != 32) throw new ArgumentOutOfRangeException("The key must have a length of 256 bit");
             if (iv == null) iv = new byte[16] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
             if (iv.Length != 16) throw new ArgumentOutOfRangeException("The initialization vector must have a length of 128 bit");
+#if WINDOWS_UWP
+            csp = Aes.Create();
+            csp.Key = key;
+            csp.IV = iv;
+#else
             csp = new AesCryptoServiceProvider()
             {
                 Key = key,
                 IV = iv
             };
+#endif
         }
         /// <summary>
         /// Sets the key for the next operations.
@@ -82,7 +91,12 @@ namespace VSL.Crypt
                 {
                     CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write);
                     csEncrypt.Write(buf, 0, buf.Length);
+                    csEncrypt.FlushFinalBlock();
+#if WINDOWS_UWP
+                    csEncrypt.Dispose();
+#else
                     csEncrypt.Close();
+#endif
                     ciphertext = msCiphertext.ToArray();
                 }
             }
@@ -105,7 +119,12 @@ namespace VSL.Crypt
                 {
                     CryptoStream csEncrypt = new CryptoStream(msCiphertext, encryptor, CryptoStreamMode.Write);
                     await csEncrypt.WriteAsync(buf, 0, buf.Length);
+                    csEncrypt.FlushFinalBlock();
+#if WINDOWS_UWP
+                    csEncrypt.Dispose();
+#else
                     csEncrypt.Close();
+#endif
                     ciphertext = msCiphertext.ToArray();
                 }
             }
@@ -131,7 +150,12 @@ namespace VSL.Crypt
                 {
                     CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write);
                     csDecrypt.Write(buf, 0, buf.Length);
+                    csDecrypt.FlushFinalBlock();
+#if WINDOWS_UWP
+                    csDecrypt.Dispose();
+#else
                     csDecrypt.Close();
+#endif
                     plaintext = msPlaintext.ToArray();
                 }
             }
@@ -156,7 +180,12 @@ namespace VSL.Crypt
                 {
                     CryptoStream csDecrypt = new CryptoStream(msPlaintext, decryptor, CryptoStreamMode.Write);
                     await csDecrypt.WriteAsync(buf, 0, buf.Length);
+                    csDecrypt.FlushFinalBlock();
+#if WINDOWS_UWP
+                    csDecrypt.Dispose();
+#else
                     csDecrypt.Close();
+#endif
                     plaintext = msPlaintext.ToArray();
                 }
             }
@@ -251,4 +280,3 @@ namespace VSL.Crypt
 #endregion
     }
 }
-#endif
