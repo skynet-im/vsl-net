@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using VSL.Crypt;
 
 namespace VSL.FileTransfer
 {
@@ -16,14 +17,25 @@ namespace VSL.FileTransfer
         /// <param name="e">Work Item</param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="FileNotFoundException"/>
+        /// <exception cref="InvalidDataException"/>
         internal protected virtual void SendFile(FTEventArgs e)
         {
-            if (e.Path != null)
+            if (string.IsNullOrWhiteSpace(e.Path))
                 throw new ArgumentNullException("e.Path", "You must specify the path of the file");
             if (!File.Exists(e.Path))
                 throw new FileNotFoundException("You can only send existing files", e.Path);
             e.FileStream = new FileStream(e.Path, FileMode.Open, FileAccess.Read, FileShare.Read);
-
+            if (e.FileAlgorithm != ContentAlgorithm.None)
+            {
+                int first = e.FileStream.ReadByte();
+                if (first <= 0 || (ContentAlgorithm)Convert.ToByte(first) == e.FileAlgorithm)
+                    throw new InvalidDataException("Algorithm is wrong or could not be found.");
+            }
+            byte[] buf = new byte[262144];
+            if (e.FileAlgorithm == ContentAlgorithm.Aes256Cbc && e.FileKey != null)
+            {
+                
+            }
         }
         public abstract void Cancel(FTEventArgs e);
         #region util
