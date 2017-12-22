@@ -145,5 +145,23 @@ namespace VSL.Crypt
             }
             return final;
         }
+
+        public static int GetTotalSize(int normalSize, int blockSize)
+        {
+            int mod = normalSize % blockSize;
+            if (mod > 0)
+                return normalSize - mod + blockSize;
+            else
+                return normalSize;
+        }
+
+        public static long GetTotalSize(long normalSize, int blockSize)
+        {
+            long mod = normalSize % blockSize;
+            if (mod > 0)
+                return normalSize - mod + blockSize;
+            else
+                return normalSize;
+        }
     }
 }

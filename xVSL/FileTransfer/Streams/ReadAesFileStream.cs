@@ -10,8 +10,8 @@ namespace VSL.FileTransfer.Streams
     {
         private Stream source;
         private ICryptoTransform aes;
-        private long m_sourceIdx;
         private byte[] m_buffer;
+        private bool m_finished = false;
 
         internal ReadAesFileStream(Stream source, ICryptoTransform aes)
         {
@@ -65,17 +65,50 @@ namespace VSL.FileTransfer.Streams
                     m_buffer = null;
                 }
 
-            // Read from source
-            byte[] buf = new byte[count - done];
-            int l_length = source.Read(buf, 0, count - done);
-            bool isLastBlock = count - done > l_length;
-            m_sourceIdx += l_length;
+            // Read from source and decrypt full blocks
+            int newData = Crypt.Util.GetTotalSize(count - done, 16);
+            byte[] buf = new byte[newData];
+            int tmp_length = DecryptSafe(buf, 0, newData);
 
-            // TODO: Decrypt blocks
-            // TODO: Decrypt last block
-            // TODO: Write buffer
-            // TODO: Write in buffer
-            // TODO: Return count
+            if (tmp_length > count - done)
+            {
+                Array.Copy(buf, 0, buffer, offset + done, count - done); // copy result
+                int excessCount = tmp_length - count + done;
+                int oldLength = m_buffer != null ? m_buffer.Length : 0;
+                byte[] new_m_buffer = new byte[excessCount + oldLength];
+                if (oldLength > 0)
+                    Array.Copy(m_buffer, new_m_buffer, oldLength);
+                Array.Copy(buf, count - done, new_m_buffer, oldLength, excessCount);
+                m_buffer = new_m_buffer;
+                return count;
+            }
+            else
+            {
+                Array.Copy(buf, 0, buffer, offset + done, tmp_length); // copy result
+                return tmp_length;
+            }
+        }
+
+        private int DecryptSafe(byte[] buffer, int offset, int count)
+        {
+            if (count % 16 != 0)
+                throw new ArgumentException("You can only decrypt full blocks", "count");
+            if (m_finished)
+                return 0;
+            byte[] buf = new byte[count];
+            int read = source.Read(buf, 0, count);
+            if (read < count)
+            {
+                m_finished = true;
+                int first = read - (read % 16);
+                int done = aes.TransformBlock(buf, 0, first, buffer, 0);
+                byte[] last = aes.TransformFinalBlock(buf, first, read % 16);
+                Array.Copy(last, 0, buffer, offset + done, last.Length);
+                done += last.Length;
+                return done;
+            }
+            else
+                return aes.TransformBlock(buf, 0, count, buffer, offset);
         }
 
         /// <summary>

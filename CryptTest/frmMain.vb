@@ -49,8 +49,8 @@ Public Class frmMain
             aes.Key = Util.GetBytes(tbAesKey.Text)
             aes.IV = Util.GetBytes(tbAesIV.Text)
             Using trans As Security.Cryptography.ICryptoTransform = aes.CreateDecryptor()
-                decryptedLength = trans.TransformBlock(ct, 0, 16, pt, 0)
-                encryptedIndex += 16
+                decryptedLength = trans.TransformBlock(ct, 0, 32, pt, 0)
+                encryptedIndex += 32
                 decryptedLength += trans.TransformBlock(ct, encryptedIndex, 16, pt, decryptedLength)
                 encryptedIndex += 16
                 Dim lastB As Byte() = trans.TransformFinalBlock(ct, encryptedIndex, ct.Length - encryptedIndex)
