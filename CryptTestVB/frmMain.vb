@@ -48,14 +48,23 @@ Public Class frmMain
         Using aes As New Security.Cryptography.AesCryptoServiceProvider()
             aes.Key = Util.GetBytes(tbAesKey.Text)
             aes.IV = Util.GetBytes(tbAesIV.Text)
-            Using trans As Security.Cryptography.ICryptoTransform = aes.CreateDecryptor()
-                decryptedLength = trans.TransformBlock(ct, 0, 32, pt, 0)
-                encryptedIndex += 32
-                decryptedLength += trans.TransformBlock(ct, encryptedIndex, 16, pt, decryptedLength)
-                encryptedIndex += 16
-                Dim lastB As Byte() = trans.TransformFinalBlock(ct, encryptedIndex, ct.Length - encryptedIndex)
-                pt = Util.TakeBytes(pt, decryptedLength)
-                pt = Util.ConnectBytes(pt, lastB)
+            Using ciphertext As New IO.MemoryStream(ct)
+                Using trans As Security.Cryptography.ICryptoTransform = aes.CreateDecryptor()
+                    Using stream As New Security.Cryptography.CryptoStream(ciphertext, trans, Security.Cryptography.CryptoStreamMode.Read)
+                        Dim buffer As Byte() = New Byte(ct.Length - 1) {}
+                        Dim len As Integer = stream.Read(buffer, 0, 16)
+                        len += stream.Read(buffer, len, 16)
+                        len += stream.Read(buffer, len, 16)
+                        pt = Util.TakeBytes(buffer, len)
+                        'decryptedLength = trans.TransformBlock(ct, 0, 32, pt, 0)
+                        'encryptedIndex += 32
+                        'decryptedLength += trans.TransformBlock(ct, encryptedIndex, 16, pt, decryptedLength)
+                        'encryptedIndex += 16
+                        'Dim lastB As Byte() = trans.TransformFinalBlock(ct, encryptedIndex, ct.Length - encryptedIndex)
+                        'pt = Util.TakeBytes(pt, decryptedLength)
+                        'pt = Util.ConnectBytes(pt, lastB)
+                    End Using
+                End Using
             End Using
         End Using
         'Dim pt As Byte() = decryptCsp.Decrypt(ct)
@@ -86,6 +95,7 @@ Public Class frmMain
     Private Sub tbShaPlainText_TextChanged(sender As Object, e As EventArgs) Handles tbShaPlainText.TextChanged
         Try
             Dim text As Byte()
+            Dim ciphertext As Byte()
             If rbShaModeUTF8.Checked Then
                 Dim enc As New Text.UTF8Encoding()
                 text = enc.GetBytes(tbShaPlainText.Text)
@@ -96,9 +106,17 @@ Public Class frmMain
                     text = Util.GetBytes(tbShaPlainText.Text)
                 End If
             End If
+            Using sha As New Security.Cryptography.SHA256CryptoServiceProvider()
+                sha.TransformBlock(text, 0, 16, Nothing, Nothing)
+                sha.TransformBlock(text, 16, 16, Nothing, Nothing)
+                sha.TransformFinalBlock(text, 32, 16)
+                ciphertext = sha.Hash
+            End Using
             tbShaHash.Text = Util.ToHexString(Hash.SHA256(text))
-            tbShaHashHash.Text = Util.ToHexString(Hash.SHA256(Hash.SHA256(text)))
+            tbShaHashHash.Text = Util.ToHexString(ciphertext)
         Catch ex As Exception
+            tbShaHash.Text = ""
+            tbShaHashHash.Text = ""
         End Try
     End Sub
 
