@@ -17,7 +17,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Events.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\ReadAesFileStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\AesDecryptStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Events.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileMeta.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferClient.cs" />
@@ -29,6 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTSocket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Identifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\StreamMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\AesEncryptStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetworkChannel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\CryptoAlgorithm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetworkManager.cs" />
