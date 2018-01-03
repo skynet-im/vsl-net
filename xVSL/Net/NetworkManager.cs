@@ -184,7 +184,7 @@ namespace VSL
                 if (!parent.channel.TryRead(out byte[] ciphertext, 16))
                     return false;
 #if WINDOWS_UWP
-                byte[] plaintext = AES.Decrypt(ciphertext, _aesKey, _receiveIV);
+                byte[] plaintext = AesStatic.Decrypt(ciphertext, _aesKey, _receiveIV);
 #else
                 byte[] plaintext = dec.Decrypt(ciphertext); //CryptographicException
 #endif
@@ -211,7 +211,7 @@ namespace VSL
                     if (!parent.channel.TryRead(out ciphertext, pendingBlocks * 16))
                         return false;
 #if WINDOWS_UWP
-                    plaintext = Util.ConnectBytes(plaintext, AES.Decrypt(ciphertext, _aesKey, _receiveIV));
+                    plaintext = Util.ConnectBytes(plaintext, AesStatic.Decrypt(ciphertext, _aesKey, _receiveIV));
 #else
                     plaintext = Util.ConnectBytes(plaintext, dec.Decrypt(ciphertext));
 #endif
@@ -236,7 +236,7 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
-            catch (System.Security.Cryptography.CryptographicException ex) // AES.Decrypt()
+            catch (CryptographicException ex) // AES.Decrypt()
             {
                 parent.ExceptionHandler.CloseConnection(ex);
             }
@@ -263,7 +263,7 @@ namespace VSL
                 byte[] iv = Util.TakeBytes(cipherblock, 16);
                 byte[] ciphertext = Util.SkipBytes(cipherblock, 16);
 #if WINDOWS_UWP
-                byte[] b_plaintext = AES.Decrypt(ciphertext, _aesKey, iv);
+                byte[] b_plaintext = AesStatic.Decrypt(ciphertext, _aesKey, iv);
 #else
                 dec.IV = iv;
                 byte[] b_plaintext = dec.Decrypt(ciphertext);
@@ -405,7 +405,7 @@ namespace VSL
                 random.NextBytes(salt);
                 byte[] plaintext = Util.ConnectBytes(head, salt, content);
 #if WINDOWS_UWP
-                byte[] headBlock = AES.Encrypt(Util.TakeBytes(plaintext, 15), _aesKey, _sendIV);
+                byte[] headBlock = AesStatic.Encrypt(Util.TakeBytes(plaintext, 15), _aesKey, _sendIV);
 #else
                 byte[] headBlock = enc.Encrypt(Util.TakeBytes(plaintext, 15));
 #endif
@@ -414,7 +414,7 @@ namespace VSL
                 {
                     plaintext = Util.SkipBytes(plaintext, 15);
 #if WINDOWS_UWP
-                    tailBlock = AES.Encrypt(plaintext, _aesKey, _sendIV);
+                    tailBlock = AesStatic.Encrypt(plaintext, _aesKey, _sendIV);
 #else
                     tailBlock = enc.Encrypt(plaintext);
 #endif
@@ -436,8 +436,8 @@ namespace VSL
         private bool SendPacket_AES_256_CBC_HMAC_SH256_MP3(byte[] head, byte[] content)
         {
 #if WINDOWS_UWP
-            byte[] iv = AES.GenerateIV();
-            byte[] ciphertext = AES.Encrypt(Util.ConnectBytes(head, content), _aesKey, iv);
+            byte[] iv = AesStatic.GenerateIV();
+            byte[] ciphertext = AesStatic.Encrypt(Util.ConnectBytes(head, content), _aesKey, iv);
 #else
             byte[] iv = enc.GenerateIV(true);
             byte[] ciphertext = enc.Encrypt(Util.ConnectBytes(head, content));
@@ -456,9 +456,9 @@ namespace VSL
         internal void GenerateKeys()
         {
 #if WINDOWS_UWP
-            _aesKey = AES.GenerateKey();
-            _receiveIV = AES.GenerateIV();
-            _sendIV = AES.GenerateIV();
+            _aesKey = AesStatic.GenerateKey();
+            _receiveIV = AesStatic.GenerateIV();
+            _sendIV = AesStatic.GenerateIV();
 #else
             enc = new AesCsp();
             _aesKey = enc.GenerateKey(true);

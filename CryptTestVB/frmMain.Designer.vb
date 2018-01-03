@@ -36,19 +36,6 @@ Partial Class frmMain
         Me.tbRsaPrivateKey = New System.Windows.Forms.TextBox()
         Me.Label8 = New System.Windows.Forms.Label()
         Me.Label7 = New System.Windows.Forms.Label()
-        Me.tpAES = New System.Windows.Forms.TabPage()
-        Me.btnAesGenerateIV = New System.Windows.Forms.Button()
-        Me.tbAesIV = New System.Windows.Forms.TextBox()
-        Me.Label14 = New System.Windows.Forms.Label()
-        Me.btnAesEncrypt = New System.Windows.Forms.Button()
-        Me.btnAesDecrypt = New System.Windows.Forms.Button()
-        Me.tbAesCipherText = New System.Windows.Forms.TextBox()
-        Me.Label3 = New System.Windows.Forms.Label()
-        Me.tbAesPlainText = New System.Windows.Forms.TextBox()
-        Me.Label2 = New System.Windows.Forms.Label()
-        Me.btnAesGenerate = New System.Windows.Forms.Button()
-        Me.tbAesKey = New System.Windows.Forms.TextBox()
-        Me.Label1 = New System.Windows.Forms.Label()
         Me.tpSHA = New System.Windows.Forms.TabPage()
         Me.gbShaMode = New System.Windows.Forms.GroupBox()
         Me.rbShaModeHex = New System.Windows.Forms.RadioButton()
@@ -77,23 +64,17 @@ Partial Class frmMain
         Me.tpTest = New System.Windows.Forms.TabPage()
         Me.pbTest = New System.Windows.Forms.ProgressBar()
         Me.btnTestStart = New System.Windows.Forms.Button()
-        Me.EncodingUTF8Rb = New System.Windows.Forms.RadioButton()
-        Me.GroupBox1 = New System.Windows.Forms.GroupBox()
-        Me.EncodingHexRb = New System.Windows.Forms.RadioButton()
         Me.mainTabControl.SuspendLayout()
         Me.tpRSA.SuspendLayout()
-        Me.tpAES.SuspendLayout()
         Me.tpSHA.SuspendLayout()
         Me.gbShaMode.SuspendLayout()
         Me.tpECDH.SuspendLayout()
         Me.tpTest.SuspendLayout()
-        Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
         '
         'mainTabControl
         '
         Me.mainTabControl.Controls.Add(Me.tpRSA)
-        Me.mainTabControl.Controls.Add(Me.tpAES)
         Me.mainTabControl.Controls.Add(Me.tpSHA)
         Me.mainTabControl.Controls.Add(Me.tpECDH)
         Me.mainTabControl.Controls.Add(Me.tpTest)
@@ -226,129 +207,6 @@ Partial Class frmMain
         Me.Label7.Size = New System.Drawing.Size(58, 13)
         Me.Label7.TabIndex = 1
         Me.Label7.Text = "PrivateKey"
-        '
-        'tpAES
-        '
-        Me.tpAES.Controls.Add(Me.GroupBox1)
-        Me.tpAES.Controls.Add(Me.btnAesGenerateIV)
-        Me.tpAES.Controls.Add(Me.tbAesIV)
-        Me.tpAES.Controls.Add(Me.Label14)
-        Me.tpAES.Controls.Add(Me.btnAesEncrypt)
-        Me.tpAES.Controls.Add(Me.btnAesDecrypt)
-        Me.tpAES.Controls.Add(Me.tbAesCipherText)
-        Me.tpAES.Controls.Add(Me.Label3)
-        Me.tpAES.Controls.Add(Me.tbAesPlainText)
-        Me.tpAES.Controls.Add(Me.Label2)
-        Me.tpAES.Controls.Add(Me.btnAesGenerate)
-        Me.tpAES.Controls.Add(Me.tbAesKey)
-        Me.tpAES.Controls.Add(Me.Label1)
-        Me.tpAES.Location = New System.Drawing.Point(4, 22)
-        Me.tpAES.Name = "tpAES"
-        Me.tpAES.Padding = New System.Windows.Forms.Padding(3)
-        Me.tpAES.Size = New System.Drawing.Size(370, 211)
-        Me.tpAES.TabIndex = 1
-        Me.tpAES.Text = "AES"
-        Me.tpAES.UseVisualStyleBackColor = True
-        '
-        'btnAesGenerateIV
-        '
-        Me.btnAesGenerateIV.Location = New System.Drawing.Point(278, 41)
-        Me.btnAesGenerateIV.Name = "btnAesGenerateIV"
-        Me.btnAesGenerateIV.Size = New System.Drawing.Size(86, 23)
-        Me.btnAesGenerateIV.TabIndex = 11
-        Me.btnAesGenerateIV.Text = "generieren"
-        Me.btnAesGenerateIV.UseVisualStyleBackColor = True
-        '
-        'tbAesIV
-        '
-        Me.tbAesIV.Location = New System.Drawing.Point(70, 43)
-        Me.tbAesIV.Name = "tbAesIV"
-        Me.tbAesIV.Size = New System.Drawing.Size(202, 20)
-        Me.tbAesIV.TabIndex = 10
-        '
-        'Label14
-        '
-        Me.Label14.AutoSize = True
-        Me.Label14.Location = New System.Drawing.Point(6, 46)
-        Me.Label14.Name = "Label14"
-        Me.Label14.Size = New System.Drawing.Size(17, 13)
-        Me.Label14.TabIndex = 9
-        Me.Label14.Text = "IV"
-        '
-        'btnAesEncrypt
-        '
-        Me.btnAesEncrypt.Location = New System.Drawing.Point(278, 93)
-        Me.btnAesEncrypt.Name = "btnAesEncrypt"
-        Me.btnAesEncrypt.Size = New System.Drawing.Size(86, 23)
-        Me.btnAesEncrypt.TabIndex = 8
-        Me.btnAesEncrypt.Text = "verschlüsseln"
-        Me.btnAesEncrypt.UseVisualStyleBackColor = True
-        '
-        'btnAesDecrypt
-        '
-        Me.btnAesDecrypt.Location = New System.Drawing.Point(278, 67)
-        Me.btnAesDecrypt.Name = "btnAesDecrypt"
-        Me.btnAesDecrypt.Size = New System.Drawing.Size(86, 23)
-        Me.btnAesDecrypt.TabIndex = 7
-        Me.btnAesDecrypt.Text = "entschlüsseln"
-        Me.btnAesDecrypt.UseVisualStyleBackColor = True
-        '
-        'tbAesCipherText
-        '
-        Me.tbAesCipherText.Location = New System.Drawing.Point(70, 95)
-        Me.tbAesCipherText.Name = "tbAesCipherText"
-        Me.tbAesCipherText.Size = New System.Drawing.Size(202, 20)
-        Me.tbAesCipherText.TabIndex = 6
-        '
-        'Label3
-        '
-        Me.Label3.AutoSize = True
-        Me.Label3.Location = New System.Drawing.Point(6, 98)
-        Me.Label3.Name = "Label3"
-        Me.Label3.Size = New System.Drawing.Size(58, 13)
-        Me.Label3.TabIndex = 5
-        Me.Label3.Text = "CipherText"
-        '
-        'tbAesPlainText
-        '
-        Me.tbAesPlainText.Location = New System.Drawing.Point(70, 69)
-        Me.tbAesPlainText.Name = "tbAesPlainText"
-        Me.tbAesPlainText.Size = New System.Drawing.Size(202, 20)
-        Me.tbAesPlainText.TabIndex = 4
-        '
-        'Label2
-        '
-        Me.Label2.AutoSize = True
-        Me.Label2.Location = New System.Drawing.Point(6, 72)
-        Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(51, 13)
-        Me.Label2.TabIndex = 3
-        Me.Label2.Text = "PlainText"
-        '
-        'btnAesGenerate
-        '
-        Me.btnAesGenerate.Location = New System.Drawing.Point(278, 15)
-        Me.btnAesGenerate.Name = "btnAesGenerate"
-        Me.btnAesGenerate.Size = New System.Drawing.Size(86, 23)
-        Me.btnAesGenerate.TabIndex = 2
-        Me.btnAesGenerate.Text = "generieren"
-        Me.btnAesGenerate.UseVisualStyleBackColor = True
-        '
-        'tbAesKey
-        '
-        Me.tbAesKey.Location = New System.Drawing.Point(70, 17)
-        Me.tbAesKey.Name = "tbAesKey"
-        Me.tbAesKey.Size = New System.Drawing.Size(202, 20)
-        Me.tbAesKey.TabIndex = 1
-        '
-        'Label1
-        '
-        Me.Label1.AutoSize = True
-        Me.Label1.Location = New System.Drawing.Point(6, 20)
-        Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(25, 13)
-        Me.Label1.TabIndex = 0
-        Me.Label1.Text = "Key"
         '
         'tpSHA
         '
@@ -617,39 +475,6 @@ Partial Class frmMain
         Me.btnTestStart.Text = "Start"
         Me.btnTestStart.UseVisualStyleBackColor = True
         '
-        'EncodingUTF8Rb
-        '
-        Me.EncodingUTF8Rb.AutoSize = True
-        Me.EncodingUTF8Rb.Checked = True
-        Me.EncodingUTF8Rb.Location = New System.Drawing.Point(6, 19)
-        Me.EncodingUTF8Rb.Name = "EncodingUTF8Rb"
-        Me.EncodingUTF8Rb.Size = New System.Drawing.Size(55, 17)
-        Me.EncodingUTF8Rb.TabIndex = 12
-        Me.EncodingUTF8Rb.TabStop = True
-        Me.EncodingUTF8Rb.Text = "UTF-8"
-        Me.EncodingUTF8Rb.UseVisualStyleBackColor = True
-        '
-        'GroupBox1
-        '
-        Me.GroupBox1.Controls.Add(Me.EncodingHexRb)
-        Me.GroupBox1.Controls.Add(Me.EncodingUTF8Rb)
-        Me.GroupBox1.Location = New System.Drawing.Point(9, 121)
-        Me.GroupBox1.Name = "GroupBox1"
-        Me.GroupBox1.Size = New System.Drawing.Size(200, 68)
-        Me.GroupBox1.TabIndex = 13
-        Me.GroupBox1.TabStop = False
-        Me.GroupBox1.Text = "Kodierung"
-        '
-        'EncodingHexRb
-        '
-        Me.EncodingHexRb.AutoSize = True
-        Me.EncodingHexRb.Location = New System.Drawing.Point(6, 42)
-        Me.EncodingHexRb.Name = "EncodingHexRb"
-        Me.EncodingHexRb.Size = New System.Drawing.Size(85, 17)
-        Me.EncodingHexRb.TabIndex = 13
-        Me.EncodingHexRb.Text = "Hexadezimal"
-        Me.EncodingHexRb.UseVisualStyleBackColor = True
-        '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -662,8 +487,6 @@ Partial Class frmMain
         Me.mainTabControl.ResumeLayout(False)
         Me.tpRSA.ResumeLayout(False)
         Me.tpRSA.PerformLayout()
-        Me.tpAES.ResumeLayout(False)
-        Me.tpAES.PerformLayout()
         Me.tpSHA.ResumeLayout(False)
         Me.tpSHA.PerformLayout()
         Me.gbShaMode.ResumeLayout(False)
@@ -671,25 +494,13 @@ Partial Class frmMain
         Me.tpECDH.ResumeLayout(False)
         Me.tpECDH.PerformLayout()
         Me.tpTest.ResumeLayout(False)
-        Me.GroupBox1.ResumeLayout(False)
-        Me.GroupBox1.PerformLayout()
         Me.ResumeLayout(False)
 
     End Sub
 
     Friend WithEvents mainTabControl As TabControl
     Friend WithEvents tpRSA As TabPage
-    Friend WithEvents tpAES As TabPage
     Friend WithEvents tpSHA As TabPage
-    Friend WithEvents btnAesEncrypt As Button
-    Friend WithEvents btnAesDecrypt As Button
-    Friend WithEvents tbAesCipherText As TextBox
-    Friend WithEvents Label3 As Label
-    Friend WithEvents tbAesPlainText As TextBox
-    Friend WithEvents Label2 As Label
-    Friend WithEvents btnAesGenerate As Button
-    Friend WithEvents tbAesKey As TextBox
-    Friend WithEvents Label1 As Label
     Friend WithEvents tbShaHashHash As TextBox
     Friend WithEvents Label4 As Label
     Friend WithEvents tbShaHash As TextBox
@@ -724,15 +535,9 @@ Partial Class frmMain
     Friend WithEvents tbECDHBob As TextBox
     Friend WithEvents Label11 As Label
     Friend WithEvents tbECDHAlice As TextBox
-    Friend WithEvents btnAesGenerateIV As Button
-    Friend WithEvents tbAesIV As TextBox
-    Friend WithEvents Label14 As Label
     Friend WithEvents Label16 As Label
     Friend WithEvents tbECDHBobPub As TextBox
     Friend WithEvents Label15 As Label
     Friend WithEvents tbECDHAlicePub As TextBox
     Friend WithEvents tbECDHBobKey As TextBox
-    Friend WithEvents GroupBox1 As GroupBox
-    Friend WithEvents EncodingHexRb As RadioButton
-    Friend WithEvents EncodingUTF8Rb As RadioButton
 End Class

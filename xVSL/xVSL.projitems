@@ -53,7 +53,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Packet\ProblemCategory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\RequestType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Constants.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AES.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AesStatic.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AesCsp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ECDH.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Enums.cs" />

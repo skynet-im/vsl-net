@@ -10,85 +10,18 @@ Public Class frmMain
         tbRsaPrivateKey.Text = Await Task.Run(Function() RSA.GenerateKeyPairXml())
     End Sub
     Private Async Sub btnRsaEncrypt_Click(sender As Object, e As EventArgs) Handles btnRsaEncrypt.Click
-        Dim enc As New Text.UTF8Encoding()
+        Dim enc As New UTF8Encoding()
         Dim pt As Byte() = enc.GetBytes(tbRsaPlaintext.Text)
         Dim ct As Byte() = Await Task.Run(Function() RSA.Encrypt(pt, tbRsaPublicKey.Text))
         tbRsaCiphertext.Text = Util.ToHexString(ct)
         tbRsaPlaintext.Text = ""
     End Sub
     Private Async Sub btnRsaDecrypt_Click(sender As Object, e As EventArgs) Handles btnRsaDecrypt.Click
-        Dim enc As New Text.UTF8Encoding()
+        Dim enc As New UTF8Encoding()
         Dim ct As Byte() = Util.GetBytes(tbRsaCiphertext.Text)
         Dim pt As Byte() = Await Task.Run(Function() RSA.Decrypt(ct, tbRsaPrivateKey.Text))
         tbRsaPlaintext.Text = enc.GetString(pt)
         tbRsaCiphertext.Text = ""
-    End Sub
-#End Region
-#Region "AES"
-    Private encryptCsp As AesCsp
-    Private decryptCsp As AesCsp
-    Private Sub btnAesGenerate_Click(sender As Object, e As EventArgs) Handles btnAesGenerate.Click
-        tbAesKey.Text = Util.ToHexString(AES.GenerateKey())
-    End Sub
-
-    Private Sub btnAesGenerateIV_Click(sender As Object, e As EventArgs) Handles btnAesGenerateIV.Click
-        tbAesIV.Text = Util.ToHexString(AES.GenerateIV())
-    End Sub
-
-    Private Sub btnAesDecrypt_Click(sender As Object, e As EventArgs) Handles btnAesDecrypt.Click
-        If decryptCsp Is Nothing Then
-            decryptCsp = New AesCsp(Util.GetBytes(tbAesKey.Text), Util.GetBytes(tbAesIV.Text))
-        End If
-        Dim ct As Byte() = Util.GetBytes(tbAesCipherText.Text)
-        Dim pt As Byte() = New Byte(ct.Length - 1) {}
-        Dim decryptedLength As Integer = 0
-        Dim encryptedIndex As Integer = 0
-        Dim last As Integer = ct.Length Mod 16
-        If last = 0 Then last = 16
-        Using aes As New Security.Cryptography.AesCryptoServiceProvider()
-            aes.Key = Util.GetBytes(tbAesKey.Text)
-            aes.IV = Util.GetBytes(tbAesIV.Text)
-            Using ciphertext As New IO.MemoryStream(ct)
-                Using trans As Security.Cryptography.ICryptoTransform = aes.CreateDecryptor()
-                    Using stream As New Security.Cryptography.CryptoStream(ciphertext, trans, Security.Cryptography.CryptoStreamMode.Read)
-                        Dim buffer As Byte() = New Byte(ct.Length - 1) {}
-                        Dim len As Integer = stream.Read(buffer, 0, 16)
-                        len += stream.Read(buffer, len, 16)
-                        len += stream.Read(buffer, len, 16)
-                        pt = Util.TakeBytes(buffer, len)
-                        'decryptedLength = trans.TransformBlock(ct, 0, 32, pt, 0)
-                        'encryptedIndex += 32
-                        'decryptedLength += trans.TransformBlock(ct, encryptedIndex, 16, pt, decryptedLength)
-                        'encryptedIndex += 16
-                        'Dim lastB As Byte() = trans.TransformFinalBlock(ct, encryptedIndex, ct.Length - encryptedIndex)
-                        'pt = Util.TakeBytes(pt, decryptedLength)
-                        'pt = Util.ConnectBytes(pt, lastB)
-                    End Using
-                End Using
-            End Using
-        End Using
-        'Dim pt As Byte() = decryptCsp.Decrypt(ct)
-        If EncodingUTF8Rb.Checked Then
-            tbAesPlainText.Text = Encoding.UTF8.GetString(pt)
-        Else
-            tbAesPlainText.Text = Util.ToHexString(pt)
-        End If
-        tbAesCipherText.Text = ""
-    End Sub
-
-    Private Async Sub btnAesEncrypt_Click(sender As Object, e As EventArgs) Handles btnAesEncrypt.Click
-        If encryptCsp Is Nothing Then
-            encryptCsp = New AesCsp(Util.GetBytes(tbAesKey.Text), Util.GetBytes(tbAesIV.Text))
-        End If
-        Dim pt As Byte()
-        If EncodingUTF8Rb.Checked Then
-            pt = Encoding.UTF8.GetBytes(tbAesPlainText.Text)
-        Else
-            pt = Util.GetBytes(tbAesPlainText.Text)
-        End If
-        Dim ct As Byte() = Await encryptCsp.EncryptAsync(pt)
-        tbAesCipherText.Text = Util.ToHexString(ct)
-        tbAesPlainText.Text = ""
     End Sub
 #End Region
 #Region "SHA"
