@@ -36,7 +36,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.targetShaLb = new System.Windows.Forms.Label();
             this.sourceShaLb = new System.Windows.Forms.Label();
-            this.startBtn = new System.Windows.Forms.Button();
+            this.decryptBtn = new System.Windows.Forms.Button();
             this.mainProgressBar = new System.Windows.Forms.ProgressBar();
             this.genIvBtn = new System.Windows.Forms.Button();
             this.ivTb = new System.Windows.Forms.TextBox();
@@ -44,6 +44,7 @@
             this.genKeyBtn = new System.Windows.Forms.Button();
             this.keyTb = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
+            this.encryptBtn = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // selectTargetBtn
@@ -116,15 +117,15 @@
             this.sourceShaLb.TabIndex = 24;
             this.sourceShaLb.Text = "Quelldatei SHA256:";
             // 
-            // startBtn
+            // decryptBtn
             // 
-            this.startBtn.Location = new System.Drawing.Point(321, 172);
-            this.startBtn.Name = "startBtn";
-            this.startBtn.Size = new System.Drawing.Size(75, 23);
-            this.startBtn.TabIndex = 23;
-            this.startBtn.Text = "Start";
-            this.startBtn.UseVisualStyleBackColor = true;
-            this.startBtn.Click += new System.EventHandler(this.startBtn_Click);
+            this.decryptBtn.Location = new System.Drawing.Point(312, 172);
+            this.decryptBtn.Name = "decryptBtn";
+            this.decryptBtn.Size = new System.Drawing.Size(84, 23);
+            this.decryptBtn.TabIndex = 23;
+            this.decryptBtn.Text = "Entschlüsseln";
+            this.decryptBtn.UseVisualStyleBackColor = true;
+            this.decryptBtn.Click += new System.EventHandler(this.decryptBtn_Click);
             // 
             // mainProgressBar
             // 
@@ -185,14 +186,25 @@
             this.label3.TabIndex = 16;
             this.label3.Text = "Key";
             // 
+            // encryptBtn
+            // 
+            this.encryptBtn.Location = new System.Drawing.Point(222, 172);
+            this.encryptBtn.Name = "encryptBtn";
+            this.encryptBtn.Size = new System.Drawing.Size(84, 23);
+            this.encryptBtn.TabIndex = 26;
+            this.encryptBtn.Text = "Verschlüsseln";
+            this.encryptBtn.UseVisualStyleBackColor = true;
+            this.encryptBtn.Click += new System.EventHandler(this.encryptBtn_Click);
+            // 
             // E2EFileControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Transparent;
+            this.Controls.Add(this.encryptBtn);
             this.Controls.Add(this.targetShaLb);
             this.Controls.Add(this.sourceShaLb);
-            this.Controls.Add(this.startBtn);
+            this.Controls.Add(this.decryptBtn);
             this.Controls.Add(this.mainProgressBar);
             this.Controls.Add(this.genIvBtn);
             this.Controls.Add(this.ivTb);
@@ -223,7 +235,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label targetShaLb;
         private System.Windows.Forms.Label sourceShaLb;
-        private System.Windows.Forms.Button startBtn;
+        private System.Windows.Forms.Button decryptBtn;
         private System.Windows.Forms.ProgressBar mainProgressBar;
         private System.Windows.Forms.Button genIvBtn;
         private System.Windows.Forms.TextBox ivTb;
@@ -231,5 +243,6 @@
         private System.Windows.Forms.Button genKeyBtn;
         private System.Windows.Forms.TextBox keyTb;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Button encryptBtn;
     }
 }

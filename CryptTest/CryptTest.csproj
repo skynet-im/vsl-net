@@ -49,6 +49,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AesControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="AesControl.Designer.cs">
+      <DependentUpon>AesControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="E2EFileControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -63,6 +69,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="AesControl.resx">
+      <DependentUpon>AesControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="E2EFileControl.resx">
       <DependentUpon>E2EFileControl.cs</DependentUpon>
     </EmbeddedResource>

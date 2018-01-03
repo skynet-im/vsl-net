@@ -15,7 +15,7 @@ namespace VSL.Crypt
         // © 2017 Daniel Lerch
         private Aes csp;
         /// <summary>
-        /// Initializes a new instance of the <see cref="AesCsp"/> class without key of iv. This class is more efficient than the static <see cref="AES"/> class for multiple operations with the same key.
+        /// Initializes a new instance of the <see cref="AesCsp"/> class without key of iv. This class is more efficient than the static <see cref="AesStatic"/> class for multiple operations with the same key.
         /// </summary>
         public AesCsp()
         {
@@ -26,7 +26,7 @@ namespace VSL.Crypt
 #endif
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref="AesCsp"/> class with the specified key and iv. This class is more efficient than the static <see cref="AES"/> class for multiple operations with the same key.
+        /// Initializes a new instance of the <see cref="AesCsp"/> class with the specified key and iv. This class is more efficient than the static <see cref="AesStatic"/> class for multiple operations with the same key.
         /// </summary>
         /// <param name="key">AES key (256 bit)</param>
         /// <param name="iv">Initialization vector (128 bit)</param>

@@ -31,12 +31,16 @@
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.e2eFileTab = new System.Windows.Forms.TabPage();
             this.e2EFileControl1 = new CryptTest.E2EFileControl();
+            this.aesTab = new System.Windows.Forms.TabPage();
+            this.aesControl1 = new CryptTest.AesControl();
             this.tabControl1.SuspendLayout();
             this.e2eFileTab.SuspendLayout();
+            this.aesTab.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
             // 
+            this.tabControl1.Controls.Add(this.aesTab);
             this.tabControl1.Controls.Add(this.e2eFileTab);
             this.tabControl1.Location = new System.Drawing.Point(12, 12);
             this.tabControl1.Name = "tabControl1";
@@ -63,6 +67,24 @@
             this.e2EFileControl1.Size = new System.Drawing.Size(402, 231);
             this.e2EFileControl1.TabIndex = 0;
             // 
+            // aesTab
+            // 
+            this.aesTab.Controls.Add(this.aesControl1);
+            this.aesTab.Location = new System.Drawing.Point(4, 22);
+            this.aesTab.Name = "aesTab";
+            this.aesTab.Padding = new System.Windows.Forms.Padding(3);
+            this.aesTab.Size = new System.Drawing.Size(402, 231);
+            this.aesTab.TabIndex = 1;
+            this.aesTab.Text = "AES";
+            this.aesTab.UseVisualStyleBackColor = true;
+            // 
+            // aesControl1
+            // 
+            this.aesControl1.Location = new System.Drawing.Point(0, 0);
+            this.aesControl1.Name = "aesControl1";
+            this.aesControl1.Size = new System.Drawing.Size(402, 231);
+            this.aesControl1.TabIndex = 0;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -72,9 +94,10 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.Name = "MainForm";
-            this.Text = "VSL Test Application for Cryptography";
+            this.Text = "VSL Test Anwendung für Kryptographie";
             this.tabControl1.ResumeLayout(false);
             this.e2eFileTab.ResumeLayout(false);
+            this.aesTab.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -84,6 +107,8 @@
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage e2eFileTab;
         private E2EFileControl e2EFileControl1;
+        private System.Windows.Forms.TabPage aesTab;
+        private AesControl aesControl1;
     }
 }
 

@@ -54,16 +54,79 @@ namespace CryptTest
             ivTb.Text = Util.ToHexString(iv);
         }
 
-        private void startBtn_Click(object sender, EventArgs e)
+        private async void encryptBtn_Click(object sender, EventArgs e)
         {
-            System.Threading.ThreadPool.QueueUserWorkItem((o) =>
+            using (Aes aes = Aes.Create())
             {
-                using (SHA256CryptoServiceProvider csp = new SHA256CryptoServiceProvider())
+                using (ICryptoTransform transform = aes.CreateEncryptor(Util.GetBytes(keyTb.Text), Util.GetBytes(ivTb.Text)))
                 {
-                    byte[] hash = csp.ComputeHash(new FileStream(sourceTb.Text, FileMode.Open));
-                    Invoke((Action)(() => sourceShaLb.Text = Util.ToHexString(hash)));
+                    await ProcessFile(transform);
                 }
+            }
+        }
+
+        private async void decryptBtn_Click(object sender, EventArgs e)
+        {
+            using (Aes aes = Aes.Create())
+            {
+                using (ICryptoTransform transform = aes.CreateDecryptor(Util.GetBytes(keyTb.Text), Util.GetBytes(ivTb.Text)))
+                {
+                    await ProcessFile(transform);
+                }
+            }
+        }
+
+        private async Task ProcessFile(ICryptoTransform cipher)
+        {
+            if (!File.Exists(sourceTb.Text))
+            {
+                MessageBox.Show("Die angegebene Datei konnte nicht gefunden werden");
+                return;
+            }
+            if (!Directory.Exists(Path.GetDirectoryName(targetTb.Text)))
+            {
+                MessageBox.Show("Der angegebene Pfad konnte nicht gefunden werden");
+                return;
+            }
+            byte[] outerHashRGB = null;
+            byte[] innerHashRGB = null;
+            await Task.Run(() =>
+            {
+                HashAlgorithm outerHash = SHA256.Create();
+                HashAlgorithm innerHash = SHA256.Create();
+
+                FileStream readStream = new FileStream(sourceTb.Text, FileMode.Open, FileAccess.Read);
+                FileStream writeStream = new FileStream(targetTb.Text, FileMode.Create, FileAccess.Write);
+
+                CryptoStream outerStream = new CryptoStream(readStream, outerHash, CryptoStreamMode.Read);
+                CryptoStream cipherStream = new CryptoStream(outerStream, cipher, CryptoStreamMode.Read);
+                CryptoStream innerStream = new CryptoStream(cipherStream, innerHash, CryptoStreamMode.Read);
+
+                byte[] buffer = new byte[256];
+                while (true)
+                {
+                    int length = innerStream.Read(buffer, 0, 256);
+                    if (length > 0)
+                        writeStream.Write(buffer, 0, length);
+                    else
+                        break;
+                }
+
+                outerHashRGB = outerHash.Hash;
+                innerHashRGB = innerHash.Hash;
+
+                outerStream.Close();
+                cipherStream.Close();
+                innerStream.Close();
+
+                readStream.Close();
+                writeStream.Close();
+
+                outerHash.Dispose();
+                innerHash.Dispose();
             });
+            sourceShaLb.Text = Util.ToHexString(outerHashRGB);
+            targetShaLb.Text = Util.ToHexString(innerHashRGB);
         }
     }
 }
