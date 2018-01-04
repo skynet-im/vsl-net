@@ -146,6 +146,12 @@ namespace VSL.Crypt
             return final;
         }
 
+        /// <summary>
+        /// Gets the total size if only full blocks are allowed.
+        /// </summary>
+        /// <param name="normalSize">The default size of the input data.</param>
+        /// <param name="blockSize">The blocksize of the algorithm to apply on the data.</param>
+        /// <returns></returns>
         public static int GetTotalSize(int normalSize, int blockSize)
         {
             int mod = normalSize % blockSize;
@@ -155,6 +161,12 @@ namespace VSL.Crypt
                 return normalSize;
         }
 
+        /// <summary>
+        /// Gets the total size if only full blocks are allowed.
+        /// </summary>
+        /// <param name="normalSize">The default size of the input data.</param>
+        /// <param name="blockSize">The blocksize of the algorithm to apply on the data.</param>
+        /// <returns></returns>
         public static long GetTotalSize(long normalSize, int blockSize)
         {
             long mod = normalSize % blockSize;

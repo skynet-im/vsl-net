@@ -58,7 +58,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ECDH.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Hash.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\RSA.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\RsaStatic.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ScryptCsp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Util.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\ExceptionHandler.cs" />

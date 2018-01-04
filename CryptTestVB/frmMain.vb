@@ -1,29 +1,6 @@
 ﻿Imports System.Text
 Imports VSL.Crypt
 Public Class frmMain
-#Region "RSA"
-    Private Async Sub btnRsaExtract_Click(sender As Object, e As EventArgs) Handles btnRsaExtract.Click
-        If tbRsaPrivateKey.Text = "" Then tbRsaPrivateKey.Text = Await Task.Run(Function() RSA.GenerateKeyPairXml())
-        tbRsaPublicKey.Text = RSA.ExtractPublicKey(tbRsaPrivateKey.Text)
-    End Sub
-    Private Async Sub btnRsaGenerate_Click(sender As Object, e As EventArgs) Handles btnRsaGenerate.Click
-        tbRsaPrivateKey.Text = Await Task.Run(Function() RSA.GenerateKeyPairXml())
-    End Sub
-    Private Async Sub btnRsaEncrypt_Click(sender As Object, e As EventArgs) Handles btnRsaEncrypt.Click
-        Dim enc As New UTF8Encoding()
-        Dim pt As Byte() = enc.GetBytes(tbRsaPlaintext.Text)
-        Dim ct As Byte() = Await Task.Run(Function() RSA.Encrypt(pt, tbRsaPublicKey.Text))
-        tbRsaCiphertext.Text = Util.ToHexString(ct)
-        tbRsaPlaintext.Text = ""
-    End Sub
-    Private Async Sub btnRsaDecrypt_Click(sender As Object, e As EventArgs) Handles btnRsaDecrypt.Click
-        Dim enc As New UTF8Encoding()
-        Dim ct As Byte() = Util.GetBytes(tbRsaCiphertext.Text)
-        Dim pt As Byte() = Await Task.Run(Function() RSA.Decrypt(ct, tbRsaPrivateKey.Text))
-        tbRsaPlaintext.Text = enc.GetString(pt)
-        tbRsaCiphertext.Text = ""
-    End Sub
-#End Region
 #Region "SHA"
     Private Sub tbShaPlainText_TextChanged(sender As Object, e As EventArgs) Handles tbShaPlainText.TextChanged
         Try
