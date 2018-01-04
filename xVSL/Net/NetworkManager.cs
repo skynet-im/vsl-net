@@ -140,7 +140,7 @@ namespace VSL
                 int index = 1;
                 if (!parent.channel.TryRead(out byte[] ciphertext, 256))
                     return false;
-                byte[] plaintext = Crypt.RSA.DecryptBlock(ciphertext, rsaKey);
+                byte[] plaintext = Crypt.RsaStatic.DecryptBlock(ciphertext, rsaKey);
                 byte id = plaintext[0]; // index = 1
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 if (success)
@@ -370,7 +370,7 @@ namespace VSL
         {
             try
             {
-                byte[] ciphertext = Crypt.RSA.EncryptBlock(Util.ConnectBytes(head, content), rsaKey);
+                byte[] ciphertext = Crypt.RsaStatic.EncryptBlock(Util.ConnectBytes(head, content), rsaKey);
                 byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.RSA_2048_OAEP), ciphertext);
                 return buf.Length == parent.channel.Send(buf);
             }

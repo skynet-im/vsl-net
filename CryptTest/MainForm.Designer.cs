@@ -29,43 +29,28 @@
         private void InitializeComponent()
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
-            this.e2eFileTab = new System.Windows.Forms.TabPage();
-            this.e2EFileControl1 = new CryptTest.E2EFileControl();
             this.aesTab = new System.Windows.Forms.TabPage();
+            this.e2eFileTab = new System.Windows.Forms.TabPage();
             this.aesControl1 = new CryptTest.AesControl();
+            this.e2EFileControl1 = new CryptTest.E2EFileControl();
+            this.rsaTab = new System.Windows.Forms.TabPage();
+            this.rsaControl1 = new CryptTest.RsaControl();
             this.tabControl1.SuspendLayout();
-            this.e2eFileTab.SuspendLayout();
             this.aesTab.SuspendLayout();
+            this.e2eFileTab.SuspendLayout();
+            this.rsaTab.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
             // 
             this.tabControl1.Controls.Add(this.aesTab);
+            this.tabControl1.Controls.Add(this.rsaTab);
             this.tabControl1.Controls.Add(this.e2eFileTab);
             this.tabControl1.Location = new System.Drawing.Point(12, 12);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(410, 257);
             this.tabControl1.TabIndex = 0;
-            // 
-            // e2eFileTab
-            // 
-            this.e2eFileTab.Controls.Add(this.e2EFileControl1);
-            this.e2eFileTab.Location = new System.Drawing.Point(4, 22);
-            this.e2eFileTab.Name = "e2eFileTab";
-            this.e2eFileTab.Padding = new System.Windows.Forms.Padding(3);
-            this.e2eFileTab.Size = new System.Drawing.Size(402, 231);
-            this.e2eFileTab.TabIndex = 0;
-            this.e2eFileTab.Text = "E2E File";
-            this.e2eFileTab.UseVisualStyleBackColor = true;
-            // 
-            // e2EFileControl1
-            // 
-            this.e2EFileControl1.BackColor = System.Drawing.Color.Transparent;
-            this.e2EFileControl1.Location = new System.Drawing.Point(0, 0);
-            this.e2EFileControl1.Name = "e2EFileControl1";
-            this.e2EFileControl1.Size = new System.Drawing.Size(402, 231);
-            this.e2EFileControl1.TabIndex = 0;
             // 
             // aesTab
             // 
@@ -78,12 +63,48 @@
             this.aesTab.Text = "AES";
             this.aesTab.UseVisualStyleBackColor = true;
             // 
+            // e2eFileTab
+            // 
+            this.e2eFileTab.Controls.Add(this.e2EFileControl1);
+            this.e2eFileTab.Location = new System.Drawing.Point(4, 22);
+            this.e2eFileTab.Name = "e2eFileTab";
+            this.e2eFileTab.Padding = new System.Windows.Forms.Padding(3);
+            this.e2eFileTab.Size = new System.Drawing.Size(402, 231);
+            this.e2eFileTab.TabIndex = 0;
+            this.e2eFileTab.Text = "E2E File";
+            this.e2eFileTab.UseVisualStyleBackColor = true;
+            // 
             // aesControl1
             // 
             this.aesControl1.Location = new System.Drawing.Point(0, 0);
             this.aesControl1.Name = "aesControl1";
             this.aesControl1.Size = new System.Drawing.Size(402, 231);
             this.aesControl1.TabIndex = 0;
+            // 
+            // e2EFileControl1
+            // 
+            this.e2EFileControl1.BackColor = System.Drawing.Color.Transparent;
+            this.e2EFileControl1.Location = new System.Drawing.Point(0, 0);
+            this.e2EFileControl1.Name = "e2EFileControl1";
+            this.e2EFileControl1.Size = new System.Drawing.Size(402, 231);
+            this.e2EFileControl1.TabIndex = 0;
+            // 
+            // rsaTab
+            // 
+            this.rsaTab.Controls.Add(this.rsaControl1);
+            this.rsaTab.Location = new System.Drawing.Point(4, 22);
+            this.rsaTab.Name = "rsaTab";
+            this.rsaTab.Size = new System.Drawing.Size(402, 231);
+            this.rsaTab.TabIndex = 2;
+            this.rsaTab.Text = "RSA";
+            this.rsaTab.UseVisualStyleBackColor = true;
+            // 
+            // rsaControl1
+            // 
+            this.rsaControl1.Location = new System.Drawing.Point(0, 0);
+            this.rsaControl1.Name = "rsaControl1";
+            this.rsaControl1.Size = new System.Drawing.Size(402, 231);
+            this.rsaControl1.TabIndex = 0;
             // 
             // MainForm
             // 
@@ -96,8 +117,9 @@
             this.Name = "MainForm";
             this.Text = "VSL Test Anwendung für Kryptographie";
             this.tabControl1.ResumeLayout(false);
-            this.e2eFileTab.ResumeLayout(false);
             this.aesTab.ResumeLayout(false);
+            this.e2eFileTab.ResumeLayout(false);
+            this.rsaTab.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -109,6 +131,8 @@
         private E2EFileControl e2EFileControl1;
         private System.Windows.Forms.TabPage aesTab;
         private AesControl aesControl1;
+        private System.Windows.Forms.TabPage rsaTab;
+        private RsaControl rsaControl1;
     }
 }
 

@@ -23,19 +23,6 @@ Partial Class frmMain
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         Me.mainTabControl = New System.Windows.Forms.TabControl()
-        Me.tpRSA = New System.Windows.Forms.TabPage()
-        Me.btnRsaExtract = New System.Windows.Forms.Button()
-        Me.btnRsaGenerate = New System.Windows.Forms.Button()
-        Me.btnRsaEncrypt = New System.Windows.Forms.Button()
-        Me.btnRsaDecrypt = New System.Windows.Forms.Button()
-        Me.Label10 = New System.Windows.Forms.Label()
-        Me.tbRsaCiphertext = New System.Windows.Forms.TextBox()
-        Me.Label9 = New System.Windows.Forms.Label()
-        Me.tbRsaPlaintext = New System.Windows.Forms.TextBox()
-        Me.tbRsaPublicKey = New System.Windows.Forms.TextBox()
-        Me.tbRsaPrivateKey = New System.Windows.Forms.TextBox()
-        Me.Label8 = New System.Windows.Forms.Label()
-        Me.Label7 = New System.Windows.Forms.Label()
         Me.tpSHA = New System.Windows.Forms.TabPage()
         Me.gbShaMode = New System.Windows.Forms.GroupBox()
         Me.rbShaModeHex = New System.Windows.Forms.RadioButton()
@@ -65,7 +52,6 @@ Partial Class frmMain
         Me.pbTest = New System.Windows.Forms.ProgressBar()
         Me.btnTestStart = New System.Windows.Forms.Button()
         Me.mainTabControl.SuspendLayout()
-        Me.tpRSA.SuspendLayout()
         Me.tpSHA.SuspendLayout()
         Me.gbShaMode.SuspendLayout()
         Me.tpECDH.SuspendLayout()
@@ -74,7 +60,6 @@ Partial Class frmMain
         '
         'mainTabControl
         '
-        Me.mainTabControl.Controls.Add(Me.tpRSA)
         Me.mainTabControl.Controls.Add(Me.tpSHA)
         Me.mainTabControl.Controls.Add(Me.tpECDH)
         Me.mainTabControl.Controls.Add(Me.tpTest)
@@ -83,130 +68,6 @@ Partial Class frmMain
         Me.mainTabControl.SelectedIndex = 0
         Me.mainTabControl.Size = New System.Drawing.Size(378, 237)
         Me.mainTabControl.TabIndex = 0
-        '
-        'tpRSA
-        '
-        Me.tpRSA.Controls.Add(Me.btnRsaExtract)
-        Me.tpRSA.Controls.Add(Me.btnRsaGenerate)
-        Me.tpRSA.Controls.Add(Me.btnRsaEncrypt)
-        Me.tpRSA.Controls.Add(Me.btnRsaDecrypt)
-        Me.tpRSA.Controls.Add(Me.Label10)
-        Me.tpRSA.Controls.Add(Me.tbRsaCiphertext)
-        Me.tpRSA.Controls.Add(Me.Label9)
-        Me.tpRSA.Controls.Add(Me.tbRsaPlaintext)
-        Me.tpRSA.Controls.Add(Me.tbRsaPublicKey)
-        Me.tpRSA.Controls.Add(Me.tbRsaPrivateKey)
-        Me.tpRSA.Controls.Add(Me.Label8)
-        Me.tpRSA.Controls.Add(Me.Label7)
-        Me.tpRSA.Location = New System.Drawing.Point(4, 22)
-        Me.tpRSA.Name = "tpRSA"
-        Me.tpRSA.Padding = New System.Windows.Forms.Padding(3)
-        Me.tpRSA.Size = New System.Drawing.Size(370, 211)
-        Me.tpRSA.TabIndex = 0
-        Me.tpRSA.Text = "RSA"
-        Me.tpRSA.UseVisualStyleBackColor = True
-        '
-        'btnRsaExtract
-        '
-        Me.btnRsaExtract.Location = New System.Drawing.Point(7, 177)
-        Me.btnRsaExtract.Name = "btnRsaExtract"
-        Me.btnRsaExtract.Size = New System.Drawing.Size(75, 23)
-        Me.btnRsaExtract.TabIndex = 12
-        Me.btnRsaExtract.Text = "extrahieren"
-        Me.btnRsaExtract.UseVisualStyleBackColor = True
-        '
-        'btnRsaGenerate
-        '
-        Me.btnRsaGenerate.Location = New System.Drawing.Point(88, 177)
-        Me.btnRsaGenerate.Name = "btnRsaGenerate"
-        Me.btnRsaGenerate.Size = New System.Drawing.Size(69, 23)
-        Me.btnRsaGenerate.TabIndex = 11
-        Me.btnRsaGenerate.Text = "generieren"
-        Me.btnRsaGenerate.UseVisualStyleBackColor = True
-        '
-        'btnRsaEncrypt
-        '
-        Me.btnRsaEncrypt.Location = New System.Drawing.Point(163, 177)
-        Me.btnRsaEncrypt.Name = "btnRsaEncrypt"
-        Me.btnRsaEncrypt.Size = New System.Drawing.Size(92, 23)
-        Me.btnRsaEncrypt.TabIndex = 10
-        Me.btnRsaEncrypt.Text = "verschlüsseln"
-        Me.btnRsaEncrypt.UseVisualStyleBackColor = True
-        '
-        'btnRsaDecrypt
-        '
-        Me.btnRsaDecrypt.Location = New System.Drawing.Point(261, 177)
-        Me.btnRsaDecrypt.Name = "btnRsaDecrypt"
-        Me.btnRsaDecrypt.Size = New System.Drawing.Size(92, 23)
-        Me.btnRsaDecrypt.TabIndex = 9
-        Me.btnRsaDecrypt.Text = "entschlüsseln"
-        Me.btnRsaDecrypt.UseVisualStyleBackColor = True
-        '
-        'Label10
-        '
-        Me.Label10.AutoSize = True
-        Me.Label10.Location = New System.Drawing.Point(20, 126)
-        Me.Label10.Name = "Label10"
-        Me.Label10.Size = New System.Drawing.Size(58, 13)
-        Me.Label10.TabIndex = 8
-        Me.Label10.Text = "CipherText"
-        '
-        'tbRsaCiphertext
-        '
-        Me.tbRsaCiphertext.Location = New System.Drawing.Point(114, 123)
-        Me.tbRsaCiphertext.Multiline = True
-        Me.tbRsaCiphertext.Name = "tbRsaCiphertext"
-        Me.tbRsaCiphertext.Size = New System.Drawing.Size(239, 48)
-        Me.tbRsaCiphertext.TabIndex = 7
-        '
-        'Label9
-        '
-        Me.Label9.AutoSize = True
-        Me.Label9.Location = New System.Drawing.Point(20, 72)
-        Me.Label9.Name = "Label9"
-        Me.Label9.Size = New System.Drawing.Size(51, 13)
-        Me.Label9.TabIndex = 6
-        Me.Label9.Text = "PlainText"
-        '
-        'tbRsaPlaintext
-        '
-        Me.tbRsaPlaintext.Location = New System.Drawing.Point(114, 69)
-        Me.tbRsaPlaintext.Multiline = True
-        Me.tbRsaPlaintext.Name = "tbRsaPlaintext"
-        Me.tbRsaPlaintext.Size = New System.Drawing.Size(239, 48)
-        Me.tbRsaPlaintext.TabIndex = 5
-        '
-        'tbRsaPublicKey
-        '
-        Me.tbRsaPublicKey.Location = New System.Drawing.Point(114, 43)
-        Me.tbRsaPublicKey.Name = "tbRsaPublicKey"
-        Me.tbRsaPublicKey.Size = New System.Drawing.Size(239, 20)
-        Me.tbRsaPublicKey.TabIndex = 4
-        '
-        'tbRsaPrivateKey
-        '
-        Me.tbRsaPrivateKey.Location = New System.Drawing.Point(114, 17)
-        Me.tbRsaPrivateKey.Name = "tbRsaPrivateKey"
-        Me.tbRsaPrivateKey.Size = New System.Drawing.Size(239, 20)
-        Me.tbRsaPrivateKey.TabIndex = 3
-        '
-        'Label8
-        '
-        Me.Label8.AutoSize = True
-        Me.Label8.Location = New System.Drawing.Point(20, 46)
-        Me.Label8.Name = "Label8"
-        Me.Label8.Size = New System.Drawing.Size(54, 13)
-        Me.Label8.TabIndex = 2
-        Me.Label8.Text = "PublicKey"
-        '
-        'Label7
-        '
-        Me.Label7.AutoSize = True
-        Me.Label7.Location = New System.Drawing.Point(20, 20)
-        Me.Label7.Name = "Label7"
-        Me.Label7.Size = New System.Drawing.Size(58, 13)
-        Me.Label7.TabIndex = 1
-        Me.Label7.Text = "PrivateKey"
         '
         'tpSHA
         '
@@ -485,8 +346,6 @@ Partial Class frmMain
         Me.Name = "frmMain"
         Me.Text = "CryptTestApplication"
         Me.mainTabControl.ResumeLayout(False)
-        Me.tpRSA.ResumeLayout(False)
-        Me.tpRSA.PerformLayout()
         Me.tpSHA.ResumeLayout(False)
         Me.tpSHA.PerformLayout()
         Me.gbShaMode.ResumeLayout(False)
@@ -499,7 +358,6 @@ Partial Class frmMain
     End Sub
 
     Friend WithEvents mainTabControl As TabControl
-    Friend WithEvents tpRSA As TabPage
     Friend WithEvents tpSHA As TabPage
     Friend WithEvents tbShaHashHash As TextBox
     Friend WithEvents Label4 As Label
@@ -507,18 +365,6 @@ Partial Class frmMain
     Friend WithEvents Label5 As Label
     Friend WithEvents tbShaPlainText As TextBox
     Friend WithEvents Label6 As Label
-    Friend WithEvents Label7 As Label
-    Friend WithEvents tbRsaPublicKey As TextBox
-    Friend WithEvents tbRsaPrivateKey As TextBox
-    Friend WithEvents Label8 As Label
-    Friend WithEvents Label10 As Label
-    Friend WithEvents tbRsaCiphertext As TextBox
-    Friend WithEvents Label9 As Label
-    Friend WithEvents tbRsaPlaintext As TextBox
-    Friend WithEvents btnRsaExtract As Button
-    Friend WithEvents btnRsaGenerate As Button
-    Friend WithEvents btnRsaEncrypt As Button
-    Friend WithEvents btnRsaDecrypt As Button
     Friend WithEvents gbShaMode As GroupBox
     Friend WithEvents rbShaModeHex As RadioButton
     Friend WithEvents rbShaModeUTF8 As RadioButton

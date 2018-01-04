@@ -69,6 +69,12 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RsaControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="RsaControl.Designer.cs">
+      <DependentUpon>RsaControl.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="AesControl.resx">
       <DependentUpon>AesControl.cs</DependentUpon>
     </EmbeddedResource>
@@ -87,6 +93,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="RsaControl.resx">
+      <DependentUpon>RsaControl.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
