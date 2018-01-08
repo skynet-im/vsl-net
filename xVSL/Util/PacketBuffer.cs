@@ -41,33 +41,21 @@ namespace VSL
         /// <summary>
         /// Gets the length of the underlying MemoryStream in bytes.
         /// </summary>
-        public int Length
-        {
-            get
-            {
-                return Convert.ToInt32(baseStream.Length);
-            }
-        }
+        public int Length => Convert.ToInt32(baseStream.Length);
+
         /// <summary>
         /// Gets the current position within the underlying MemoryStream.
         /// </summary>
         public int Position
         {
-            get
-            {
-                return Convert.ToInt32(baseStream.Position);
-            }
+            get => Convert.ToInt32(baseStream.Position);
+            set => baseStream.Position = value;
         }
+
         /// <summary>
         /// Gets the count of pending bytes in the underlying MemoryStream.
         /// </summary>
-        public int Pending
-        {
-            get
-            {
-                return Convert.ToInt32(baseStream.Length - baseStream.Position);
-            }
-        }
+        public int Pending => Convert.ToInt32(baseStream.Length - baseStream.Position);
         //  properties>
         // <functions
         /// <summary>
@@ -99,21 +87,31 @@ namespace VSL
             baseStream.Write(b, 0, b.Length);
         }
         //  <byte
-#pragma warning disable CS1591 //Disables "Missing XML comment..."
-        public byte ReadByte()
-        {
-            return ReadByteRaw(1)[0];
-        }
-        public void WriteByte(byte b)
-        {
-            WriteByteRaw(new byte[1] { b });
-        }
+        /// <summary>
+        /// Reads an 8 bit unsigned integer.
+        /// </summary>
+        /// <returns></returns>
+        public byte ReadByte() => ReadByteRaw(1)[0]; // warning: Stream.ReadByte() does not throw an exception if read fails.
+        /// <summary>
+        /// Writes an 8 bit unsigned integer.
+        /// </summary>
+        /// <param name="b"></param>
+        public void WriteByte(byte b) => baseStream.WriteByte(b);
         //   byte>
         //  <byte array
+        /// <summary>
+        /// Reads a byte array with the specified length.
+        /// </summary>
+        /// <param name="count">The count of bytes to read.</param>
+        /// <returns></returns>
         public byte[] ReadByteArray(int count)
         {
             return ReadByteRaw(count);
         }
+        /// <summary>
+        /// Reads an <see cref="uint"/> and then a byte array with the length of this <see cref="uint"/>.
+        /// </summary>
+        /// <returns></returns>
         public byte[] ReadByteArray()
         {
             int count = Convert.ToInt32(ReadUInt());
@@ -132,16 +130,25 @@ namespace VSL
         }
         //   byte array>
         //  <bool
+        /// <summary>
+        /// Reads a boolean.
+        /// </summary>
+        /// <returns></returns>
         public bool ReadBool()
         {
             return ReadByteRaw(1)[0] == 1;
         }
+        /// <summary>
+        /// Writes a boolean as a byte (0 for false and 1 for true).
+        /// </summary>
+        /// <param name="b"></param>
         public void WriteBool(bool b)
         {
-            WriteByteRaw(new byte[1] { Convert.ToByte(b ? 1 : 0) });
+            baseStream.WriteByte(Convert.ToByte(b ? 1 : 0));
         }
         //   bool>
         //  <short
+#pragma warning disable CS1591 //Disables "Missing XML comment..."
         public short ReadShort()
         {
             return BitConverter.ToInt16(ReadByteRaw(2), 0);
