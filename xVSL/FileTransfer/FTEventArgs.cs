@@ -26,5 +26,7 @@ namespace VSL.FileTransfer
         public ContentAlgorithm FileAlgorithm { get; private set; }
         internal byte[] FileKey { get; set; }
         internal byte[] FileIV { get; set; }
+
+        internal void OnHeaderReceived()
     }
 }
