@@ -28,5 +28,8 @@ namespace VSL.FileTransfer
         internal byte[] FileIV { get; set; }
 
         internal void OnHeaderReceived()
+        {
+
+        }
     }
 }
