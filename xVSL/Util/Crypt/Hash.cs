@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
+using System.IO;
 #if WINDOWS_UWP
 using Windows.Security.Cryptography;
 using Windows.Security.Cryptography.Core;
@@ -44,30 +45,55 @@ namespace VSL.Crypt
             return hash;
         }
         /// <summary>
-        /// Computes the SHA256 hash of a string
+        /// Computes the SHA256 hash of a string with the specified encoding.
         /// </summary>
-        /// <param name="s">string (UTF8 encoding)</param>
+        /// <param name="s"></param>
+        /// <param name="encoding"></param>
         /// <returns></returns>
-        public static byte[] SHA256(string s)
+        public static byte[] SHA256(string s, Encoding encoding)
         {
-            return SHA256(Encoding.UTF8.GetBytes(s));
+            return SHA256(encoding.GetBytes(s));
         }
         /// <summary>
-        /// Computes the SHA256 hash of a byte array
+        /// Computes the SHA256 hash of a byte array.
         /// </summary>
-        /// <param name="b">byte array to hash</param>
+        /// <param name="buffer"></param>
         /// <returns></returns>
-        public static byte[] SHA256(byte[] b)
+        public static byte[] SHA256(byte[] buffer)
         {
 #if WINDOWS_UWP
             HashAlgorithmProvider csp = HashAlgorithmProvider.OpenAlgorithm("SHA256");
-            CryptographicBuffer.CopyToByteArray(csp.HashData(CryptographicBuffer.CreateFromByteArray(b)), out byte[] hash);
+            CryptographicBuffer.CopyToByteArray(csp.HashData(CryptographicBuffer.CreateFromByteArray(buffer)), out byte[] hash);
 #else
             byte[] hash;
             using (SHA256CryptoServiceProvider sha = new SHA256CryptoServiceProvider())
-                hash = sha.ComputeHash(b);
+                hash = sha.ComputeHash(buffer);
 #endif
             return hash;
+        }
+        /// <summary>
+        /// Computes the SHA256 hash of a file.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static byte[] SHA256(string fileName)
+        {
+            using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                return SHA256(fs);
+        }
+        /// <summary>
+        /// Computes the SHA256 hash of a stream.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        public static byte[] SHA256(System.IO.Stream stream)
+        {
+#if WINDOWS_UWP
+            using (var csp = System.Security.Cryptography.SHA256.Create())
+#else
+            using (var csp = new SHA256CryptoServiceProvider())
+#endif
+                return csp.ComputeHash(stream);
         }
 #region Scrypt
         /// <summary>
