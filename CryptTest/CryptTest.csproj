@@ -61,6 +61,12 @@
     <Compile Include="E2EFileControl.Designer.cs">
       <DependentUpon>E2EFileControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="EcdhControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="EcdhControl.Designer.cs">
+      <DependentUpon>EcdhControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -75,11 +81,20 @@
     <Compile Include="RsaControl.Designer.cs">
       <DependentUpon>RsaControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="ShaControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ShaControl.Designer.cs">
+      <DependentUpon>ShaControl.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="AesControl.resx">
       <DependentUpon>AesControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="E2EFileControl.resx">
       <DependentUpon>E2EFileControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="EcdhControl.resx">
+      <DependentUpon>EcdhControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -95,6 +110,9 @@
     </Compile>
     <EmbeddedResource Include="RsaControl.resx">
       <DependentUpon>RsaControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ShaControl.resx">
+      <DependentUpon>ShaControl.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
