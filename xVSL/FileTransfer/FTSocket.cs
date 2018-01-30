@@ -8,6 +8,28 @@ namespace VSL.FileTransfer
 {
     public abstract class FTSocket
     {
+        public event EventHandler<FTEventArgs> Request;
+
+        public void Accept(FTEventArgs e)
+        {
+            //TODO: Handle any type of request.
+        }
+
+        public void Cancel(FTEventArgs e)
+        {
+            //TODO: Cancel request or file transfer
+        }
+
+        public void Download(FTEventArgs e)
+        {
+            //TODO: Send a request. Compare hashes of local and server file.
+        }
+
+        public void Upload(FTEventArgs e)
+        {
+            //TODO: Send a request. Upload header and file.
+        }
+
         internal abstract void ReceiveHeader(FTEventArgs e);
         internal abstract void ReceiveFile(FTEventArgs e);
         internal abstract void SendHeader(FTEventArgs e);
@@ -20,56 +42,23 @@ namespace VSL.FileTransfer
         /// <exception cref="InvalidDataException"/>
         internal protected virtual void SendFile(FTEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(e.Path))
-                throw new ArgumentNullException("e.Path", "You must specify the path of the file");
-            if (!File.Exists(e.Path))
-                throw new FileNotFoundException("You can only send existing files", e.Path);
-            e.FileStream = new FileStream(e.Path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            if (e.FileAlgorithm != ContentAlgorithm.None)
-            {
-                int first = e.FileStream.ReadByte();
-                if (first <= 0 || (ContentAlgorithm)Convert.ToByte(first) == e.FileAlgorithm)
-                    throw new InvalidDataException("Algorithm is wrong or could not be found.");
-            }
-            byte[] buf = new byte[262144];
-            if (e.FileAlgorithm == ContentAlgorithm.Aes256Cbc && e.FileKey != null)
-            {
+            // Architecture has changed
+            //if (string.IsNullOrWhiteSpace(e.Path))
+            //    throw new ArgumentNullException("e.Path", "You must specify the path of the file");
+            //if (!File.Exists(e.Path))
+            //    throw new FileNotFoundException("You can only send existing files", e.Path);
+            //e.FileStream = new FileStream(e.Path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            //if (e.FileAlgorithm != ContentAlgorithm.None)
+            //{
+            //    int first = e.FileStream.ReadByte();
+            //    if (first <= 0 || (ContentAlgorithm)Convert.ToByte(first) == e.FileAlgorithm)
+            //        throw new InvalidDataException("Algorithm is wrong or could not be found.");
+            //}
+            //byte[] buf = new byte[262144];
+            //if (e.FileAlgorithm == ContentAlgorithm.Aes256Cbc && e.FileKey != null)
+            //{
                 
-            }
-        }
-        public abstract void Cancel(FTEventArgs e);
-        #region util
-        /// <summary>
-        /// Writes all meta data to a file at the specified path. The file will stay in its directory but will be renamed to its original name which will be returned.
-        /// </summary>
-        /// <param name="fi">Meta data that will be applied except the directory.</param>
-        /// <param name="path">Current path of the file.</param>
-        /// <returns>The new path of the file.</returns>
-        public static string ApplyMetaData(FileInfo fi, string path)
-        {
-            FileInfo current = new FileInfo(path);
-            string directory = current.DirectoryName;
-            if (File.Exists(Path.Combine(directory, fi.Name)))
-            {
-                long count = 2;
-                while (true)
-                {
-                    string newpath = Path.Combine(directory, fi.Name + " (" + count + ")");
-                    if (File.Exists(newpath))
-                        count++;
-                    else
-                    {
-                        current.MoveTo(newpath);
-                        break;
-                    }
-                }
-            }
-            fi.Attributes = current.Attributes;
-            fi.CreationTime = current.CreationTime;
-            fi.LastAccessTime = current.LastAccessTime;
-            fi.LastWriteTime = current.LastWriteTime;
-            return fi.FullName;
-        }
-        #endregion
+            //}
+        }       
     }
 }
