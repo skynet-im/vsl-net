@@ -77,19 +77,15 @@ namespace VSL
             parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P04ChangeIV.");
             return false;
         }
-        internal override bool HandleP05KeepAlive(P05KeepAlive p)
-        {
-            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P05KeepAlive.");
-            return false;
-        }
-        // overriding void HandleP06Accepted is not neccessary.
+        // overriding HandleP05KeepAlive is not neccessary.
+        // overriding HandleP06Accepted is not neccessary.
         internal override bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
             parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P07OpenFileTransfer.");
             return false;
         }
-        // overriding void HandleP08FileHeader is not neccessary.
-        // overriding void HandleP09FileDataBlock is not neccessary.
+        // overriding HandleP08FileHeader is not neccessary.
+        // overriding HandleP09FileDataBlock is not neccessary.
         //  functions>
     }
 }

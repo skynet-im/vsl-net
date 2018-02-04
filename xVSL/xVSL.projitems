@@ -20,11 +20,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Events.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileMeta.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferClient.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferSocket.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTSocket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Identifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\StreamMode.cs" />
