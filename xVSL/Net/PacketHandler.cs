@@ -71,7 +71,11 @@ namespace VSL
         internal abstract bool HandleP02Certificate(P02Certificate p);
         internal abstract bool HandleP03FinishHandshake(P03FinishHandshake p);
         internal abstract bool HandleP04ChangeIV(P04ChangeIV p);
-        internal abstract bool HandleP05KeepAlive(P05KeepAlive p);
+        internal virtual bool HandleP05KeepAlive(P05KeepAlive p)
+        {
+            // TODO: Echo an keepalive packet if the last call was more than one second ago.
+            return true;
+        }
         internal virtual bool HandleP06Accepted(P06Accepted p)
         {
             if (p.RelatedPacket > 5 && p.RelatedPacket < 10)

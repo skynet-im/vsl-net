@@ -3,14 +3,25 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using VSL.Crypt;
+using VSL.Packet;
 
 namespace VSL.FileTransfer
 {
-    public abstract class FTSocket
+    public class FTSocket
     {
+        private VSLSocket parent;
+        private FTEventArgs currentItem;
+
+        internal FTSocket(VSLSocket parent)
+        {
+            this.parent = parent;
+        }
+
+        //TODO: Use sync lock to suppress multiple file transfers
+
         public event EventHandler<FTEventArgs> Request;
 
-        public void Accept(FTEventArgs e)
+        public void Accept(FTEventArgs e, string path)
         {
             //TODO: Handle any type of request.
         }
@@ -20,45 +31,58 @@ namespace VSL.FileTransfer
             //TODO: Cancel request or file transfer
         }
 
+        public void DownloadHeader(FTEventArgs e)
+        {
+            //TODO: Send a request and download only header.
+            e.Mode = StreamMode.GetHeader;
+            parent.manager.SendPacket(new P07OpenFileTransfer(e.Identifier, e.Mode));
+        }
+
         public void Download(FTEventArgs e)
         {
             //TODO: Send a request. Compare hashes of local and server file.
+            e.Mode = StreamMode.GetFile;
+            parent.manager.SendPacket(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         public void Upload(FTEventArgs e)
         {
-            //TODO: Send a request. Upload header and file.
+            e.Mode = StreamMode.UploadFile;
+            parent.manager.SendPacket(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            //TODO: Upload header
+            //TODO: Encrypt and upload file
         }
 
-        internal abstract void ReceiveHeader(FTEventArgs e);
-        internal abstract void ReceiveFile(FTEventArgs e);
-        internal abstract void SendHeader(FTEventArgs e);
-        /// <summary>
-        /// Sends only the raw file data.
-        /// </summary>
-        /// <param name="e">Work Item</param>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="FileNotFoundException"/>
-        /// <exception cref="InvalidDataException"/>
-        internal protected virtual void SendFile(FTEventArgs e)
+        internal bool OnPacketReceived(P06Accepted packet)
         {
-            // Architecture has changed
-            //if (string.IsNullOrWhiteSpace(e.Path))
-            //    throw new ArgumentNullException("e.Path", "You must specify the path of the file");
-            //if (!File.Exists(e.Path))
-            //    throw new FileNotFoundException("You can only send existing files", e.Path);
-            //e.FileStream = new FileStream(e.Path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            //if (e.FileAlgorithm != ContentAlgorithm.None)
-            //{
-            //    int first = e.FileStream.ReadByte();
-            //    if (first <= 0 || (ContentAlgorithm)Convert.ToByte(first) == e.FileAlgorithm)
-            //        throw new InvalidDataException("Algorithm is wrong or could not be found.");
-            //}
-            //byte[] buf = new byte[262144];
-            //if (e.FileAlgorithm == ContentAlgorithm.Aes256Cbc && e.FileKey != null)
-            //{
-                
-            //}
-        }       
+
+        }
+
+        internal bool OnPacketReceived(P07OpenFileTransfer packet)
+        {
+            if (currentItem == null)
+            {
+                FTEventArgs e = new FTEventArgs(packet.Identifier, packet.StreamMode);
+                currentItem = e;
+                parent.ThreadManager.QueueWorkItem((ct) => Request?.Invoke(this, e));
+                return true;
+            }
+            else
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidRequest",
+                    "A new file transfer was request before the last one was finished or aborted.\r\n\tat FTSocket.OnPacketReceived(P07OpenFileTransfer)");
+                return false;
+            }
+        }
+
+        internal bool OnPacketReceived(P08FileHeader packet)
+        {
+
+        }
+
+        internal bool OnPacketReceived(P09FileDataBlock packet)
+        {
+
+        }
     }
 }

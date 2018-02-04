@@ -92,23 +92,20 @@ namespace VSL
         }
         internal override bool HandleP04ChangeIV(P04ChangeIV p)
         {
+            // TODO: Disable with protocol v1.2
             parent.manager.SendIV = p.ServerIV;
             parent.manager.ReceiveIV = p.ClientIV;
             return true;
         }
-        internal override bool HandleP05KeepAlive(P05KeepAlive p)
-        {
-            parent.ExceptionHandler.CloseConnection("NotSupported", "This VSL version does not support keep alive packets");
-            return false;
-        }
-        // overriding void HandleP06Accepted is not neccessary.
+        // overriding HandleP05KeepAlive is not neccessary.
+        // overriding HandleP06Accepted is not neccessary.
         internal override bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
             parent.FileTransfer.OnFileTransferRequested(p.Identifier, p.StreamMode);
             return true;
         }
-        // overriding void HandleP08FileHeader is not neccessary.
-        // overriding void HandleP09FileDataBlock is not neccessary.
+        // overriding HandleP08FileHeader is not neccessary.
+        // overriding HandleP09FileDataBlock is not neccessary.
         //  functions>
     }
 }
