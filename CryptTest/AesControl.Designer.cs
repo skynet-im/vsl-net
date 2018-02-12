@@ -66,7 +66,6 @@
             this.EncodingHexRb.TabIndex = 13;
             this.EncodingHexRb.Text = "Hexadezimal";
             this.EncodingHexRb.UseVisualStyleBackColor = true;
-            this.EncodingHexRb.Click += new System.EventHandler(this.RadioButtons_CheckedChanged);
             // 
             // EncodingUTF8Rb
             // 

@@ -11,9 +11,8 @@ namespace VSL.FileTransfer
     /// </summary>
     public class FTEventArgs : EventArgs
     {
-        // TODO: Assign this field at the first call.
-        private FTSocket parent;
-        internal FileStream FileStream;
+        private VSLSocket parent;
+        private FTSocket socket;
 
         /// <summary>
         /// Initalizes a new instance of the <see cref="FTEventArgs"/> that can be used to send the associated file.
@@ -34,19 +33,44 @@ namespace VSL.FileTransfer
             Mode = mode;
         }
 
+        /// <summary>
+        /// Occurs when the file transfer is denied or canceled.
+        /// </summary>
         public event EventHandler Canceled;
+        /// <summary>
+        /// Occurs when the file transfer was finished successfully.
+        /// </summary>
         public event EventHandler Finished;
+        /// <summary>
+        /// Occurs when VSL achieved a progress running the file transfer.
+        /// </summary>
+        public event EventHandler<FTProgressEventArgs> Progress;
 
         public Identifier Identifier { get; }
         public StreamMode Mode { get; internal set; }
-        public FileMeta FileMeta { get; }
+        private FileMeta _fileMeta;
+        public FileMeta FileMeta
+        {
+            get => _fileMeta;
+            internal set
+            {
+                _fileMeta = value;
+                parent.ThreadManager.QueueWorkItem((ct) => Progress?.Invoke(this, new FTProgressEventArgs(0, _fileMeta.Length)));
+            }
+        }
         public string Path { get; }
         public ContentAlgorithm HeaderAlgorithm { get; private set; }
         public ContentAlgorithm FileAlgorithm { get; private set; }
 
-        internal void OnHeaderReceived()
+        internal void Assign(VSLSocket parent, FTSocket socket)
         {
+            this.parent = parent;
+            this.socket = socket;
+        }
 
+        internal void OnFinished()
+        {
+            parent.ThreadManager.QueueWorkItem((ct) => Finished?.Invoke(this, null));
         }
     }
 }

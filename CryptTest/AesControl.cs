@@ -53,7 +53,13 @@ namespace CryptTest
 
         private void RadioButtons_CheckedChanged(object sender, EventArgs e)
         {
-            // TODO: Convert input
+            if (!string.IsNullOrWhiteSpace(tbAesPlainText.Text))
+            {
+                if (EncodingUTF8Rb.Checked) // Convert to UTF-8
+                    tbAesPlainText.Text = Encoding.UTF8.GetString(Util.GetBytes(tbAesPlainText.Text));
+                else // Convert to binary
+                    tbAesPlainText.Text = Util.ToHexString(Encoding.UTF8.GetBytes(tbAesPlainText.Text));
+            }
         }
     }
 }
