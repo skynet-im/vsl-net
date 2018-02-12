@@ -67,7 +67,7 @@ namespace VSL.FileTransfer
         {
             if (receivingHeader)
             {
-                SetHeaderPacket(Path, packet);
+                //SetHeaderPacket(Path, packet);
                 OnFileTransferFinished();
                 Reset();
             }

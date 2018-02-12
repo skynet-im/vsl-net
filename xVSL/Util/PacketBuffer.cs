@@ -118,6 +118,32 @@ namespace VSL
             return ReadByteRaw(count);
         }
         /// <summary>
+        /// Reads a byte array with the specified length without increasing the source index.
+        /// </summary>
+        /// <param name="count">The count of bytes to read.</param>
+        /// <returns></returns>
+        public byte[] PeekByteArray(int count)
+        {
+            long position = baseStream.Position;
+            byte[] buffer = new byte[count];
+            baseStream.Read(buffer, 0, count);
+            baseStream.Position = position;
+            return buffer;
+        }
+        /// <summary>
+        /// Reads an <see cref="uint"/> and then a bytes array with the length of this <see cref="uint"/> without increasing the source index.
+        /// </summary>
+        /// <returns></returns>
+        public byte[] PeekByteArray()
+        {
+            long position = baseStream.Position;
+            int count = Convert.ToInt32(ReadUInt());
+            byte[] buffer = new byte[count];
+            baseStream.Read(buffer, 0, count);
+            baseStream.Position = position;
+            return buffer;
+        }
+        /// <summary>
         /// Writes a byte array to the end buffer
         /// </summary>
         /// <param name="b">Byte array to write</param>

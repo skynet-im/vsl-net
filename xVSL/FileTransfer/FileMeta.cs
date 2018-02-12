@@ -19,6 +19,10 @@ namespace VSL.FileTransfer
         /// </summary>
         public ContentAlgorithm Algorithm { get; private set; }
         /// <summary>
+        /// Gets the length of the file. If it is encrypted the length of the encrypted content is used.
+        /// </summary>
+        public long Length { get; private set; }
+        /// <summary>
         /// Gets whether plain data is available and the properties and fields can be used.
         /// </summary>
         public bool Available { get; private set; }
@@ -44,10 +48,6 @@ namespace VSL.FileTransfer
         /// This property can only be used if <see cref="Available"/> returns true.
         /// </summary>
         public string Name { get; private set; }
-        /// <summary>
-        /// This property can only be used if <see cref="Available"/> returns true.
-        /// </summary>
-        public ulong Length { get; private set; }
         /// <summary>
         /// This property can only be used if <see cref="Available"/> returns true.
         /// </summary>
@@ -129,7 +129,7 @@ namespace VSL.FileTransfer
             BinaryData = buf.ToArray();
             PlainData = BinaryData;
             Name = buf.ReadString();
-            Length = buf.ReadULong();
+            Length = Convert.ToInt64(buf.ReadULong());
             Attributes = (FileAttributes)buf.ReadUInt();
             CreationTime = buf.ReadDate();
             LastAccessTime = buf.ReadDate();
@@ -142,7 +142,8 @@ namespace VSL.FileTransfer
         private void Read_v1_2(PacketBuffer buf)
         {
             Algorithm = (ContentAlgorithm)buf.ReadByte();
-            BinaryData = Util.SkipBytes(buf.ToArray(), 1);
+            Length = buf.ReadUInt();
+            BinaryData = buf.PeekByteArray(buf.Pending);
             if (Algorithm == ContentAlgorithm.None)
             {
                 Read_v1_2_Core(buf);
@@ -153,7 +154,8 @@ namespace VSL.FileTransfer
         private void Read_v1_2(PacketBuffer buf, byte[] hmacKey, byte[] aesKey)
         {
             Algorithm = (ContentAlgorithm)buf.ReadByte();
-            BinaryData = Util.SkipBytes(buf.ToArray(), 1);
+            Length = buf.ReadUInt();
+            BinaryData = buf.PeekByteArray(buf.Pending);
             if (Algorithm == ContentAlgorithm.None)
                 Read_v1_2_Core(buf);
             else if (Algorithm == ContentAlgorithm.Aes256CbcHmacSha256)
@@ -184,7 +186,6 @@ namespace VSL.FileTransfer
         {
             PlainData = buf.ToArray();
             Name = buf.ReadString();
-            Length = buf.ReadULong();
             Attributes = (FileAttributes)buf.ReadUInt();
             CreationTime = buf.ReadDate();
             LastAccessTime = buf.ReadDate();
@@ -230,20 +231,23 @@ namespace VSL.FileTransfer
             HmacKey = hmacKey;
             FileKey = fileKey;
 
-            if (AesKey == null)
-                AesKey = AesStatic.GenerateKey();
-            else if (AesKey.Length != 32)
-                throw new ArgumentOutOfRangeException("aesKey");
+            if (algorithm == ContentAlgorithm.Aes256CbcHmacSha256)
+            {
+                if (AesKey == null)
+                    AesKey = AesStatic.GenerateKey();
+                else if (AesKey.Length != 32)
+                    throw new ArgumentOutOfRangeException("aesKey");
 
-            if (hmacKey == null)
-                HmacKey = AesStatic.GenerateKey();
-            else if (HmacKey.Length != 32)
-                throw new ArgumentOutOfRangeException("hmacKey");
+                if (hmacKey == null)
+                    HmacKey = AesStatic.GenerateKey();
+                else if (HmacKey.Length != 32)
+                    throw new ArgumentOutOfRangeException("hmacKey");
 
-            if (fileKey == null)
-                FileKey = AesStatic.GenerateKey();
-            else if (FileKey.Length != 32)
-                throw new ArgumentOutOfRangeException("fileKey");
+                if (fileKey == null)
+                    FileKey = AesStatic.GenerateKey();
+                else if (FileKey.Length != 32)
+                    throw new ArgumentOutOfRangeException("fileKey");
+            }
 
             LoadFromFile(path);
             if (algorithm == ContentAlgorithm.None)
@@ -263,7 +267,7 @@ namespace VSL.FileTransfer
             byte[] hash = null;
             Task hashT = Task.Run(() => hash = Hash.SHA256(path));
             Name = fi.Name;
-            Length = Convert.ToUInt64(fi.Length);
+            Length = fi.Length;
             Attributes = fi.Attributes;
             CreationTime = fi.CreationTime;
             LastAccessTime = fi.LastAccessTime;
@@ -277,7 +281,7 @@ namespace VSL.FileTransfer
         {
             Algorithm = ContentAlgorithm.None;
             buf.WriteString(Name);
-            buf.WriteULong(Length);
+            buf.WriteULong(Convert.ToUInt64(Length));
             buf.WriteUInt((uint)Attributes);
             buf.WriteDate(CreationTime);
             buf.WriteDate(LastAccessTime);
@@ -291,6 +295,7 @@ namespace VSL.FileTransfer
         private void Write_v1_2_None(PacketBuffer buf)
         {
             buf.WriteByte((byte)ContentAlgorithm.None);
+            buf.WriteULong(Convert.ToUInt64(Length));
             Write_v1_2_Core(buf);
             PlainData = Util.SkipBytes(buf.ToArray(), 1);
             BinaryData = PlainData;
@@ -305,6 +310,7 @@ namespace VSL.FileTransfer
                 PlainData = buf.ToArray();
             }
             buf.WriteByte((byte)ContentAlgorithm.Aes256CbcHmacSha256);
+            buf.WriteULong(Convert.ToUInt64(Length));
             byte[] iv = AesStatic.GenerateIV();
             byte[] plain = Util.ConnectBytes(iv, PlainData);
             using (HMACSHA256 hmac = new HMACSHA256(HmacKey))
@@ -317,7 +323,6 @@ namespace VSL.FileTransfer
         private void Write_v1_2_Core(PacketBuffer buf)
         {
             buf.WriteString(Name);
-            buf.WriteULong(Length);
             buf.WriteUInt((uint)Attributes);
             buf.WriteDate(CreationTime);
             buf.WriteDate(LastAccessTime);

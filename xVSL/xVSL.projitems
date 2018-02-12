@@ -23,9 +23,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferSocket.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTProgressEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTSocket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Identifier.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\StreamMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\AesShaStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\CryptographicOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\ShaStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetworkChannel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\CryptoAlgorithm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetworkManager.cs" />

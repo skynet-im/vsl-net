@@ -71,7 +71,8 @@ namespace VSL.FileTransfer
         internal P08FileHeader GetHeaderPacket(string path)
         {
             FileInfo fi = new FileInfo(path);
-            return new P08FileHeader(fi.Name, Convert.ToUInt64(fi.Length), fi.Attributes, fi.CreationTime, fi.LastAccessTime, fi.LastWriteTime, new byte[0], new byte[0]);
+            //return new P08FileHeader(fi.Name, Convert.ToUInt64(fi.Length), fi.Attributes, fi.CreationTime, fi.LastAccessTime, fi.LastWriteTime, new byte[0], new byte[0]);
+            return null;
         }
         /// <summary>
         /// Applies an FileHeader packet and writes all meta data to the specified file.
@@ -80,7 +81,7 @@ namespace VSL.FileTransfer
         /// <param name="packet"></param>
         internal void SetHeaderPacket(string path, P08FileHeader packet)
         {
-            string newPath = "";
+            /*string newPath = "";
             try
             {
                 newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path), packet.Name);
@@ -101,7 +102,7 @@ namespace VSL.FileTransfer
             {
                 // TODO: Change exception handling
                 parent.ExceptionHandler.PrintException(ex);
-            }
+            }*/
         }
         #region receive
         internal void ReceiveFile()
@@ -112,7 +113,7 @@ namespace VSL.FileTransfer
         internal virtual async void OnHeaderReceived(P08FileHeader packet)
         {
             Task t = Task.Run(() => parent.manager.SendPacket(new P06Accepted(true, 8, ProblemCategory.None)));
-            length = Convert.ToInt64(packet.Length);
+            //length = Convert.ToInt64(packet.Length);
             header = packet;
             OnFileTransferProgress();
             await t;
@@ -153,7 +154,7 @@ namespace VSL.FileTransfer
         {
             SendingFile = true;
             header = GetHeaderPacket(Path);
-            length = Convert.ToInt64(header.Length);
+            //length = Convert.ToInt64(header.Length);
             Task t = Task.Run(() => parent.manager.SendPacket(header));
             try
             {
