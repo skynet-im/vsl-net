@@ -62,17 +62,6 @@ namespace VSL.Crypt
             }
             return final;
         }
-        /// <summary>
-        /// Connects multiple byte arrays to one
-        /// </summary>
-        /// <param name="b">byte arrays to connect</param>
-        /// <returns></returns>
-        [Obsolete("Util.ConnectBytesPA is deprecated, please use Util.ConnectBytes instead.", false)]
-        // TODO: Add error in v1.2.1
-        public static byte[] ConnectBytesPA(params byte[][] b)
-        {
-            return ConnectBytes(b);
-        }
 
         /// <summary>
         /// Skips the specified count of bytes at the front of a byte array. This function was designed to run more efficient than IEnumerable.Skip(int).ToArray().

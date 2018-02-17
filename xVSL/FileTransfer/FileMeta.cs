@@ -15,7 +15,7 @@ namespace VSL.FileTransfer
     public class FileMeta
     {
         /// <summary>
-        /// Gets the original algorithm of this file.
+        /// Gets the cryptographic algorithm of this <see cref="FileMeta"/>.
         /// </summary>
         public ContentAlgorithm Algorithm { get; private set; }
         /// <summary>

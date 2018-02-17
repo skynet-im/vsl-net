@@ -7,9 +7,8 @@ using VSL.Crypt;
 
 namespace VSL.FileTransfer.Streams
 {
-    internal class AesShaStream : Stream
+    internal class AesShaStream : HashStream
     {
-        private Stream stream;
         private CryptoStream aesStream;
         private CryptoStream shaStream;
         private byte[] key;
@@ -17,41 +16,22 @@ namespace VSL.FileTransfer.Streams
         private Aes csp;
         private ICryptoTransform transform;
         private SHA256CryptoServiceProvider sha;
-        private CryptoStreamMode mode;
         private CryptographicOperation operation;
         private bool first = true;
 
-        internal AesShaStream(Stream stream, byte[] key, CryptoStreamMode mode, CryptographicOperation operation)
+        internal AesShaStream(Stream stream, byte[] key, CryptoStreamMode mode, CryptographicOperation operation) : base(stream, mode)
         {
-            this.stream = stream ?? throw new ArgumentNullException("stream");
             this.key = key ?? throw new ArgumentNullException("key");
             if (key.Length != 32)
                 throw new ArgumentOutOfRangeException("key", "The AES key must have a length of 256 bit.");
-            if (mode == CryptoStreamMode.Read && !stream.CanRead)
-                throw new ArgumentException("You cannot use CryptoStreamMode.Read with a not readable stream.");
-            else if (mode == CryptoStreamMode.Write && !stream.CanWrite)
-                throw new ArgumentException("You cannot use CryptoStreamMode.Write with a not writeable stream.");
             if (operation == CryptographicOperation.Encrypt)
                 iv = AesStatic.GenerateIV();
             else if (operation == CryptographicOperation.Decrypt) { }
             else
                 throw new NotSupportedException("This stream does not support cryptographic operations other than encrypt and decrypt.");
 
-            this.mode = mode;
             this.operation = operation;
             sha = new SHA256CryptoServiceProvider();
-        }
-
-        public override bool CanRead => mode == CryptoStreamMode.Read;
-        public override bool CanSeek => false;
-        public override bool CanWrite => mode == CryptoStreamMode.Write;
-        public override long Length => throw new NotImplementedException();
-        public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public byte[] Hash { get; private set; }
-
-        public override void Flush()
-        {
-
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -63,7 +43,7 @@ namespace VSL.FileTransfer.Streams
                 int done = 0;
                 if (first)
                 {
-                    Array.Copy(iv, 0, buffer, offset, 16);
+                    Array.Copy(iv, 0, buffer, offset, 16); // copy iv to encrypted output
                     done += 16;
                     offset += 16;
                     count -= 16;
@@ -73,11 +53,12 @@ namespace VSL.FileTransfer.Streams
                     csp = new AesCryptoServiceProvider();
 #endif
                     transform = csp.CreateEncryptor(key, iv);
-                    shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Read);
-                    aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Read);
+                    shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Read); // compute SHA256 of plain data
+                    aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Read); // encrypt after computing hash
                     first = false;
                 }
                 done += aesStream.Read(buffer, offset, count);
+                _position += done; // The method returns the iv so it has to be counted
                 return done;
             }
             else // CryptographicOperation.Decrypt
@@ -85,27 +66,29 @@ namespace VSL.FileTransfer.Streams
                 if (first)
                 {
                     iv = new byte[16];
-                    if (stream.Read(iv, 0, 16) < 16) return -1;
+                    if (stream.Read(iv, 0, 16) < 16) return -1; // read iv from stream
 #if WINDOWS_UWP
                     csp = Aes.Create();
 #else
                     csp = new AesCryptoServiceProvider();
 #endif
                     transform = csp.CreateDecryptor(key, iv);
-                    aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Read);
-                    shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Read);
+                    aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Read); // first decrypt data
+                    shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Read); // then compute hash of the plain data
                     first = false;
                 }
-                return shaStream.Read(buffer, offset, count);
+                int done = shaStream.Read(buffer, offset, count);
+                _position += done; // The method does not return an iv and its length is ignored.
+                return done;
             }
         }
 
-        public override long Seek(long offset, SeekOrigin origin)
-            => throw new NotImplementedException();
-
-        public override void SetLength(long value)
-            => throw new NotImplementedException();
-
+        /// <summary>
+        /// Processes the input data and writes the result on the underlying stream. The first write blocks must be at least 16 bytes large.
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="count"></param>
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (mode != CryptoStreamMode.Write)
@@ -114,20 +97,78 @@ namespace VSL.FileTransfer.Streams
             {
                 if (first)
                 {
-                    // TODO: Generate iv and write on stream
-                    // TODO: Initialize csp
+                    stream.Write(iv, 0, 16); // write pre-generated iv on stream
+#if WINDOWS_UWP
+                    csp = Aes.Create();
+#else
+                    csp = new AesCryptoServiceProvider();
+#endif
+                    transform = csp.CreateEncryptor(key, iv);
+                    aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Write); // write encrypted data on stream
+                    shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Write); // compute hash before encrypting
                 }
-                // Encrypt and write
+                shaStream.Write(buffer, offset, count);
+                _position += count; // no iv is provided directly -> ignore the count of the iv
             }
-            else
+            else // CryptographicOperation.Decrypt
             {
+                int done = 0;
                 if (first)
                 {
-                    // TODO: Read iv from buffer
-                    // TODO: Initialize csp
+                    if (count < 16) throw new ArgumentOutOfRangeException("count", count, "The first block must be at least 16 bytes large.");
+                    iv = new byte[16];
+                    Array.Copy(buffer, offset, iv, 0, 16); // read iv from buffer
+                    offset += 16;
+                    count -= 16;
+                    done += 16;
+#if WINDOWS_UWP
+                    csp = Aes.Create();
+#else
+                    csp = new AesCryptoServiceProvider();
+#endif
+                    transform = csp.CreateDecryptor(key, iv);
+                    shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Write); // compute hash of plain data and write on stream
+                    aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Write); // decrypt before computing hash
                 }
-                // Decrypt and write
+                aesStream.Write(buffer, offset, count);
+                done += count;
+                _position += done; // the iv is directly provided and will be counted
             }
         }
-    }
-}
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    if (mode == CryptoStreamMode.Read)
+                    {
+                        if (operation == CryptographicOperation.Encrypt)
+                            aesStream.Dispose(); // all chained streams will be disposed with this call
+                        else
+                            shaStream.Dispose();
+                    }
+                    else // CryptoStreamMode.Write
+                    {
+                        if (operation == CryptographicOperation.Encrypt)
+                            shaStream.Dispose();
+                        else
+                            aesStream.Dispose();
+                    }
+                    try
+                    {
+                        Hash = sha.Hash;
+                    }
+                    catch { }
+                }
+
+                disposedValue = true;
+            }
+        }
+        #endregion
+    } // class
+} // namespace
