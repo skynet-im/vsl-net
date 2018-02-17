@@ -29,6 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\StreamMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\AesShaStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\CryptographicOperation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\HashStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Streams\ShaStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\NetworkChannel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\CryptoAlgorithm.cs" />

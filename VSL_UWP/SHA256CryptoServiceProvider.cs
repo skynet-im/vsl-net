@@ -27,6 +27,8 @@ namespace System.Security.Cryptography
 
         public bool CanTransformMultipleBlocks => true;
 
+        public byte[] Hash { get; private set; }
+
         public int InputBlockSize => 1;
 
         public int OutputBlockSize => 1;
@@ -72,6 +74,7 @@ namespace System.Security.Cryptography
         {
             IBuffer buffer = csp.GetValueAndReset();
             CryptographicBuffer.CopyToByteArray(buffer, out byte[] final);
+            Hash = final;
             return final;
         }
     }
