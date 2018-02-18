@@ -1,6 +1,6 @@
 ﻿namespace VSLTest
 {
-    partial class frmMain
+    partial class FrmMain
     {
         /// <summary>
         /// Required designer variable.
@@ -32,13 +32,14 @@
             this.btnStartServer = new System.Windows.Forms.Button();
             this.btnConnect = new System.Windows.Forms.Button();
             this.btnClientSendPacket = new System.Windows.Forms.Button();
-            this.btnSendFile = new System.Windows.Forms.Button();
+            this.btnReceiveFile = new System.Windows.Forms.Button();
             this.pbFileTransfer = new System.Windows.Forms.ProgressBar();
             this.btnServerSendPacket = new System.Windows.Forms.Button();
             this.btnPenetrationTest = new System.Windows.Forms.Button();
             this.LbServer = new System.Windows.Forms.Label();
             this.LbServerUpdateTimer = new System.Windows.Forms.Timer(this.components);
             this.BtnCleanup = new System.Windows.Forms.Button();
+            this.btnSendFile = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnStartServer
@@ -49,39 +50,39 @@
             this.btnStartServer.TabIndex = 0;
             this.btnStartServer.Text = "Server starten";
             this.btnStartServer.UseVisualStyleBackColor = true;
-            this.btnStartServer.Click += new System.EventHandler(this.btnStartServer_Click);
+            this.btnStartServer.Click += new System.EventHandler(this.BtnStartServer_Click);
             // 
             // btnConnect
             // 
-            this.btnConnect.Location = new System.Drawing.Point(183, 12);
+            this.btnConnect.Location = new System.Drawing.Point(173, 12);
             this.btnConnect.Name = "btnConnect";
-            this.btnConnect.Size = new System.Drawing.Size(89, 23);
+            this.btnConnect.Size = new System.Drawing.Size(99, 23);
             this.btnConnect.TabIndex = 1;
             this.btnConnect.Text = "Verbinden";
             this.btnConnect.UseVisualStyleBackColor = true;
-            this.btnConnect.Click += new System.EventHandler(this.btnConnect_Click);
+            this.btnConnect.Click += new System.EventHandler(this.BtnConnect_Click);
             // 
             // btnClientSendPacket
             // 
             this.btnClientSendPacket.Enabled = false;
-            this.btnClientSendPacket.Location = new System.Drawing.Point(183, 41);
+            this.btnClientSendPacket.Location = new System.Drawing.Point(173, 41);
             this.btnClientSendPacket.Name = "btnClientSendPacket";
-            this.btnClientSendPacket.Size = new System.Drawing.Size(89, 23);
+            this.btnClientSendPacket.Size = new System.Drawing.Size(99, 23);
             this.btnClientSendPacket.TabIndex = 2;
             this.btnClientSendPacket.Text = "Senden";
             this.btnClientSendPacket.UseVisualStyleBackColor = true;
-            this.btnClientSendPacket.Click += new System.EventHandler(this.btnSendPacket_Click);
+            this.btnClientSendPacket.Click += new System.EventHandler(this.BtnSendPacket_Click);
             // 
-            // btnSendFile
+            // btnReceiveFile
             // 
-            this.btnSendFile.Enabled = false;
-            this.btnSendFile.Location = new System.Drawing.Point(183, 70);
-            this.btnSendFile.Name = "btnSendFile";
-            this.btnSendFile.Size = new System.Drawing.Size(89, 23);
-            this.btnSendFile.TabIndex = 3;
-            this.btnSendFile.Text = "Datei senden";
-            this.btnSendFile.UseVisualStyleBackColor = true;
-            this.btnSendFile.Click += new System.EventHandler(this.btnSendFile_Click);
+            this.btnReceiveFile.Enabled = false;
+            this.btnReceiveFile.Location = new System.Drawing.Point(173, 70);
+            this.btnReceiveFile.Name = "btnReceiveFile";
+            this.btnReceiveFile.Size = new System.Drawing.Size(99, 23);
+            this.btnReceiveFile.TabIndex = 3;
+            this.btnReceiveFile.Text = "Datei empfangen";
+            this.btnReceiveFile.UseVisualStyleBackColor = true;
+            this.btnReceiveFile.Click += new System.EventHandler(this.BtnReceiveFile_Click);
             // 
             // pbFileTransfer
             // 
@@ -98,13 +99,13 @@
             this.btnServerSendPacket.TabIndex = 5;
             this.btnServerSendPacket.Text = "Senden";
             this.btnServerSendPacket.UseVisualStyleBackColor = true;
-            this.btnServerSendPacket.Click += new System.EventHandler(this.btnSendPacket_Click);
+            this.btnServerSendPacket.Click += new System.EventHandler(this.BtnSendPacket_Click);
             // 
             // btnPenetrationTest
             // 
-            this.btnPenetrationTest.Location = new System.Drawing.Point(183, 99);
+            this.btnPenetrationTest.Location = new System.Drawing.Point(173, 128);
             this.btnPenetrationTest.Name = "btnPenetrationTest";
-            this.btnPenetrationTest.Size = new System.Drawing.Size(89, 23);
+            this.btnPenetrationTest.Size = new System.Drawing.Size(99, 23);
             this.btnPenetrationTest.TabIndex = 6;
             this.btnPenetrationTest.Text = "Stresstest";
             this.btnPenetrationTest.UseVisualStyleBackColor = true;
@@ -134,23 +135,35 @@
             this.BtnCleanup.UseVisualStyleBackColor = true;
             this.BtnCleanup.Click += new System.EventHandler(this.BtnCleanup_Click);
             // 
-            // frmMain
+            // btnSendFile
+            // 
+            this.btnSendFile.Enabled = false;
+            this.btnSendFile.Location = new System.Drawing.Point(173, 99);
+            this.btnSendFile.Name = "btnSendFile";
+            this.btnSendFile.Size = new System.Drawing.Size(99, 23);
+            this.btnSendFile.TabIndex = 9;
+            this.btnSendFile.Text = "Datei senden";
+            this.btnSendFile.UseVisualStyleBackColor = true;
+            this.btnSendFile.Click += new System.EventHandler(this.BtnSendFile_Click);
+            // 
+            // FrmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.btnSendFile);
             this.Controls.Add(this.BtnCleanup);
             this.Controls.Add(this.LbServer);
             this.Controls.Add(this.btnPenetrationTest);
             this.Controls.Add(this.btnServerSendPacket);
             this.Controls.Add(this.pbFileTransfer);
-            this.Controls.Add(this.btnSendFile);
+            this.Controls.Add(this.btnReceiveFile);
             this.Controls.Add(this.btnClientSendPacket);
             this.Controls.Add(this.btnConnect);
             this.Controls.Add(this.btnStartServer);
-            this.Name = "frmMain";
-            this.Text = "VSL test application";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
+            this.Name = "FrmMain";
+            this.Text = "VSL {0} Test";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmMain_FormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -161,13 +174,14 @@
         private System.Windows.Forms.Button btnStartServer;
         private System.Windows.Forms.Button btnConnect;
         private System.Windows.Forms.Button btnClientSendPacket;
-        private System.Windows.Forms.Button btnSendFile;
+        private System.Windows.Forms.Button btnReceiveFile;
         private System.Windows.Forms.ProgressBar pbFileTransfer;
         private System.Windows.Forms.Button btnServerSendPacket;
         private System.Windows.Forms.Button btnPenetrationTest;
         private System.Windows.Forms.Label LbServer;
         private System.Windows.Forms.Timer LbServerUpdateTimer;
         private System.Windows.Forms.Button BtnCleanup;
+        private System.Windows.Forms.Button btnSendFile;
     }
 }
 

@@ -99,11 +99,7 @@ namespace VSL
         }
         // overriding HandleP05KeepAlive is not neccessary.
         // overriding HandleP06Accepted is not neccessary.
-        internal override bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
-        {
-            parent.FileTransfer.OnFileTransferRequested(p.Identifier, p.StreamMode);
-            return true;
-        }
+        // overriding HandleP07OpenFileTransfer is not neccessary.
         // overriding HandleP08FileHeader is not neccessary.
         // overriding HandleP09FileDataBlock is not neccessary.
         //  functions>

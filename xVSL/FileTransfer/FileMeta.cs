@@ -14,6 +14,7 @@ namespace VSL.FileTransfer
     /// </summary>
     public class FileMeta
     {
+        private byte[] encryptedContent;
         /// <summary>
         /// Gets the cryptographic algorithm of this <see cref="FileMeta"/>.
         /// </summary>
@@ -26,10 +27,6 @@ namespace VSL.FileTransfer
         /// Gets whether plain data is available and the properties and fields can be used.
         /// </summary>
         public bool Available { get; private set; }
-        /// <summary>
-        /// Gets encrypted or unencrypted binary data that can be restored. These bytes will be sent to a remote host during file transfer.
-        /// </summary>
-        public byte[] BinaryData { get; private set; }
 
         #region encrypted properties
         /// <summary>
@@ -40,10 +37,6 @@ namespace VSL.FileTransfer
         /// This property can only be used if <see cref="Available"/> returns true.
         /// </summary>
         public byte[] AesKey { get; private set; }
-        /// <summary>
-        /// Gets the plaintext binary expression of this <see cref="FileMeta"/> without algorithm byte. This property can only be used if <see cref="Available"/> returns true.
-        /// </summary>
-        public byte[] PlainData { get; private set; }
         /// <summary>
         /// This property can only be used if <see cref="Available"/> returns true.
         /// </summary>
@@ -89,21 +82,22 @@ namespace VSL.FileTransfer
         /// <param name="connectionVersion"></param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
+        /// <exception cref="NotSupportedException"/>
         public FileMeta(byte[] binaryData, ushort connectionVersion)
         {
             if (binaryData == null) throw new ArgumentNullException("binaryData");
             if (binaryData.Length < 76) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.1 FileHeader packet must contain at least 76 bytes.");
-            if (connectionVersion < 1 || connectionVersion > 2)
+            if (connectionVersion < Constants.CompatibilityVersion || connectionVersion > Constants.VersionNumber)
                 throw new NotSupportedException($"VSL {Constants.ProductVersion} only support connection versions from {Constants.CompatibilityVersion} to {Constants.VersionNumber} but not {connectionVersion}");
 
-            if (connectionVersion > 1)
-                Read_v1_2(new PacketBuffer(binaryData));
-            else
+            if (connectionVersion == 1)
                 Read_v1_1(new PacketBuffer(binaryData));
+            else if (connectionVersion == 2)
+                Read_v1_2(new PacketBuffer(binaryData));
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FileMeta"/> class with expected <see cref="ContentAlgorithm.Aes256CbcHmacSha256"/>.
+        /// Initializes a new instance of the <see cref="FileMeta"/> class with <see cref="ContentAlgorithm.Aes256CbcHmacSha256"/>.
         /// </summary>
         /// <param name="binaryData"></param>
         /// <param name="hmacKey"></param>
@@ -126,8 +120,6 @@ namespace VSL.FileTransfer
         private void Read_v1_1(PacketBuffer buf)
         {
             Algorithm = ContentAlgorithm.None;
-            BinaryData = buf.ToArray();
-            PlainData = BinaryData;
             Name = buf.ReadString();
             Length = Convert.ToInt64(buf.ReadULong());
             Attributes = (FileAttributes)buf.ReadUInt();
@@ -141,21 +133,19 @@ namespace VSL.FileTransfer
 
         private void Read_v1_2(PacketBuffer buf)
         {
-            Algorithm = (ContentAlgorithm)buf.ReadByte();
-            Length = buf.ReadUInt();
-            BinaryData = buf.PeekByteArray(buf.Pending);
+            Read_v1_2_Header(buf);
             if (Algorithm == ContentAlgorithm.None)
             {
                 Read_v1_2_Core(buf);
                 Available = true;
             }
+            else
+                encryptedContent = buf.ReadByteArray(buf.Pending);
         }
 
         private void Read_v1_2(PacketBuffer buf, byte[] hmacKey, byte[] aesKey)
         {
-            Algorithm = (ContentAlgorithm)buf.ReadByte();
-            Length = buf.ReadUInt();
-            BinaryData = buf.PeekByteArray(buf.Pending);
+            Read_v1_2_Header(buf);
             if (Algorithm == ContentAlgorithm.None)
                 Read_v1_2_Core(buf);
             else if (Algorithm == ContentAlgorithm.Aes256CbcHmacSha256)
@@ -182,9 +172,14 @@ namespace VSL.FileTransfer
             }
         }
 
+        private void Read_v1_2_Header(PacketBuffer buf)
+        {
+            Algorithm = (ContentAlgorithm)buf.ReadByte();
+            Length = Convert.ToInt64(buf.ReadULong());
+        }
+
         private void Read_v1_2_Core(PacketBuffer buf)
         {
-            PlainData = buf.ToArray();
             Name = buf.ReadString();
             Attributes = (FileAttributes)buf.ReadUInt();
             CreationTime = buf.ReadDate();
@@ -198,20 +193,19 @@ namespace VSL.FileTransfer
         /// <summary>
         /// Initializes a new instance of the <see cref="FileMeta"/> class for VSL 1.1.
         /// </summary>
-        /// <param name="path"></param>
+        /// <param name="path">The local file path to load the meta data from.</param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="FileNotFoundException"/>
         public FileMeta(string path)
         {
             LoadFromFile(path);
-            using (PacketBuffer buf = new PacketBuffer())
-                Write_v1_1(buf);
+            Available = true;
         }
         /// <summary>
         /// Initializes a new instance of the <see cref="FileMeta"/> class for VSL 1.2 and generates all required keys.
         /// </summary>
-        /// <param name="path"></param>
-        /// <param name="algorithm"></param>
+        /// <param name="path">The local file path to load the meta data from.</param>
+        /// <param name="algorithm">The cryptographic algorith to encrypt this <see cref="FileMeta"/>.</param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="FileNotFoundException"/>
         /// <exception cref="NotSupportedException"/>
@@ -220,13 +214,19 @@ namespace VSL.FileTransfer
         /// <summary>
         /// Initializes a new instance of the <see cref="FileMeta"/> class for VSL 1.2 and generates missing keys.
         /// </summary>
-        /// <param name="path"></param>
-        /// <param name="algorithm"></param>
+        /// <param name="path">The local file path to load the meta data from.</param>
+        /// <param name="algorithm">The cryptographic algorith to encrypt this <see cref="FileMeta"/>.</param>
         /// <param name="aesKey">256 bit AES key to encrypt this <see cref="FileMeta"/>.</param>
         /// <param name="hmacKey">256 bit HMAC key to verify integrity of this <see cref="FileMeta"/>.</param>
         /// <param name="fileKey">256 bit AES key to encrypt the associated file.</param>
+        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentOutOfRangeException"/>
+        /// <exception cref="NotSupportedException"/>
+        /// <exception cref="FileNotFoundException"/>
         public FileMeta(string path, ContentAlgorithm algorithm, byte[] aesKey, byte[] hmacKey, byte[] fileKey)
         {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentNullException("path");
             AesKey = aesKey;
             HmacKey = hmacKey;
             FileKey = fileKey;
@@ -249,15 +249,78 @@ namespace VSL.FileTransfer
                     throw new ArgumentOutOfRangeException("fileKey");
             }
 
-            LoadFromFile(path);
-            if (algorithm == ContentAlgorithm.None)
-                using (PacketBuffer buf = new PacketBuffer())
-                    Write_v1_2_None(buf);
-            else if (algorithm == ContentAlgorithm.Aes256CbcHmacSha256)
-                using (PacketBuffer buf = new PacketBuffer())
-                    Write_v1_2_AesHmac(buf);
-            else
+            if (algorithm != ContentAlgorithm.None && algorithm != ContentAlgorithm.Aes256CbcHmacSha256)
                 throw new NotSupportedException("This content algorithm is not supported.");
+
+            LoadFromFile(path);
+            Available = true;
+        }
+
+        /// <summary>
+        /// Returns the binary expression of this <see cref="FileMeta"/> like it will be sent over the internet.
+        /// </summary>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        public byte[] GetBinaryData(ushort version)
+        {
+            using (PacketBuffer buf = new PacketBuffer())
+            {
+                if (version == 1)
+                    Write_v1_1(buf);
+                else
+                {
+                    if (Algorithm == ContentAlgorithm.None)
+                    {
+                        Write_v1_2_Header(buf);
+                        Write_v1_2_Core(buf);
+                    }
+                    else if (Algorithm == ContentAlgorithm.Aes256CbcHmacSha256)
+                    {
+                        Write_v1_2_Header(buf); // write header anyway because we always these data
+
+                        if (Available)
+                        {
+                            byte[] plaindata;
+                            using (PacketBuffer ibuf = new PacketBuffer())
+                            {
+                                Write_v1_2_Core(ibuf);
+                                plaindata = ibuf.ToArray();
+                            }
+
+                            byte[] iv = AesStatic.GenerateIV();
+                            byte[] ciphertext = AesStatic.Encrypt(plaindata, AesKey, iv); // pre-compute cipher block for HMAC
+
+                            using (HMACSHA256 hmac = new HMACSHA256(HmacKey))
+                                buf.WriteByteArray(hmac.ComputeHash(Util.ConnectBytes(iv, ciphertext)), false); // compute and write HMAC of iv and ciphertext
+                            buf.WriteByteArray(iv, false);
+                            buf.WriteByteArray(ciphertext, false);
+                        }
+                        else
+                            buf.WriteByteArray(encryptedContent, false); // write all pre-read encrypted content including hmac, iv, etc.
+                    }
+                }
+                return buf.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Returns the binary expression of this <see cref="FileMeta"/> without any encryption, hmacs, ivs, etc.
+        /// </summary>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        public byte[] GetPlainData(ushort version)
+        {
+            using (PacketBuffer buf = new PacketBuffer())
+            {
+                if (version == 1)
+                    Write_v1_1(buf);
+                else
+                {
+                    Write_v1_2_Header(buf);
+                    Write_v1_2_Core(buf);
+                }
+                return buf.ToArray();
+            }
         }
 
         private void LoadFromFile(string path)
@@ -272,7 +335,7 @@ namespace VSL.FileTransfer
             CreationTime = fi.CreationTime;
             LastAccessTime = fi.LastAccessTime;
             LastWriteTime = fi.LastWriteTime;
-            // TODO: Thumbnail
+            Thumbnail = new byte[0]; // Thumbnails aren't supported yet
             hashT.Wait();
             SHA256 = hash;
         }
@@ -288,36 +351,12 @@ namespace VSL.FileTransfer
             buf.WriteDate(LastWriteTime);
             buf.WriteByteArray(Thumbnail);
             buf.WriteByteArray(SHA256, false);
-            PlainData = buf.ToArray();
-            BinaryData = PlainData;
         }
 
-        private void Write_v1_2_None(PacketBuffer buf)
+        private void Write_v1_2_Header(PacketBuffer buf)
         {
-            buf.WriteByte((byte)ContentAlgorithm.None);
+            buf.WriteByte((byte)Algorithm);
             buf.WriteULong(Convert.ToUInt64(Length));
-            Write_v1_2_Core(buf);
-            PlainData = Util.SkipBytes(buf.ToArray(), 1);
-            BinaryData = PlainData;
-        }
-
-        private void Write_v1_2_AesHmac(PacketBuffer buf)
-        {
-            using (PacketBuffer innerBuf = new PacketBuffer())
-            {
-                Write_v1_2_Core(innerBuf);
-                innerBuf.WriteByteArray(FileKey, false);
-                PlainData = buf.ToArray();
-            }
-            buf.WriteByte((byte)ContentAlgorithm.Aes256CbcHmacSha256);
-            buf.WriteULong(Convert.ToUInt64(Length));
-            byte[] iv = AesStatic.GenerateIV();
-            byte[] plain = Util.ConnectBytes(iv, PlainData);
-            using (HMACSHA256 hmac = new HMACSHA256(HmacKey))
-                buf.WriteByteArray(hmac.ComputeHash(plain), false);
-            buf.WriteByteArray(iv, false);
-            buf.WriteByteArray(AesStatic.Encrypt(PlainData, AesKey, iv), false);
-            BinaryData = buf.ToArray();
         }
 
         private void Write_v1_2_Core(PacketBuffer buf)
@@ -329,6 +368,9 @@ namespace VSL.FileTransfer
             buf.WriteDate(LastWriteTime);
             buf.WriteByteArray(Thumbnail);
             buf.WriteByteArray(SHA256, false);
+            buf.WriteByte((byte)FileEncryption);
+            if (FileEncryption == ContentAlgorithm.Aes256Cbc)
+                buf.WriteByteArray(FileKey, false);
         }
         #endregion
 

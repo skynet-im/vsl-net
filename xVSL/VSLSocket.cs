@@ -34,7 +34,7 @@ namespace VSL
         /// <summary>
         /// Access file transfer functions.
         /// </summary>
-        public FileTransferSocket FileTransfer { get; internal set; }
+        public FTSocket FileTransfer { get; internal set; }
         internal ExceptionHandler ExceptionHandler;
         /// <summary>
         /// Configure necessary console output.
@@ -50,6 +50,7 @@ namespace VSL
             ThreadManager = threadManager;
             threadManager.Assign(this);
             ExceptionHandler = new ExceptionHandler(this);
+            FileTransfer = new FTSocket(this);
             Logger = new Logger(this);
             connectionLostLock = new object();
         }

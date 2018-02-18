@@ -67,27 +67,36 @@ namespace VSL
         public event EventHandler<LoggedMessageEventArgs> LoggedMessage;
         private void OnLoggedMessage(string text, LogType type)
         {
-#if WINDOWS_UWP
-            Task.Run(() =>
-            {
-                if (WritePrefix) text = "[VSL " + type.ToString() + "] " + text;
-                LoggedMessage?.Invoke(this, new LoggedMessageEventArgs(type, text));
-            });
-#else
             ThreadPool.QueueUserWorkItem((o) =>
             {
-                if (WritePrefix) text = "[VSL " + type.ToString() + "] " + text;
+                if (WritePrefix) text = PrependPrefix(text, type);
                 LoggedMessage?.Invoke(this, new LoggedMessageEventArgs(type, text));
             });
-#endif
         }
         //  events>
         private void PrintMessage(string text, LogType type)
         {
+            text = PrependPrefix(text, type);
 #if WINDOWS_UWP
-            System.Diagnostics.Debug.WriteLine("[VSL " + type.ToString() + "] " + text);
+            System.Diagnostics.Debug.WriteLine(text);
 #else
-            Console.WriteLine("[VSL " + type.ToString() + "] " + text);
+            Console.WriteLine(text);
+#endif
+        }
+
+        private string PrependPrefix(string text, LogType type)
+        {
+#if DEBUG
+            string rel;
+            if (parent is VSLServer)
+                rel = "Server ";
+            else if (parent is VSLClient)
+                rel = "Client ";
+            else
+                rel = "";
+            return "[VSL " + rel + type.ToString() + "] " + text;
+#else
+            return "[VSL " + type.ToString() + "] " + text;
 #endif
         }
 

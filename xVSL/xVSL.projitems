@@ -17,12 +17,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Events.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Events.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileMeta.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTEventArgs.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferServer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FileTransferSocket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTProgressEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\FTSocket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FileTransfer\Identifier.cs" />
@@ -38,7 +34,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandlerClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandlerServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketRule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Net\SocketAsyncEventArgsPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\ConnectionType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\IPacket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\P00Handshake.cs" />

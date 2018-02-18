@@ -40,7 +40,8 @@ namespace VSL.Packet
         public void ReadPacket(PacketBuffer buf)
         {
             Identifier = Identifier.FromBinary(buf);
-            StreamMode = (StreamMode)buf.ReadByte();
+            StreamMode = StreamMode.InverseFromByte(buf.ReadByte());
+            // reverse only incoming request to switch in the right perspective
         }
 
         public void WritePacket(PacketBuffer buf)

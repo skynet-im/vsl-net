@@ -22,6 +22,7 @@ namespace VSL.FileTransfer.Streams
                 throw new ArgumentException("You cannot use CryptoStreamMode.Read with a not readable stream.");
             else if (mode == CryptoStreamMode.Write && !stream.CanWrite)
                 throw new ArgumentException("You cannot use CryptoStreamMode.Write with a not writeable stream.");
+            this.mode = mode;
         }
 
         public override bool CanRead => mode == CryptoStreamMode.Read;

@@ -139,5 +139,26 @@ namespace VSL.FileTransfer
                     break;
             }
         }
+
+        /// <summary>
+        /// Returns a string that represents the current <see cref="Identifier"/>.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            switch (Mode)
+            {
+                case IdentificationMode.UInt32:
+                    return Convert.ToString((uint)ID);
+                case IdentificationMode.UInt64:
+                    return Convert.ToString((ulong)ID);
+                case IdentificationMode.ByteArray:
+                    return Crypt.Util.ToHexString((byte[])ID);
+                case IdentificationMode.String:
+                    return (string)ID;
+                default:
+                    return base.ToString();
+            }
+        }
     }
 }

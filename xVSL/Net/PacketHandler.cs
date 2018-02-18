@@ -76,12 +76,11 @@ namespace VSL
             // TODO: Echo an keepalive packet if the last call was more than one second ago.
             return true;
         }
-        internal virtual bool HandleP06Accepted(P06Accepted p)
+        internal bool HandleP06Accepted(P06Accepted p)
         {
             if (p.RelatedPacket > 5 && p.RelatedPacket < 10)
             {
-                parent.FileTransfer.OnAccepted(p);
-                return true;
+                return parent.FileTransfer.OnPacketReceived(p);
             }
             else
             {
@@ -89,25 +88,17 @@ namespace VSL
                 return false;
             }
         }
-        internal abstract bool HandleP07OpenFileTransfer(P07OpenFileTransfer p);
-        // TODO: What if no file transfer is running?
-        internal virtual bool HandleP08FileHeader(P08FileHeader p)
+        internal virtual bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
-            parent.FileTransfer.OnHeaderReceived(p);
-            return true;
+            return parent.FileTransfer.OnPacketReceived(p);
         }
-        internal virtual bool HandleP09FileDataBlock(P09FileDataBlock p)
+        internal bool HandleP08FileHeader(P08FileHeader p)
         {
-            if (parent.FileTransfer.ReceivingFile)
-            {
-                parent.FileTransfer.OnDataBlockReceived(p);
-                return true;
-            }
-            else
-            {
-                parent.ExceptionHandler.CloseConnection("InvalidPacket", "No running file transfer that fits to the received P09FileDataBlock");
-                return false;
-            }
+            return parent.FileTransfer.OnPacketReceived(p);
+        }
+        internal bool HandleP09FileDataBlock(P09FileDataBlock p)
+        {
+            return parent.FileTransfer.OnPacketReceived(p);
         }
         //  functions>
     }

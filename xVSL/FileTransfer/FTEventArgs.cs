@@ -71,12 +71,10 @@ namespace VSL.FileTransfer
             this.socket = socket;
         }
 
-        internal bool 
-
         internal bool OpenStream()
         {
             // TODO: Handle Exceptions at opening the FileStream
-            if (Mode == StreamMode.GetHeader)
+            if (Mode == StreamMode.GetHeader || Mode == StreamMode.PushHeader)
                 throw new InvalidOperationException();
             else if (Mode == StreamMode.GetFile)
             {
@@ -92,7 +90,7 @@ namespace VSL.FileTransfer
                     return false;
                 }
             }
-            else // Mode == StreamMode.UploadFile
+            else // Mode == StreamMode.PushFile
             {
                 FileStream fs = new FileStream(Path, FileMode.Open, FileAccess.Read, FileShare.Read);
                 if (FileMeta.FileEncryption == ContentAlgorithm.None)
@@ -111,7 +109,7 @@ namespace VSL.FileTransfer
 
         internal void CloseStream(bool success)
         {
-            Stream?.Close();
+            Stream?.Dispose();
             Stream = null;
             if (success)
                 OnFinished();
@@ -121,7 +119,14 @@ namespace VSL.FileTransfer
 
         internal void OnFileMetaTransfered()
         {
-            parent.ThreadManager.QueueWorkItem((ct) => Progress?.Invoke(this, new FTProgressEventArgs(0, FileMeta.Length)));
+            var args = new FTProgressEventArgs(0, FileMeta.Length);
+            parent.ThreadManager.QueueWorkItem((ct) => Progress?.Invoke(this, args));
+        }
+
+        internal void OnProgress()
+        {
+            var args = new FTProgressEventArgs(Stream.Position, FileMeta.Length);
+            parent.ThreadManager.QueueWorkItem((ct) => Progress?.Invoke(this, args));
         }
 
         internal void OnFinished()

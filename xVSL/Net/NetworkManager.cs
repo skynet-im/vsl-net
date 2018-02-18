@@ -50,12 +50,16 @@ namespace VSL
                     case CryptoAlgorithm.AES_256_CBC_SP:
                         if (!Ready4Aes)
                         {
-                            parent.ExceptionHandler.CloseConnection("InvalidOperation", "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n\tat NetworkManager.OnDataReceive()");
+                            parent.ExceptionHandler.CloseConnection("InvalidOperation",
+                                "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n" +
+                                "\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
                         if (parent.ConnectionVersion.HasValue && parent.ConnectionVersion.Value >= 2)
                         {
-                            parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", "VSL versions 1.2 and later are not allowed to use an old, insecure algorithm.\r\n\tat NetworkManager.OnDataReceive()");
+                            parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
+                                "VSL versions 1.2 and later are not allowed to use an old, insecure algorithm.\r\n" +
+                                "\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
                         return ReceivePacket_AES_256_CBC_SP();
@@ -63,18 +67,24 @@ namespace VSL
                     case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
                         if (!Ready4Aes)
                         {
-                            parent.ExceptionHandler.CloseConnection("InvalidOperation", "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n\tat NetworkManager.OnDataReceive()");
+                            parent.ExceptionHandler.CloseConnection("InvalidOperation", 
+                                "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n" +
+                                "\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
                         if (parent.ConnectionVersion.HasValue && parent.ConnectionVersion.Value < 2)
                         {
-                            parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", "VSL versions older than 1.2 should not be able to use CryptographicAlgorithm.AES_256_CBC_MP2.\r\n\tat NetworkManager.OnDataReceive()");
+                            parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
+                                "VSL versions older than 1.2 should not be able to use CryptographicAlgorithm.AES_256_CBC_MP2.\r\n" +
+                                "\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
                         return ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3();
 
                     default:
-                        parent.ExceptionHandler.CloseConnection("InvalidAlgorithm", $"Received packet with unknown algorithm ({algorithm}).\r\n\tat NetworkManager.OnDataReceive()");
+                        parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
+                            $"Received packet with unknown algorithm ({algorithm}).\r\n" +
+                            $"\tat NetworkManager.OnDataReceive()");
                         return false;
                 }
             }
@@ -255,9 +265,9 @@ namespace VSL
                 if (!hmac.SequenceEqual(hmacProvider.ComputeHash(cipherblock)))
                 {
                     parent.ExceptionHandler.CloseConnection("MessageCorrupted",
-                        "The integrity checking resulted in a corrupted message.\r\n\t" +
-                        "at NetworkManager.ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3()\r\n\t" +
-                        "block count: " + blocks);
+                        "The integrity checking resulted in a corrupted message.\r\n" +
+                        "\tat NetworkManager.ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3()\r\n" +
+                        "\tblock count: " + blocks);
                     return false;
                 }
                 byte[] iv = Util.TakeBytes(cipherblock, 16);
@@ -284,7 +294,9 @@ namespace VSL
                             long pending = ms_plaintext.Length - ms_plaintext.Position;
                             if (length > pending)
                             {
-                                parent.ExceptionHandler.CloseConnection("TooBigPacket", $"Tried to receive a packet with {length} bytes length although only {pending} bytes are available.\r\n\tat NetworkManager.ReceivePacket_AES_256_CBC_MP2()");
+                                parent.ExceptionHandler.CloseConnection("TooBigPacket",
+                                    $"Tried to receive a packet with {length} bytes length although only {pending} bytes are available.\r\n" +
+                                    $"\tat NetworkManager.ReceivePacket_AES_256_CBC_MP2()");
                                 return false;
                             }
                             byte[] content = plaintext.ReadBytes(Convert.ToInt32(length));
@@ -298,7 +310,7 @@ namespace VSL
                             else
                             {
                                 if (parent.Logger.InitD)
-                                    parent.Logger.D($"Received external insecure AES packet: ID={255 - id} Length={content.Length}");
+                                    parent.Logger.D($"Received external AES packet: ID={255 - id} Length={content.Length}");
                                 parent.OnPacketReceived(id, content);
                             }
                         }
