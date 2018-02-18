@@ -28,7 +28,7 @@ namespace VSL
                 new PacketRule(new P04ChangeIV(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
                 // P05KeepAlive     -   Not supported in VSL 1.1
                 new PacketRule(new P06Accepted(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
-                // P07OpenFileTransfer - Server only
+                new PacketRule(new P07OpenFileTransfer(), CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3), // since VSL 1.2
                 new PacketRule(new P08FileHeader(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
                 new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3)
             };
@@ -81,8 +81,15 @@ namespace VSL
         // overriding HandleP06Accepted is not neccessary.
         internal override bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
-            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P07OpenFileTransfer.");
-            return false;
+            if (parent.ConnectionVersion.Value < 2) // before VSL 1.2
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P07OpenFileTransfer.");
+                return false;
+            }
+            else
+            {
+                return parent.FileTransfer.OnPacketReceived(p);
+            }
         }
         // overriding HandleP08FileHeader is not neccessary.
         // overriding HandleP09FileDataBlock is not neccessary.

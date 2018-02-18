@@ -18,10 +18,6 @@ namespace VSL
     {
         // <fields
         new internal PacketHandlerClient handler;
-        /// <summary>
-        /// Access file transfer functions.
-        /// </summary>
-        new public FileTransferClient FileTransfer { get; internal set; }
         internal ushort LatestProduct;
         internal ushort OldestProduct;
         private int _networkBufferSize = Constants.ReceiveBufferSize;
@@ -50,9 +46,6 @@ namespace VSL
 
             LatestProduct = latestProduct;
             OldestProduct = oldestProduct;
-
-            FileTransfer = new FileTransferClient(this);
-            base.FileTransfer = FileTransfer;
         }
         //  constructor>
 

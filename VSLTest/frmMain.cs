@@ -16,60 +16,34 @@ using VSL.FileTransfer;
 
 namespace VSLTest
 {
-    public partial class frmMain : Form
+    public partial class FrmMain : Form
     {
         private VSLClient vslClient;
-        // TESTSEVER: 
-        private const string publickey = "<RSAKeyValue><Modulus>qBQQScN/+A2Tfi971dmOyPwSXpoq3XVwQBJNzbCCk1ohGVoOzdNK87Csw3thZyrynfaDzujW555S4HkWXxLR5dzo8rj/6KAk0yugYtFMt10XC1iZHRQACQIB3j+lS5wK9ZHfbsE4+/CUAoUdhYa9cad/xEbYrgkkyY0TuZZ1w2piiE1SdOXB+U6NF1aJbkUtKrHU2zcp5YzhYlRePvx7e+GQ5GMctSuT/xFzPpBZ5DZx1I/7lQicq7V21M/ktilRQIeqIslX98j4jLuFriinySwW+oi0s+8hantRwZ9jgAIIEao9+tbDSj8ePHb0Li6hhuoMmLeImLaoadDG39VnFQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
-        private const int port = 32761;
-        private bool clientConnected = false;
-        private bool serverRunning = false;
-        private volatile bool running = true;
-        public frmMain()
+        private Server server;
+        private bool clientConnected;
+
+        public FrmMain()
         {
             InitializeComponent();
+            Text = string.Format(Text, Constants.ProductVersion);
+            server = new Server(Program.Port, Program.Keypair);
         }
 
-        private void btnStartServer_Click(object sender, EventArgs e)
+        private void BtnStartServer_Click(object sender, EventArgs e)
         {
-            if (!serverRunning)
+            if (!server.Running)
             {
                 btnStartServer.Enabled = false;
-                Listener();
+                server.Start();
             }
             else
             {
-                CloseServer();
+                btnStartServer.Enabled = true;
+                server.Stop();
             }
         }
 
-        private void Listener()
-        {
-            //Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-            //TcpListener listener = new TcpListener(IPAddress.Any, 32771);
-            var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-            TcpListener listener4 = new TcpListener(IPAddress.Loopback, port);
-            TcpListener listener6 = new TcpListener(IPAddress.IPv6Loopback, port);
-            listener4.Start();
-            listener6.Start();
-            btnStartServer.Text = "Beenden";
-            btnStartServer.Enabled = true;
-            serverRunning = true;
-            WaitCallback waitCallback = (state) =>
-            {
-                TcpListener listener = (TcpListener)state;
-                while (running)
-                {
-                    Socket native = listener.AcceptSocket();
-                    Client c = new Client(native, dispatcher);
-                    Interlocked.Increment(ref Program.Connects);
-                }
-            };
-            ThreadPool.QueueUserWorkItem(waitCallback, listener4);
-            ThreadPool.QueueUserWorkItem(waitCallback, listener6);
-        }
-
-        private async void btnConnect_Click(object sender, EventArgs e)
+        private async void BtnConnect_Click(object sender, EventArgs e)
         {
             if (!clientConnected)
             {
@@ -80,10 +54,8 @@ namespace VSLTest
                 vslClient.Logger.PrintUncaughtExceptions = true;
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
-                vslClient.PacketReceived += vslClient_Received;
-                vslClient.FileTransfer.FileTransferProgress += vslClient_FTProgress;
-                vslClient.FileTransfer.FileTransferFinished += vslClient_FTFinished;
-                await vslClient.ConnectAsync("localhost", port, publickey);
+                vslClient.PacketReceived += VslClient_Received;
+                await vslClient.ConnectAsync("localhost", Program.Port, Program.PublicKey);
                 btnConnect.Enabled = false;
             }
             else
@@ -95,6 +67,7 @@ namespace VSLTest
             btnConnect.Enabled = true;
             btnConnect.Text = "Trennen";
             btnClientSendPacket.Enabled = true;
+            btnReceiveFile.Enabled = true;
             btnSendFile.Enabled = true;
             clientConnected = true;
         }
@@ -103,23 +76,13 @@ namespace VSLTest
         {
             btnConnect.Text = "Verbinden";
             btnClientSendPacket.Enabled = false;
+            btnReceiveFile.Enabled = false;
             btnSendFile.Enabled = false;
             clientConnected = false;
-            //MessageBox.Show(string.Format("[Client] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
         }
 
-        private void btnSendPacket_Click(object sender, EventArgs e)
+        private void BtnSendPacket_Click(object sender, EventArgs e)
         {
-            // Skynet:
-            //PacketBuffer buf = new PacketBuffer();
-            //buf.WriteString("Twometer");
-            //buf.WriteByteArray(new byte[32], false);
-            //buf.WriteDate(DateTime.Now);
-            //buf.WriteDate(DateTime.Now.AddDays(-1));
-            //byte[] contents = buf.ToArray();
-            //vslClient.SendPacket(1, contents);
-
-            // VSL:
             Random rnd = new Random();
             byte[] b = new byte[65536];
             rnd.NextBytes(b);
@@ -127,40 +90,39 @@ namespace VSLTest
                 vslClient.SendPacket(1, b);
             else if ((Button)sender == btnServerSendPacket)
                 Program.Clients.ParallelForEach((c) => c.Vsl.SendPacket(1, b));
-            //foreach (Client c in Program.Clients)
-            //{
-            //    c.Vsl.SendPacket(1, b);
-            //}
         }
 
-        private void vslClient_Received(object sender, PacketReceivedEventArgs e)
+        private void VslClient_Received(object sender, PacketReceivedEventArgs e)
         {
             MessageBox.Show(string.Format("Client received: ID={0} Content={1}", e.ID, e.Content.Length));
         }
 
-        private void vslServer_Received(object sender, PacketReceivedEventArgs e)
+        private void BtnReceiveFile_Click(object sender, EventArgs e)
         {
-            if (e.Content.Length > 1024)
-                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, e.Content.Length));
-            else
-                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, VSL.Crypt.Util.ToHexString(e.Content)));
+            string path = Path.Combine("D:", "ProgramData", "VSLTest", Path.GetRandomFileName());
+            MessageBox.Show(path);
+            FTEventArgs args = new FTEventArgs(new Identifier(0), null, path);
+            args.Progress += VslClient_FTProgress;
+            args.Finished += VslClient_FTFinished;
+            vslClient.FileTransfer.Download(args);
+            btnReceiveFile.Enabled = false;
+            btnSendFile.Enabled = false;
         }
 
-        private void btnSendFile_Click(object sender, EventArgs e)
+        private void BtnSendFile_Click(object sender, EventArgs e)
         {
-            //using (OpenFileDialog fd = new OpenFileDialog())
-            //{
-            //    fd.ShowDialog();
-            //    if (string.IsNullOrEmpty(fd.FileName))
-            //    {
-            //        fd.Dispose();
-            //        return;
-            //    }
-            //    vslClient.FileTransfer.Path = fd.FileName;
-            //}
-            vslClient.FileTransfer.Path = Path.Combine("D:", "ProgramData", "VSLTest", Path.GetRandomFileName());
-            MessageBox.Show(vslClient.FileTransfer.Path);
-            vslClient.FileTransfer.RequestFile(new Identifier(0), StreamMode.GetFile);
+            string path;
+            using (OpenFileDialog fd = new OpenFileDialog())
+            {
+                fd.ShowDialog();
+                path = fd.FileName;
+            }
+            MessageBox.Show(path);
+            FTEventArgs args = new FTEventArgs(new Identifier(0), new FileMeta(path), path);
+            args.Progress += VslClient_FTProgress;
+            args.Finished += VslClient_FTFinished;
+            vslClient.FileTransfer.Upload(args);
+            btnReceiveFile.Enabled = false;
             btnSendFile.Enabled = false;
         }
 
@@ -186,14 +148,15 @@ namespace VSLTest
                         try
                         {
                             TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
-                            tcp.Connect("::1", port);
+                            tcp.Connect("::1", Program.Port);
                             Random rand = new Random();
                             byte[] buf = new byte[rand.Next(2048)];
                             rand.NextBytes(buf);
                             tcp.Client.Send(buf);
                             tcp.Close();
                             done++;
-                            Thread.Sleep(10);
+                            if (System.Diagnostics.Debugger.IsAttached)
+                                Thread.Sleep(10);
                         }
                         catch { }
                     }
@@ -212,41 +175,30 @@ namespace VSLTest
             MessageBox.Show(string.Format("Cleanup successful after {0} ms.", stopwatch.ElapsedMilliseconds));
         }
 
-        private void vslClient_FTProgress(object sender, FileTransferProgressEventArgs e)
+        private void VslClient_FTProgress(object sender, FTProgressEventArgs e)
         {
             pbFileTransfer.Value = Convert.ToInt32(e.Percentage * 100);
         }
 
-        private void vslClient_FTFinished(object sender, EventArgs e)
+        private void VslClient_FTFinished(object sender, EventArgs e)
         {
+            ((FTEventArgs)sender).Progress -= VslClient_FTProgress;
+            ((FTEventArgs)sender).Finished -= VslClient_FTFinished;
+            btnReceiveFile.Enabled = true;
             btnSendFile.Enabled = true;
         }
 
-        private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+        private void FrmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (vslClient != null)
             {
                 vslClient.ConnectionClosed -= VSL_Close;
-                try
-                {
+                if (clientConnected)
                     vslClient.CloseConnection("");
-                }
-                catch (ObjectDisposedException) { }
+                else
+                    vslClient.Dispose();
             }
-            CloseServer();
-        }
-
-        private void CloseServer()
-        {
-            Program.Clients.ParallelForEach((c) =>
-            {
-                try
-                {
-                    c.Vsl.CloseConnection("");
-                }
-                catch { }
-            });
-            running = false;
+            server.Stop();
         }
 
         private int maxCount = 0;

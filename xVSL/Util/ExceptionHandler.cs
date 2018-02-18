@@ -61,15 +61,15 @@ namespace VSL
             parent.CloseInternal(ex.ToString());
         }
 
-        /// <summary>
-        /// Handles an Exception by cancelling the current file transfer and releasing all associated resources.
-        /// </summary>
-        /// <param name="ex"></param>
-        internal void CancelFileTransfer(Exception ex)
-        {
-            PrintException(ex);
-            parent.FileTransfer.Cancel();
-        }
+        ///// <summary>
+        ///// Handles an Exception by cancelling the current file transfer and releasing all associated resources.
+        ///// </summary>
+        ///// <param name="ex"></param>
+        //internal void CancelFileTransfer(Exception ex)
+        //{
+        //    PrintException(ex);
+        //    parent.FileTransfer.Cancel();
+        //}
 
         /// <summary>
         /// Prints an Exception.

@@ -19,8 +19,9 @@ namespace VSLTest
         public Client(Socket native, Dispatcher dispatcher)
         {
             Vsl = new VSLServer(native, 0, 0, Program.Keypair, ThreadManager.CreateManagedThread(dispatcher));
+            Vsl.PacketReceived += Vsl_PacketReceived;
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
-            Vsl.FileTransfer.FileTransferRequested += Vsl_FileTransferRequested;
+            Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
             Vsl.Logger.PrintDebugMessages = true;
             Vsl.Logger.PrintExceptionMessages = true;
             Vsl.Logger.PrintInfoMessages = true;
@@ -32,35 +33,34 @@ namespace VSLTest
             Vsl.Start();
         }
 
+        private void Vsl_PacketReceived(object sender, PacketReceivedEventArgs e)
+        {
+            if (e.Content.Length > 1024)
+                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, e.Content.Length));
+            else
+                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, VSL.Crypt.Util.ToHexString(e.Content)));
+        }
+
         private void Vsl_ConnectionClosed(object sender, ConnectionClosedEventArgs e)
         {
-            //MessageBox.Show(string.Format("[Server] Connection closed\r\nReason: {0}\r\nReceived: {1}\r\nSent: {2}", e.Reason, e.ReceivedBytes, e.SentBytes));
             Vsl.Dispose();
             if (!Program.Clients.Remove(this))
                 throw new Exception("Second ConnectionClosed event");
             Interlocked.Increment(ref Program.Disconnects);
-#if DEBUG
-            //if (Program.Clients.Count == 0)
-            //    Console.WriteLine("Empty");
-#endif
         }
 
-        private void Vsl_FileTransferRequested(object sender, EventArgs e)
+        private void Vsl_FileTransferRequested(object sender, FTEventArgs e)
         {
-            if (Vsl.FileTransfer.Mode != StreamMode.UploadFile)
+            if (e.Mode == StreamMode.PushHeader || e.Mode == StreamMode.PushFile)
             {
                 using (OpenFileDialog fd = new OpenFileDialog())
                 {
                     fd.ShowDialog();
-                    Vsl.FileTransfer.Path = fd.FileName;
-                    Vsl.FileTransfer.Accept();
+                    Vsl.FileTransfer.Accept(e, fd.FileName);
                 }
             }
             else
-            {
-                Vsl.FileTransfer.Path = Path.Combine("D:", "ProgramData", "VSLTest", Path.GetRandomFileName());
-                Vsl.FileTransfer.Accept();
-            }
+                Vsl.FileTransfer.Accept(e, Path.Combine("D:", "ProgramData", "VSLTest", Path.GetRandomFileName()));
         }
     }
 }

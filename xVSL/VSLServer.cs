@@ -17,10 +17,6 @@ namespace VSL
     {
         // <fields
         new internal PacketHandlerServer handler;
-        /// <summary>
-        /// Access file transfer functions.
-        /// </summary>
-        new public FileTransferServer FileTransfer { get; internal set; }
         internal string Keypair;
         internal ushort LatestProduct;
         internal ushort OldestProduct;
@@ -56,8 +52,6 @@ namespace VSL
             manager = new NetworkManager(this, keypair);
             handler = new PacketHandlerServer(this);
             base.handler = handler;
-            FileTransfer = new FileTransferServer(this);
-            base.FileTransfer = FileTransfer;
         }
         //  constructor>
 
