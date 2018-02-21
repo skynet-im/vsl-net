@@ -48,7 +48,10 @@ namespace VSL
         }
         internal override bool HandleP02Certificate(P02Certificate p)
         {
-            throw new NotSupportedException("This VSL version does not support Certificates");
+            parent.ExceptionHandler.CloseConnection("NotSupported",
+                "VSL 1.2 does not support key exchanged validated by certificates.\r\n" +
+                "\tat PacketHandlerClient.HandleP02Certificate(P02Certificate)");
+            return false;
         }
         internal override bool HandleP03FinishHandshake(P03FinishHandshake p)
         {
@@ -88,7 +91,7 @@ namespace VSL
             }
             else
             {
-                return parent.FileTransfer.OnPacketReceived(p);
+                return base.HandleP07OpenFileTransfer(p);
             }
         }
         // overriding HandleP08FileHeader is not neccessary.

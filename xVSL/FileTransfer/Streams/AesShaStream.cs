@@ -106,6 +106,7 @@ namespace VSL.FileTransfer.Streams
                     transform = csp.CreateEncryptor(key, iv);
                     aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Write); // write encrypted data on stream
                     shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Write); // compute hash before encrypting
+                    first = false;
                 }
                 shaStream.Write(buffer, offset, count);
                 _position += count; // no iv is provided directly -> ignore the count of the iv
@@ -129,6 +130,7 @@ namespace VSL.FileTransfer.Streams
                     transform = csp.CreateDecryptor(key, iv);
                     shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Write); // compute hash of plain data and write on stream
                     aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Write); // decrypt before computing hash
+                    first = false;
                 }
                 aesStream.Write(buffer, offset, count);
                 done += count;

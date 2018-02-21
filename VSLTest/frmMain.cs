@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -12,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
+using VSL.Crypt;
 using VSL.FileTransfer;
 
 namespace VSLTest
@@ -20,6 +18,7 @@ namespace VSLTest
     {
         private VSLClient vslClient;
         private Server server;
+        private PenetrationTest pentest;
         private bool clientConnected;
 
         public FrmMain()
@@ -27,6 +26,7 @@ namespace VSLTest
             InitializeComponent();
             Text = string.Format(Text, Constants.ProductVersion);
             server = new Server(Program.Port, Program.Keypair);
+            pentest = new PenetrationTest();
         }
 
         private void BtnStartServer_Click(object sender, EventArgs e)
@@ -89,7 +89,7 @@ namespace VSLTest
             if ((Button)sender == btnClientSendPacket)
                 vslClient.SendPacket(1, b);
             else if ((Button)sender == btnServerSendPacket)
-                Program.Clients.ParallelForEach((c) => c.Vsl.SendPacket(1, b));
+                Program.Clients.ParallelForEach((c) => c.SendPacket(1, b));
         }
 
         private void VslClient_Received(object sender, PacketReceivedEventArgs e)
@@ -99,11 +99,12 @@ namespace VSLTest
 
         private void BtnReceiveFile_Click(object sender, EventArgs e)
         {
-            string path = Path.Combine("D:", "ProgramData", "VSLTest", Path.GetRandomFileName());
+            string path = Path.Combine(Program.TempPath, Path.GetRandomFileName());
             MessageBox.Show(path);
             FTEventArgs args = new FTEventArgs(new Identifier(0), null, path);
             args.Progress += VslClient_FTProgress;
             args.Finished += VslClient_FTFinished;
+            args.FileMetaReceived += VslClient_FTFileMetaReceived;
             vslClient.FileTransfer.Download(args);
             btnReceiveFile.Enabled = false;
             btnSendFile.Enabled = false;
@@ -114,11 +115,23 @@ namespace VSLTest
             string path;
             using (OpenFileDialog fd = new OpenFileDialog())
             {
-                fd.ShowDialog();
+                fd.InitialDirectory = Program.TempPath;
+                if (fd.ShowDialog() == DialogResult.Cancel) return;
                 path = fd.FileName;
             }
             MessageBox.Show(path);
-            FTEventArgs args = new FTEventArgs(new Identifier(0), new FileMeta(path), path);
+
+            ContentAlgorithm algorithm = ContentAlgorithm.None;
+            byte[] aesKey = null;
+            byte[] hmacKey = null;
+            if (!string.IsNullOrWhiteSpace(TbFileKey.Text))
+            {
+                algorithm = ContentAlgorithm.Aes256CbcHmacSha256;
+                byte[] keys = Util.GetBytes(TbFileKey.Text);
+                hmacKey = Util.TakeBytes(keys, 32);
+                aesKey = Util.TakeBytes(keys, 32);
+            }
+            FTEventArgs args = new FTEventArgs(new Identifier(0), new FileMeta(path, algorithm, hmacKey, aesKey, null), path);
             args.Progress += VslClient_FTProgress;
             args.Finished += VslClient_FTFinished;
             vslClient.FileTransfer.Upload(args);
@@ -126,43 +139,20 @@ namespace VSLTest
             btnSendFile.Enabled = false;
         }
 
-        private volatile bool runningPT = false;
-        private void BtnPenetrationTest_Click(object sender, EventArgs e)
+        private async void BtnPenetrationTest_Click(object sender, EventArgs e)
         {
-            if (runningPT)
+            if (pentest.Running)
             {
-                runningPT = false;
+                pentest.Stop();
                 btnPenetrationTest.Text = "Stresstest";
             }
             else
             {
-                runningPT = true;
+                Task t = pentest.RunAsync(5000);
                 btnPenetrationTest.Text = "Stoppen";
-                ThreadPool.QueueUserWorkItem((o) =>
-                {
-                    System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-                    stopwatch.Start();
-                    int done = 0;
-                    while (runningPT && done < 1000)
-                    {
-                        try
-                        {
-                            TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
-                            tcp.Connect("::1", Program.Port);
-                            Random rand = new Random();
-                            byte[] buf = new byte[rand.Next(2048)];
-                            rand.NextBytes(buf);
-                            tcp.Client.Send(buf);
-                            tcp.Close();
-                            done++;
-                            if (System.Diagnostics.Debugger.IsAttached)
-                                Thread.Sleep(10);
-                        }
-                        catch { }
-                    }
-                    stopwatch.Stop();
-                    MessageBox.Show(string.Format("1000 attacks in {0}ms", stopwatch.ElapsedMilliseconds));
-                });
+                await t;
+                pentest.Stop();
+                MessageBox.Show(string.Format("{0} attacks in {1}ms", pentest.Done, pentest.ElapsedTime));
             }
         }
 
@@ -172,7 +162,7 @@ namespace VSLTest
             stopwatch.Start();
             Program.Clients.Cleanup();
             stopwatch.Stop();
-            MessageBox.Show(string.Format("Cleanup successful after {0} ms.", stopwatch.ElapsedMilliseconds));
+            MessageBox.Show($"Cleanup successful after {stopwatch.ElapsedMilliseconds} ms.");
         }
 
         private void VslClient_FTProgress(object sender, FTProgressEventArgs e)
@@ -182,10 +172,26 @@ namespace VSLTest
 
         private void VslClient_FTFinished(object sender, EventArgs e)
         {
-            ((FTEventArgs)sender).Progress -= VslClient_FTProgress;
-            ((FTEventArgs)sender).Finished -= VslClient_FTFinished;
+            FTEventArgs args = (FTEventArgs)sender;
+            args.Progress -= VslClient_FTProgress;
+            args.Finished -= VslClient_FTFinished;
+            if (args.Mode == StreamMode.GetFile &&
+                MessageBox.Show("Möchten Sie die empfangenen Metadaten übernehmen?",
+                "Metadaten übernehmen?", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                args.FileMeta.Apply(args.Path, Program.TempPath);
             btnReceiveFile.Enabled = true;
             btnSendFile.Enabled = true;
+        }
+
+        private void VslClient_FTFileMetaReceived(object sender, EventArgs e)
+        {
+            FTEventArgs args = (FTEventArgs)sender;
+            if (args.FileMeta.Algorithm == ContentAlgorithm.Aes256CbcHmacSha256 && !string.IsNullOrWhiteSpace(TbFileKey.Text))
+            {
+                byte[] keys = Util.GetBytes(TbFileKey.Text);
+                args.FileMeta.Decrypt(Util.TakeBytes(keys, 32), Util.TakeBytes(keys, 32));
+            }
+            vslClient.FileTransfer.Continue(args);
         }
 
         private void FrmMain_FormClosing(object sender, FormClosingEventArgs e)
@@ -208,6 +214,14 @@ namespace VSLTest
             if (current > maxCount)
                 maxCount = current;
             LbServer.Text = string.Format("{0} / {1} Clients\r\nConnects: {2} <> {3}", current, maxCount, Program.Connects, Program.Disconnects);
+        }
+
+        private void LbFileKey_Click(object sender, EventArgs e)
+        {
+            byte[] buffer = new byte[64];
+            using (var csp = new System.Security.Cryptography.RNGCryptoServiceProvider())
+                csp.GetBytes(buffer);
+            TbFileKey.Text = Util.ToHexString(buffer);
         }
     }
 }

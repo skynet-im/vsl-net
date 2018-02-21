@@ -37,6 +37,7 @@ namespace VSL.FileTransfer.Streams
         public override long Position { get => _position; set => throw new NotSupportedException(); }
 
         public override void Flush() { }
+        // TODO: [VSL 1.2.1] Implement FlushFinalBlock to prevent a CryptographicException at Dispose
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override void SetLength(long value) => throw new NotSupportedException();
     }

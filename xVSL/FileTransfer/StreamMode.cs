@@ -32,17 +32,29 @@ namespace VSL.FileTransfer
             this.value = value;
         }
 
-        // TODO: Add support for VSL 1.1
+        /// <summary>
+        /// Returns the inverted <see cref="StreamMode"/> (e.g. GetFile -> PushFile, etc.)
+        /// </summary>
+        /// <returns></returns>
         public StreamMode Inverse()
         {
             return new StreamMode(Convert.ToByte((value + 2) % 4));
         }
 
+        /// <summary>
+        /// Returns the binary expression of the inverted <see cref="StreamMode"/>
+        /// </summary>
+        /// <returns></returns>
         public byte InverseToByte()
         {
             return Convert.ToByte((value + 2) % 4);
         }
 
+        /// <summary>
+        /// Gets the inverted <see cref="StreamMode"/> from a binary expression.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static StreamMode InverseFromByte(byte value)
         {
             return new StreamMode(Convert.ToByte((value + 2) % 4));
@@ -97,11 +109,23 @@ namespace VSL.FileTransfer
             }
         }
 
+        /// <summary>
+        /// Determines whether two <see cref="StreamMode"/>s are equal.
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
         public static bool operator ==(StreamMode left, StreamMode right)
         {
             return left.value == right.value;
         }
 
+        /// <summary>
+        /// Determines whether two <see cref="StreamMode"/>s are not equal.
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
         public static bool operator !=(StreamMode left, StreamMode right)
         {
             return left.value != right.value;

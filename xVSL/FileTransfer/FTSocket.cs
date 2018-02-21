@@ -83,7 +83,7 @@ namespace VSL.FileTransfer
         }
 
         /// <summary>
-        /// Requests a remote file with its header. All further information is specfied in the <see cref="FTEventArgs"/>.
+        /// Requests a remote file with its header. All further information is specfied in the <see cref="FTEventArgs"/>. After a <see cref="FileMeta"/> was received you can start the actual download with <see cref="Continue(FTEventArgs)"/>.
         /// </summary>
         /// <param name="e">Specifies an identifier for the remote file, a local path and many more information of the file to download.</param>
         public void Download(FTEventArgs e) // Client
@@ -104,6 +104,27 @@ namespace VSL.FileTransfer
             e.Mode = StreamMode.PushFile;
             currentItem = e;
             parent.manager.SendPacket(new P07OpenFileTransfer(e.Identifier, e.Mode));
+        }
+
+        /// <summary>
+        /// Continues a file receive operation after a <see cref="FileMeta"/> was received. Cryptographic keys stored in this <see cref="FileMeta"/> will be used if available.
+        /// </summary>
+        /// <param name="e">The associated file transfer operation to continue.</param>
+        /// <returns></returns>
+        public bool Continue(FTEventArgs e)
+        {
+            if (e.Mode != StreamMode.GetFile)
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidOperation",
+                    $"You cannot continue a file transfer operation with {e.Mode}. Only file transfer with StreamMode.GetFile can be continued.\r\n" +
+                    "\tat FTSocket.Continue(FTEventArgs)");
+                return false;
+            }
+            else
+            {
+                if (!currentItem.OpenStream()) return false;
+                return parent.manager.SendPacket(new P06Accepted(true, 8, ProblemCategory.None));
+            }
         }
 
         internal bool OnPacketReceived(P06Accepted packet)
@@ -132,8 +153,8 @@ namespace VSL.FileTransfer
                 currentItem.OnFileMetaTransfered();
                 if (currentItem.Mode == StreamMode.PushFile) // only StreamMode.PushFile wants to receive the file data
                 {
-                    currentItem.OpenStream();
-                    SendBlock();
+                    if (!currentItem.OpenStream()) return false;
+                    return SendBlock();
                 }
                 else if (currentItem.Mode != StreamMode.PushHeader)
                 {
@@ -155,25 +176,32 @@ namespace VSL.FileTransfer
                     return false;
                 }
                 else if (currentItem.Stream != null)
-                    SendBlock();
+                    return SendBlock();
                 else
                     currentItem = null;
             }
             return true;
         }
 
-        private void SendBlock()
+        private bool SendBlock()
         {
-            if (currentItem.Stream != null)
+            byte[] buffer = new byte[262144];
+            ulong pos = Convert.ToUInt64(currentItem.Stream.Position);
+            int count;
+            try
             {
-                byte[] buffer = new byte[262144];
-                ulong pos = Convert.ToUInt64(currentItem.Stream.Position);
-                int count = currentItem.Stream.Read(buffer, 0, buffer.Length);
-                parent.manager.SendPacket(new P09FileDataBlock(pos, Util.TakeBytes(buffer, count)));
-                currentItem.OnProgress();
-                if (count < buffer.Length)
-                    currentItem.CloseStream(true);
+                count = currentItem.Stream.Read(buffer, 0, buffer.Length);
             }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+                return false;
+            }
+            if (!parent.manager.SendPacket(new P09FileDataBlock(pos, Util.TakeBytes(buffer, count)))) return false;
+            currentItem.OnProgress();
+            if (count < buffer.Length)
+                currentItem.CloseStream(true);
+            return true;
         }
 
         internal bool OnPacketReceived(P07OpenFileTransfer packet)
@@ -220,12 +248,11 @@ namespace VSL.FileTransfer
             if (currentItem.Mode == StreamMode.GetHeader)
             {
                 currentItem.OnFinished();
+                return parent.manager.SendPacket(new P06Accepted(true, 8, ProblemCategory.None));
             }
-            else // StreamMode.GetFile
-            {
-                currentItem.OpenStream();
-            }
-            return parent.manager.SendPacket(new P06Accepted(true, 8, ProblemCategory.None));
+            // We do not answer for StreamMode.GetFile here, because this is done by FTSocket.Continue(FTEventArgs)
+            // in order to give the opportunity to set keys.
+            return true;
         }
 
         internal bool OnPacketReceived(P09FileDataBlock packet)
@@ -241,7 +268,8 @@ namespace VSL.FileTransfer
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
                     "The running file transfer is not supposed to receive a file data block.\r\n" +
-                    "\tat FTSocket.OnPacketReceived(P09FileDataBlock)");
+                    "\tat FTSocket.OnPacketReceived(P09FileDataBlock)\r\n" +
+                    $"\tMode={currentItem.Mode}");
                 return false;
             }
             if (currentItem.Stream == null)
@@ -251,11 +279,19 @@ namespace VSL.FileTransfer
                     "\tat FTSocket.OnPacketReceived(P09FileDataBlock)");
                 return false;
             }
-            currentItem.Stream.Write(packet.DataBlock, 0, packet.DataBlock.Length);
+            try
+            {
+                currentItem.Stream.Write(packet.DataBlock, 0, packet.DataBlock.Length);
+            }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+                return false;
+            }
             currentItem.OnProgress();
             if (currentItem.Stream.Position == currentItem.FileMeta.Length)
             {
-                currentItem.CloseStream(true);
+                if (!currentItem.CloseStream(true)) return false;
                 currentItem = null;
             }
             return parent.manager.SendPacket(new P06Accepted(true, 9, ProblemCategory.None));
