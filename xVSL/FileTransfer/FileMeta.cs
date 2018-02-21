@@ -165,17 +165,17 @@ namespace VSL.FileTransfer
                 AesKey = aesKey;
                 using (PacketBuffer innerBuf = new PacketBuffer(plain))
                     Read_v1_2_Core(innerBuf);
-                FileEncryption = (ContentAlgorithm)buf.ReadByte();
-                if (FileEncryption != ContentAlgorithm.None)
-                    FileKey = buf.ReadByteArray(32);
                 Available = true;
             }
+            else
+                encryptedContent = buf.ReadByteArray(buf.Pending);
         }
 
         private void Read_v1_2_Header(PacketBuffer buf)
         {
             Algorithm = (ContentAlgorithm)buf.ReadByte();
             Length = Convert.ToInt64(buf.ReadULong());
+            FileEncryption = (ContentAlgorithm)buf.ReadByte();
         }
 
         private void Read_v1_2_Core(PacketBuffer buf)
@@ -187,22 +187,30 @@ namespace VSL.FileTransfer
             LastWriteTime = buf.ReadDate();
             Thumbnail = buf.ReadByteArray();
             SHA256 = buf.ReadByteArray(32);
+            if (FileEncryption == ContentAlgorithm.Aes256Cbc)
+                FileKey = buf.ReadByteArray(32);
         }
         #endregion
+        /// <summary>
+        /// Decrypts an encrypted <see cref="FileMeta"/> with <see cref="ContentAlgorithm.Aes256CbcHmacSha256"/>.
+        /// </summary>
+        /// <param name="hmacKey"></param>
+        /// <param name="aesKey"></param>
+        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentOutOfRangeException"/>
+        public void Decrypt(byte[] hmacKey, byte[] aesKey)
+        {
+            if (hmacKey == null) throw new ArgumentNullException("hmacKey");
+            if (hmacKey.Length != 32) throw new ArgumentOutOfRangeException("hmacKey", "An HMAC key must be 32 bytes in length.");
+            if (aesKey == null) throw new ArgumentNullException("aesKey");
+            if (aesKey.Length != 32) throw new ArgumentOutOfRangeException("aesKey", "An AES key must be 32 bytes in length.");
+
+            using (PacketBuffer buf = new PacketBuffer(GetBinaryData(Constants.VersionNumber)))
+                Read_v1_2(buf, hmacKey, aesKey);
+        }
         #region read from file
         /// <summary>
-        /// Initializes a new instance of the <see cref="FileMeta"/> class for VSL 1.1.
-        /// </summary>
-        /// <param name="path">The local file path to load the meta data from.</param>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="FileNotFoundException"/>
-        public FileMeta(string path)
-        {
-            LoadFromFile(path);
-            Available = true;
-        }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FileMeta"/> class for VSL 1.2 and generates all required keys.
+        /// Initializes a new instance of the <see cref="FileMeta"/> class and generates all required keys.
         /// </summary>
         /// <param name="path">The local file path to load the meta data from.</param>
         /// <param name="algorithm">The cryptographic algorith to encrypt this <see cref="FileMeta"/>.</param>
@@ -212,26 +220,30 @@ namespace VSL.FileTransfer
         public FileMeta(string path, ContentAlgorithm algorithm) : this(path, algorithm, null, null, null) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FileMeta"/> class for VSL 1.2 and generates missing keys.
+        /// Initializes a new instance of the <see cref="FileMeta"/> class and generates missing keys.
         /// </summary>
         /// <param name="path">The local file path to load the meta data from.</param>
         /// <param name="algorithm">The cryptographic algorith to encrypt this <see cref="FileMeta"/>.</param>
-        /// <param name="aesKey">256 bit AES key to encrypt this <see cref="FileMeta"/>.</param>
         /// <param name="hmacKey">256 bit HMAC key to verify integrity of this <see cref="FileMeta"/>.</param>
+        /// <param name="aesKey">256 bit AES key to encrypt this <see cref="FileMeta"/>.</param>
         /// <param name="fileKey">256 bit AES key to encrypt the associated file.</param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <exception cref="NotSupportedException"/>
         /// <exception cref="FileNotFoundException"/>
-        public FileMeta(string path, ContentAlgorithm algorithm, byte[] aesKey, byte[] hmacKey, byte[] fileKey)
+        public FileMeta(string path, ContentAlgorithm algorithm, byte[] hmacKey, byte[] aesKey, byte[] fileKey)
         {
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
+            if (algorithm != ContentAlgorithm.None && algorithm != ContentAlgorithm.Aes256CbcHmacSha256)
+                throw new NotSupportedException("This content algorithm is not supported.");
+
+            Algorithm = algorithm;
             AesKey = aesKey;
             HmacKey = hmacKey;
             FileKey = fileKey;
 
-            if (algorithm == ContentAlgorithm.Aes256CbcHmacSha256)
+            if (Algorithm == ContentAlgorithm.Aes256CbcHmacSha256)
             {
                 if (AesKey == null)
                     AesKey = AesStatic.GenerateKey();
@@ -247,10 +259,9 @@ namespace VSL.FileTransfer
                     FileKey = AesStatic.GenerateKey();
                 else if (FileKey.Length != 32)
                     throw new ArgumentOutOfRangeException("fileKey");
-            }
 
-            if (algorithm != ContentAlgorithm.None && algorithm != ContentAlgorithm.Aes256CbcHmacSha256)
-                throw new NotSupportedException("This content algorithm is not supported.");
+                FileEncryption = ContentAlgorithm.Aes256Cbc; // The file needs no HMAC as we have an SHA256
+            }
 
             LoadFromFile(path);
             Available = true;
@@ -330,7 +341,10 @@ namespace VSL.FileTransfer
             byte[] hash = null;
             Task hashT = Task.Run(() => hash = Hash.SHA256(path));
             Name = fi.Name;
-            Length = fi.Length;
+            if (FileEncryption == ContentAlgorithm.None)
+                Length = fi.Length;
+            else if (FileEncryption == ContentAlgorithm.Aes256Cbc)
+                Length = Util.GetTotalSize(fi.Length + 17, 16); // 16 bytes iv + 1 byte 
             Attributes = fi.Attributes;
             CreationTime = fi.CreationTime;
             LastAccessTime = fi.LastAccessTime;
@@ -357,6 +371,7 @@ namespace VSL.FileTransfer
         {
             buf.WriteByte((byte)Algorithm);
             buf.WriteULong(Convert.ToUInt64(Length));
+            buf.WriteByte((byte)FileEncryption);
         }
 
         private void Write_v1_2_Core(PacketBuffer buf)
@@ -368,7 +383,6 @@ namespace VSL.FileTransfer
             buf.WriteDate(LastWriteTime);
             buf.WriteByteArray(Thumbnail);
             buf.WriteByteArray(SHA256, false);
-            buf.WriteByte((byte)FileEncryption);
             if (FileEncryption == ContentAlgorithm.Aes256Cbc)
                 buf.WriteByteArray(FileKey, false);
         }
@@ -385,7 +399,7 @@ namespace VSL.FileTransfer
         public string Apply(string sourcePath, string targetDir)
         {
             if (!Available)
-                throw new InvalidOperationException("You only apply the FileMeta if information is decrypted.");
+                throw new InvalidOperationException("You can only apply the FileMeta information if it is decrypted.");
             if (!Directory.Exists(targetDir))
                 throw new DirectoryNotFoundException("The specified target directory could not be found.");
 
@@ -399,9 +413,11 @@ namespace VSL.FileTransfer
             if (File.Exists(Path.Combine(targetDir, Name)))
             {
                 ulong count = 2;
+                string name = Name.Remove(Name.LastIndexOf('.'));
+                string extension = Name.Substring(Name.LastIndexOf('.') + 1);
                 while (true)
                 {
-                    string newpath = Path.Combine(targetDir, Name + " (" + count + ")");
+                    string newpath = Path.Combine(targetDir, name + " (" + count + ")." + extension);
                     if (File.Exists(newpath))
                         count++;
                     else

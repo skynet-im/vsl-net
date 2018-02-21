@@ -8,9 +8,16 @@ namespace VSL.Packet
 {
     internal class P05KeepAlive : IPacket
     {
+        internal KeepAliveRole Role { get; private set; }
+
         internal P05KeepAlive()
         {
 
+        }
+
+        public P05KeepAlive(KeepAliveRole role)
+        {
+            Role = role;
         }
 
         public byte PacketID { get; } = 4;
@@ -29,12 +36,12 @@ namespace VSL.Packet
 
         public void ReadPacket(PacketBuffer buf)
         {
-            
+            Role = (KeepAliveRole)buf.ReadByte();
         }
 
         public void WritePacket(PacketBuffer buf)
         {
-            
+            buf.WriteByte((byte)Role);
         }
     }
 }

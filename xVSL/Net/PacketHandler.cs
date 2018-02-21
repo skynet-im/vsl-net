@@ -73,8 +73,17 @@ namespace VSL
         internal abstract bool HandleP04ChangeIV(P04ChangeIV p);
         internal virtual bool HandleP05KeepAlive(P05KeepAlive p)
         {
-            // TODO: Echo an keepalive packet if the last call was more than one second ago.
-            return true;
+            if (parent.ConnectionVersion.Value < 2)
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidPacket",
+                    "VSL 1.1 and lower versions do not support keep-alive packets.");
+                return false;
+            }
+            if (p.Role == KeepAliveRole.Request)
+                return parent.manager.SendPacket(new P05KeepAlive(KeepAliveRole.Response));
+            else
+                return true;
+            // TODO: [VSL 1.2.1] API and timeout for keep-alives
         }
         internal bool HandleP06Accepted(P06Accepted p)
         {
@@ -90,6 +99,13 @@ namespace VSL
         }
         internal virtual bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
+            if (parent.ConnectionVersion.Value < 2)
+            {
+                byte original = p.StreamMode.InverseToByte();
+                if (original == 2) // StreamMode.PushHeader (zero based index 2) is not implemented in VSL 1.1
+                    original++;
+                p.StreamMode = FileTransfer.StreamMode.InverseFromByte(original);
+            }
             return parent.FileTransfer.OnPacketReceived(p);
         }
         internal bool HandleP08FileHeader(P08FileHeader p)

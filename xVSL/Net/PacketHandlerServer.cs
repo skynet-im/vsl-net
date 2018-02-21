@@ -92,10 +92,19 @@ namespace VSL
         }
         internal override bool HandleP04ChangeIV(P04ChangeIV p)
         {
-            // TODO: Disable with protocol v1.2
-            parent.manager.SendIV = p.ServerIV;
-            parent.manager.ReceiveIV = p.ClientIV;
-            return true;
+            if (parent.ConnectionVersion.Value > 1)
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidPacket",
+                    "P04ChangeIV is not supported in VSL 1.2 because ivs are generated for each packet.\r\n" +
+                    "\tat PacketHandlerServer.HandleP04ChangeIV(P04ChangeIV)");
+                return false;
+            }
+            else
+            {
+                parent.manager.SendIV = p.ServerIV;
+                parent.manager.ReceiveIV = p.ClientIV;
+                return true;
+            }
         }
         // overriding HandleP05KeepAlive is not neccessary.
         // overriding HandleP06Accepted is not neccessary.

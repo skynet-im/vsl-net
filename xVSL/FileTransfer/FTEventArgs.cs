@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using VSL.Crypt;
 using VSL.FileTransfer.Streams;
@@ -46,6 +47,10 @@ namespace VSL.FileTransfer
         /// Occurs when VSL achieved a progress running the file transfer.
         /// </summary>
         public event EventHandler<FTProgressEventArgs> Progress;
+        /// <summary>
+        /// Occurs when a <see cref="FileTransfer.FileMeta"/> was received. You may have to call <see cref="FTSocket.Continue(FTEventArgs)"/> in order to continue the file transfer.
+        /// </summary>
+        public event EventHandler FileMetaReceived;
 
         /// <summary>
         /// Gets the remote identifier for the transfered file.
@@ -73,52 +78,92 @@ namespace VSL.FileTransfer
 
         internal bool OpenStream()
         {
-            // TODO: Handle Exceptions at opening the FileStream
             if (Mode == StreamMode.GetHeader || Mode == StreamMode.PushHeader)
-                throw new InvalidOperationException();
-            else if (Mode == StreamMode.GetFile)
             {
-                FileStream fs = new FileStream(Path, FileMode.Create, FileAccess.Write, FileShare.None);
-                if (FileMeta.FileEncryption == ContentAlgorithm.None)
-                    Stream = new ShaStream(fs, System.Security.Cryptography.CryptoStreamMode.Write);
-                else if (FileMeta.FileEncryption == ContentAlgorithm.Aes256Cbc)
-                    Stream = new AesShaStream(fs, FileMeta.FileKey, System.Security.Cryptography.CryptoStreamMode.Write, CryptographicOperation.Decrypt);
-                else
-                {
-                    parent.ExceptionHandler.CloseConnection("InvalidFileAlgorithm",
-                        "Cannot run file transfer with " + FileMeta.FileEncryption + ".\r\n\tat FTEventArgs.OpenStream()");
-                    return false;
-                }
+                parent.ExceptionHandler.CloseConnection("InvalidOperation",
+                    $"You should not try to open a file stream with {Mode}\r\n" +
+                    "\tat FTEventArgs.OpenStream()");
+                return false;
+            }
+            FileStream fileStream;
+            FileMode fileMode;
+            FileAccess fileAccess;
+            FileShare fileShare;
+            System.Security.Cryptography.CryptoStreamMode streamMode;
+            CryptographicOperation operation;
+            if (Mode == StreamMode.GetFile)
+            {
+                fileMode = FileMode.Create;
+                fileAccess = FileAccess.Write;
+                fileShare = FileShare.None;
+                streamMode = System.Security.Cryptography.CryptoStreamMode.Write;
+                operation = CryptographicOperation.Decrypt;
             }
             else // Mode == StreamMode.PushFile
             {
-                FileStream fs = new FileStream(Path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                if (FileMeta.FileEncryption == ContentAlgorithm.None)
-                    Stream = new ShaStream(fs, System.Security.Cryptography.CryptoStreamMode.Read);
-                else if (FileMeta.FileEncryption == ContentAlgorithm.Aes256Cbc)
-                    Stream = new AesShaStream(fs, FileMeta.FileKey, System.Security.Cryptography.CryptoStreamMode.Read, CryptographicOperation.Encrypt);
-                else
-                {
-                    parent.ExceptionHandler.CloseConnection("InvalidFileAlgorithm",
-                        "Cannot run file transfer with " + FileMeta.FileEncryption + ".\r\n\tat FTEventArgs.OpenStream()");
-                    return false;
-                }
+                fileMode = FileMode.Open;
+                fileAccess = FileAccess.Read;
+                fileShare = FileShare.Read;
+                streamMode = System.Security.Cryptography.CryptoStreamMode.Read;
+                operation = CryptographicOperation.Encrypt;
+            }
+            try
+            {
+                fileStream = new FileStream(Path, fileMode, fileAccess, fileShare);
+            }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+                return false;
+            }
+            if (FileMeta.FileEncryption == ContentAlgorithm.None || !FileMeta.Available)
+                Stream = new ShaStream(fileStream, streamMode);
+            else if (FileMeta.FileEncryption == ContentAlgorithm.Aes256Cbc)
+                Stream = new AesShaStream(fileStream, FileMeta.FileKey, streamMode, operation);
+            else
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidFileAlgorithm",
+                    "Cannot run file transfer with " + FileMeta.FileEncryption + ".\r\n\tat FTEventArgs.OpenStream()");
+                return false;
             }
             return true;
         }
 
-        internal void CloseStream(bool success)
+        internal bool CloseStream(bool success)
         {
-            Stream?.Dispose();
+            try
+            {
+                Stream?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+                return false;
+            }
+            byte[] hash = Stream.Hash;
             Stream = null;
             if (success)
-                OnFinished();
+            {
+                if (FileMeta.Available && !hash.SequenceEqual(FileMeta.SHA256))
+                {
+                    OnCanceled();
+                    parent.ExceptionHandler.CloseConnection("FileCorrupted",
+                        "The integrity checking resulted in a corrupted message.\r\n" +
+                        "\tat FTEventArgs.CloseStream(bool)");
+                    return false;
+                }
+                else
+                    OnFinished();
+            }
             else
                 OnCanceled();
+            return true;
         }
 
         internal void OnFileMetaTransfered()
         {
+            if (Mode == StreamMode.GetHeader || Mode == StreamMode.GetFile)
+                parent.ThreadManager.QueueWorkItem((ct) => FileMetaReceived?.Invoke(this, null));
             var args = new FTProgressEventArgs(0, FileMeta.Length);
             parent.ThreadManager.QueueWorkItem((ct) => Progress?.Invoke(this, args));
         }
@@ -132,6 +177,8 @@ namespace VSL.FileTransfer
         internal void OnFinished()
         {
             parent.ThreadManager.QueueWorkItem((ct) => Finished?.Invoke(this, null));
+            if (parent.Logger.InitD) parent.Logger.D($"Successfully transfered file with id {Identifier} and {Mode}\r\n" +
+                $"to \"{Path}\" using ContentAlgorithm.{FileMeta.Algorithm}");
         }
 
         internal void OnCanceled()

@@ -40,6 +40,8 @@
             this.LbServerUpdateTimer = new System.Windows.Forms.Timer(this.components);
             this.BtnCleanup = new System.Windows.Forms.Button();
             this.btnSendFile = new System.Windows.Forms.Button();
+            this.TbFileKey = new System.Windows.Forms.TextBox();
+            this.LbFileKey = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // btnStartServer
@@ -146,11 +148,30 @@
             this.btnSendFile.UseVisualStyleBackColor = true;
             this.btnSendFile.Click += new System.EventHandler(this.BtnSendFile_Click);
             // 
+            // TbFileKey
+            // 
+            this.TbFileKey.Location = new System.Drawing.Point(173, 157);
+            this.TbFileKey.Name = "TbFileKey";
+            this.TbFileKey.Size = new System.Drawing.Size(99, 20);
+            this.TbFileKey.TabIndex = 10;
+            // 
+            // LbFileKey
+            // 
+            this.LbFileKey.AutoSize = true;
+            this.LbFileKey.Location = new System.Drawing.Point(142, 160);
+            this.LbFileKey.Name = "LbFileKey";
+            this.LbFileKey.Size = new System.Drawing.Size(25, 13);
+            this.LbFileKey.TabIndex = 11;
+            this.LbFileKey.Text = "Key";
+            this.LbFileKey.Click += new System.EventHandler(this.LbFileKey_Click);
+            // 
             // FrmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.LbFileKey);
+            this.Controls.Add(this.TbFileKey);
             this.Controls.Add(this.btnSendFile);
             this.Controls.Add(this.BtnCleanup);
             this.Controls.Add(this.LbServer);
@@ -182,6 +203,8 @@
         private System.Windows.Forms.Timer LbServerUpdateTimer;
         private System.Windows.Forms.Button BtnCleanup;
         private System.Windows.Forms.Button btnSendFile;
+        private System.Windows.Forms.TextBox TbFileKey;
+        private System.Windows.Forms.Label LbFileKey;
     }
 }
 

@@ -80,7 +80,7 @@ namespace VSL
             if (item == null)
                 throw new ArgumentNullException("item");
             bool final = false;
-            // TODO: Do not run loop in lock
+            // -TODO: Do not run loop in lock
             lock (changeStateLock)
             {
                 if (cleaning)
