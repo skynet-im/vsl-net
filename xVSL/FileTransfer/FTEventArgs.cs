@@ -144,8 +144,9 @@ namespace VSL.FileTransfer
             Stream = null;
             if (success)
             {
-                if (FileMeta.Available && !hash.SequenceEqual(FileMeta.SHA256))
-                {
+                if (FileMeta.Available && parent.ConnectionVersion.Value > 1 && !hash.SequenceEqual(FileMeta.SHA256))
+                { 
+                    // Do not check hash for VSL 1.1 because this version always sends an empty field.
                     OnCanceled();
                     parent.ExceptionHandler.CloseConnection("FileCorrupted",
                         "The integrity checking resulted in a corrupted message.\r\n" +
