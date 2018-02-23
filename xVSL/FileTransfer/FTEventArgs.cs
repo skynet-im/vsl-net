@@ -131,34 +131,55 @@ namespace VSL.FileTransfer
 
         internal bool CloseStream(bool success)
         {
-            try
-            {
-                Stream?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-                return false;
-            }
-            byte[] hash = Stream.Hash;
-            Stream = null;
             if (success)
             {
-                if (FileMeta.Available && parent.ConnectionVersion.Value > 1 && !hash.SequenceEqual(FileMeta.SHA256))
-                { 
-                    // Do not check hash for VSL 1.1 because this version always sends an empty field.
+                try
+                {
+                    if (Stream.CanWrite && !Stream.HasFlushedFinalBlock)
+                        Stream.FlushFinalBlock();
+                }
+                catch (Exception ex) // most common: CryptographicException
+                {
                     OnCanceled();
+                    parent.ExceptionHandler.CloseConnection(ex);
+                    CloseStreamInternal(false, false);
+                    return false;
+                }
+                byte[] hash = Stream.Hash;
+                if (FileMeta.Available && parent.ConnectionVersion.Value > 1 && !hash.SequenceEqual(FileMeta.SHA256))
+                {
+                    // Do not check hash for VSL 1.1 because this version always sends an empty field.
                     parent.ExceptionHandler.CloseConnection("FileCorrupted",
                         "The integrity checking resulted in a corrupted message.\r\n" +
                         "\tat FTEventArgs.CloseStream(bool)");
+                    CloseStreamInternal(false, false);
                     return false;
                 }
-                else
-                    OnFinished();
             }
-            else
-                OnCanceled();
-            return true;
+            return CloseStreamInternal(true, success);
+        }
+
+        private bool CloseStreamInternal(bool events, bool success)
+        {
+            try
+            {
+                Stream?.Dispose();
+                if (events) OnFinished();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (events)
+                {
+                    OnCanceled();
+                    parent.ExceptionHandler.CloseConnection(ex);
+                }
+                return false;
+            }
+            finally
+            {
+                Stream = null;
+            }
         }
 
         internal void OnFileMetaTransfered()

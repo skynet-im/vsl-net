@@ -47,7 +47,7 @@ namespace VSL
             {
                 if (id == rule.Packet.PacketID)
                 {
-                    if (rule.Algorithms.Contains(alg))
+                    if (rule.Algorithms.Contains(alg)) // TODO: [VSL 1.2.2] Contains needs O(n) for a search, a dictionary or an array<bool> would be much faster
                     {
                         IPacket packet = rule.Packet.New();
                         PacketBuffer buf = new PacketBuffer(content);
@@ -83,7 +83,7 @@ namespace VSL
                 return parent.manager.SendPacket(new P05KeepAlive(KeepAliveRole.Response));
             else
                 return true;
-            // TODO: [VSL 1.2.1] API and timeout for keep-alives
+            // TODO: [VSL 1.2.2] API and timeout for keep-alives
         }
         internal bool HandleP06Accepted(P06Accepted p)
         {

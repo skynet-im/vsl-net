@@ -200,7 +200,7 @@ namespace VSL.FileTransfer
             if (!parent.manager.SendPacket(new P09FileDataBlock(pos, Util.TakeBytes(buffer, count)))) return false;
             currentItem.OnProgress();
             if (count < buffer.Length)
-                currentItem.CloseStream(true);
+                return currentItem.CloseStream(true);
             return true;
         }
 

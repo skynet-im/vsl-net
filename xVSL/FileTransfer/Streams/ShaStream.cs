@@ -17,6 +17,16 @@ namespace VSL.FileTransfer.Streams
             shaStream = new CryptoStream(stream, sha, mode);
         }
 
+        public override byte[] Hash => sha?.Hash;
+
+        public override void FlushFinalBlock()
+        {
+            if (HasFlushedFinalBlock)
+                throw new InvalidOperationException("You cannot flush the final block twice.");
+            shaStream.FlushFinalBlock();
+            HasFlushedFinalBlock = true;
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (mode != CryptoStreamMode.Read)
@@ -31,6 +41,8 @@ namespace VSL.FileTransfer.Streams
         {
             if (mode != CryptoStreamMode.Write)
                 throw new InvalidOperationException("You cannot write on a stream in read mode.");
+            if (HasFlushedFinalBlock)
+                throw new InvalidOperationException("You cannot write on the stream when the final block was already flushed.");
 
             shaStream.Write(buffer, offset, count);
             _position += count;
@@ -47,11 +59,6 @@ namespace VSL.FileTransfer.Streams
                 {
                     shaStream.Dispose(); // all chained streams will be disposed with this call
                 }
-                try
-                {
-                    Hash = sha.Hash;
-                }
-                catch { }
 
                 disposedValue = true;
             }

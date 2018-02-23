@@ -9,6 +9,7 @@ namespace VSL.FileTransfer.Streams
 {
     internal class AesShaStream : HashStream
     {
+        private CryptoStream topStream;
         private CryptoStream aesStream;
         private CryptoStream shaStream;
         private byte[] key;
@@ -34,17 +35,31 @@ namespace VSL.FileTransfer.Streams
             sha = new SHA256CryptoServiceProvider();
         }
 
+        public override byte[] Hash => sha?.Hash;
+
+        public override void FlushFinalBlock()
+        {
+            if (HasFlushedFinalBlock)
+                throw new InvalidOperationException("You cannot flush the final block twice.");
+
+            topStream.FlushFinalBlock();
+            HasFlushedFinalBlock = true;
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (mode != CryptoStreamMode.Read)
                 throw new InvalidOperationException("You cannot read from a stream in write mode.");
+            if (HasFlushedFinalBlock)
+                throw new InvalidOperationException("You cannot write on the stream when the final block was already flushed.");
+            int done = 0;
+
             if (operation == CryptographicOperation.Encrypt)
             {
-                int done = 0;
                 if (first)
                 {
                     Array.Copy(iv, 0, buffer, offset, 16); // copy iv to encrypted output
-                    done += 16;
+                    done += 16; // the method returns the iv so it has to be counted
                     offset += 16;
                     count -= 16;
 #if WINDOWS_UWP
@@ -55,11 +70,9 @@ namespace VSL.FileTransfer.Streams
                     transform = csp.CreateEncryptor(key, iv);
                     shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Read); // compute SHA256 of plain data
                     aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Read); // encrypt after computing hash
+                    topStream = aesStream; // Following operations will be done on this stream.
                     first = false;
                 }
-                done += aesStream.Read(buffer, offset, count);
-                _position += done; // The method returns the iv so it has to be counted
-                return done;
             }
             else // CryptographicOperation.Decrypt
             {
@@ -67,6 +80,7 @@ namespace VSL.FileTransfer.Streams
                 {
                     iv = new byte[16];
                     if (stream.Read(iv, 0, 16) < 16) return -1; // read iv from stream
+                    // The method does not return an iv and its length is ignored.
 #if WINDOWS_UWP
                     csp = Aes.Create();
 #else
@@ -75,12 +89,13 @@ namespace VSL.FileTransfer.Streams
                     transform = csp.CreateDecryptor(key, iv);
                     aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Read); // first decrypt data
                     shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Read); // then compute hash of the plain data
+                    topStream = shaStream; // Following operations will be done on this stream.
                     first = false;
                 }
-                int done = shaStream.Read(buffer, offset, count);
-                _position += done; // The method does not return an iv and its length is ignored.
-                return done;
             }
+            done += topStream.Read(buffer, offset, count);
+            _position += done;
+            return done;
         }
 
         /// <summary>
@@ -93,11 +108,16 @@ namespace VSL.FileTransfer.Streams
         {
             if (mode != CryptoStreamMode.Write)
                 throw new InvalidOperationException("You cannot write on a stream in read mode.");
+            if (HasFlushedFinalBlock)
+                throw new InvalidOperationException("You cannot write on the stream when the final block was already flushed.");
+            int done = 0;
+
             if (operation == CryptographicOperation.Encrypt)
             {
                 if (first)
                 {
                     stream.Write(iv, 0, 16); // write pre-generated iv on stream
+                    // no iv is provided directly -> ignore the count of the iv
 #if WINDOWS_UWP
                     csp = Aes.Create();
 #else
@@ -106,14 +126,12 @@ namespace VSL.FileTransfer.Streams
                     transform = csp.CreateEncryptor(key, iv);
                     aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Write); // write encrypted data on stream
                     shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Write); // compute hash before encrypting
+                    topStream = shaStream; // Following operations will be done on this stream.
                     first = false;
                 }
-                shaStream.Write(buffer, offset, count);
-                _position += count; // no iv is provided directly -> ignore the count of the iv
             }
             else // CryptographicOperation.Decrypt
             {
-                int done = 0;
                 if (first)
                 {
                     if (count < 16) throw new ArgumentOutOfRangeException("count", count, "The first block must be at least 16 bytes large.");
@@ -121,7 +139,7 @@ namespace VSL.FileTransfer.Streams
                     Array.Copy(buffer, offset, iv, 0, 16); // read iv from buffer
                     offset += 16;
                     count -= 16;
-                    done += 16;
+                    done += 16; // the iv is directly provided and will be counted
 #if WINDOWS_UWP
                     csp = Aes.Create();
 #else
@@ -130,12 +148,12 @@ namespace VSL.FileTransfer.Streams
                     transform = csp.CreateDecryptor(key, iv);
                     shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Write); // compute hash of plain data and write on stream
                     aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Write); // decrypt before computing hash
+                    topStream = aesStream; // Following operations will be done on this stream.
                     first = false;
                 }
-                aesStream.Write(buffer, offset, count);
-                done += count;
-                _position += done; // the iv is directly provided and will be counted
             }
+            topStream.Write(buffer, offset, count);
+            _position += done + count;
         }
 
         #region IDisposable Support
@@ -147,25 +165,9 @@ namespace VSL.FileTransfer.Streams
             {
                 if (disposing)
                 {
-                    if (mode == CryptoStreamMode.Read)
-                    {
-                        if (operation == CryptographicOperation.Encrypt)
-                            aesStream.Dispose(); // all chained streams will be disposed with this call
-                        else
-                            shaStream.Dispose();
-                    }
-                    else // CryptoStreamMode.Write
-                    {
-                        if (operation == CryptographicOperation.Encrypt)
-                            shaStream.Dispose();
-                        else
-                            aesStream.Dispose();
-                    }
-                    try
-                    {
-                        Hash = sha.Hash;
-                    }
-                    catch { }
+                    topStream.Dispose(); // This call will flush and dispose all chained streams.
+                    transform.Dispose();
+                    sha.Dispose();
                 }
 
                 disposedValue = true;

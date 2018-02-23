@@ -24,7 +24,7 @@ namespace VSLTest
         public FrmMain()
         {
             InitializeComponent();
-            Text = string.Format(Text, Constants.ProductVersion);
+            Text = string.Format(Text, Constants.ProductVersion(4));
             server = new Server(Program.Port, Program.Keypair);
             pentest = new PenetrationTest();
         }

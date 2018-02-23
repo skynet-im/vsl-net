@@ -191,38 +191,13 @@ namespace VSL
         /// <summary>
         /// Reads data from the buffer. This function is not threadsafe!
         /// </summary>
-        /// <param name="count">count of bytes to read</param>
-        /// <exception cref="OperationCanceledException"/>
-        /// <exception cref="TimeoutException"/>
-        /// <returns></returns>
-        internal byte[] Read(int count)
-        {
-            const int wait = 10;
-            int cycles = (Constants.ReceiveTimeout + count / 8) / wait;
-            int cycle = 0;
-            while (cache.Length < count)
-            {
-                if (cycle >= cycles)
-                    throw new TimeoutException(string.Format("Waiting for {0} bytes took over {1} ms.", count, cycles * wait));
-                if (ct.WaitHandle.WaitOne(wait))
-                    throw new OperationCanceledException();
-                cycle++;
-            }
-            if (!cache.Dequeue(out byte[] buf, count))
-                throw new Exception("Error at dequeueing bytes");
-            return buf;
-        }
-
-        /// <summary>
-        /// Reads data from the buffer. This function is not threadsafe!
-        /// </summary>
         /// <param name="buf">Buffer to store read bytes.</param>
         /// <param name="count">Count of bytes to read. This function will return false if not all bytes could be read.</param>
         /// <returns>Returns whether the function could successfully read all requested bytes.</returns>
         internal bool TryRead(out byte[] buf, int count)
         {
             const int wait = 10; // frequency to look for new data
-            int cycles = (Constants.ReceiveTimeout + count / 8) / wait; // assuming 64 kbit/s or 8 B/s and a latency of 5 sek => Constants.ReceiveTimeout
+            int cycles = (parent.NetworkMaxLatency + 1000 * count / parent.NetworkMinBandwith) / wait;
             int cycle = 0;
             while (cache.Length < count)
             {
@@ -278,7 +253,7 @@ namespace VSL
         /// </summary>
         internal void CloseConnection()
         {
-            if (disposedValue) throw new ObjectDisposedException("VSL.NetworkChannel");
+            if (disposedValue) throw new ObjectDisposedException(GetType().FullName);
             StopThreads();
             try
             {
