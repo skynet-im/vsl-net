@@ -8,7 +8,7 @@ using System.IO;
 namespace VSL
 {
     /// <summary>
-    /// A byte buffer to read and write basic datatypes
+    /// A byte buffer to read and write basic datatypes from a binary context
     /// </summary>
     public class PacketBuffer : IDisposable
     {
@@ -39,12 +39,12 @@ namespace VSL
         //  constructor>
         // <properties
         /// <summary>
-        /// Gets the length of the underlying MemoryStream in bytes.
+        /// Gets the length of the underlying <see cref="MemoryStream"/> in bytes.
         /// </summary>
         public int Length => Convert.ToInt32(baseStream.Length);
 
         /// <summary>
-        /// Gets the current position within the underlying MemoryStream.
+        /// Gets the current position within the underlying <see cref="MemoryStream"/>.
         /// </summary>
         public int Position
         {
@@ -53,13 +53,13 @@ namespace VSL
         }
 
         /// <summary>
-        /// Gets the count of pending bytes in the underlying MemoryStream.
+        /// Gets the count of pending bytes in the underlying <see cref="MemoryStream"/>.
         /// </summary>
         public int Pending => Convert.ToInt32(baseStream.Length - baseStream.Position);
         //  properties>
         // <functions
         /// <summary>
-        /// Returns the content of the underlying MemoryStream as a byte array.
+        /// Returns the content of the underlying <see cref="MemoryStream"/> as a byte array.
         /// </summary>
         /// <returns></returns>
         public byte[] ToArray()
@@ -86,18 +86,7 @@ namespace VSL
         {
             baseStream.Write(b, 0, b.Length);
         }
-        //  <byte
-        /// <summary>
-        /// Reads an 8 bit unsigned integer.
-        /// </summary>
-        /// <returns></returns>
-        public byte ReadByte() => ReadByteRaw(1)[0]; // warning: Stream.ReadByte() does not throw an exception if read fails.
-        /// <summary>
-        /// Writes an 8 bit unsigned integer.
-        /// </summary>
-        /// <param name="b"></param>
-        public void WriteByte(byte b) => baseStream.WriteByte(b);
-        //   byte>
+        #region public byte array
         //  <byte array
         /// <summary>
         /// Reads a byte array with the specified length.
@@ -155,6 +144,8 @@ namespace VSL
             WriteByteRaw(b);
         }
         //   byte array>
+        #endregion
+        #region boolean types
         //  <bool
         /// <summary>
         /// Reads a boolean.
@@ -173,8 +164,22 @@ namespace VSL
             baseStream.WriteByte(Convert.ToByte(b ? 1 : 0));
         }
         //   bool>
-        //  <short
+        #endregion
+        #region integral types
+        //  <byte
+        /// <summary>
+        /// Reads an 8 bit unsigned integer.
+        /// </summary>
+        /// <returns></returns>
+        public byte ReadByte() => ReadByteRaw(1)[0]; // warning: Stream.ReadByte() does not throw an exception if read fails.
+        /// <summary>
+        /// Writes an 8 bit unsigned integer.
+        /// </summary>
+        /// <param name="b"></param>
+        public void WriteByte(byte b) => baseStream.WriteByte(b);
+        //   byte>
 #pragma warning disable CS1591 //Disables "Missing XML comment..."
+        //  <short
         public short ReadShort()
         {
             return BitConverter.ToInt16(ReadByteRaw(2), 0);
@@ -234,6 +239,30 @@ namespace VSL
             WriteByteRaw(BitConverter.GetBytes(l));
         }
         //   ulong>
+        #endregion
+        #region floating point types
+        //  <float
+        public float ReadSingle()
+        {
+            return BitConverter.ToSingle(ReadByteRaw(4), 0);
+        }
+        public void WriteSingle(float f)
+        {
+            WriteByteRaw(BitConverter.GetBytes(f));
+        }
+        //   float>
+        //  <double
+        public double ReadDouble()
+        {
+            return BitConverter.ToDouble(ReadByteRaw(4), 0);
+        }
+        public void WriteDouble(double f)
+        {
+            WriteByteRaw(BitConverter.GetBytes(f));
+        }
+        //   double>
+        #endregion
+        #region combined types
         //  <date
         public DateTime ReadDate()
         {
@@ -244,20 +273,29 @@ namespace VSL
             WriteLong(d.ToBinary());
         }
         //   date>
+#pragma warning restore CS1591
         //  <string
+        /// <summary>
+        /// Reads an <see cref="uint"/> and then a <see cref="string"/> with UTF-8-Encoding and the length of this <see cref="uint"/>.
+        /// </summary>
+        /// <returns></returns>
         public string ReadString()
         {
             int len = Convert.ToInt32(ReadUInt());
             return encoding.GetString(ReadByteRaw(len));
         }
+        /// <summary>
+        /// Writes an <see cref="uint"/> as a length marker and then the specified <see cref="string"/> with UTF-8-Encoding.
+        /// </summary>
+        /// <param name="s"></param>
         public void WriteString(string s)
         {
             byte[] buf = encoding.GetBytes(s);
             WriteUInt(Convert.ToUInt32(buf.Length));
             WriteByteRaw(buf);
         }
-#pragma warning restore CS1591
         //   string>
+        #endregion
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 

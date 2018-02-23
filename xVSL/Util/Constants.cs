@@ -11,10 +11,10 @@ namespace VSL
     /// </summary>
     public static class Constants
     {
-        /// <summary>
-        /// The installed version of VSL.
-        /// </summary>
-        public const string ProductVersion = "1.2.0.27";
+        static Constants()
+        {
+            _productVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        }
         /// <summary>
         /// The installed version as ushort.
         /// </summary>
@@ -32,6 +32,10 @@ namespace VSL
         /// </summary>
         public const int ReceiveTimeout = 5000;
         /// <summary>
+        /// The count of bytes that must be received within one second.
+        /// </summary>
+        public const int ReceiveBandwith = 8000;
+        /// <summary>
         /// The maximum admissible packet size. If a received packet is bigger the receiver closes the connection.
         /// </summary>
         public const int MaxPacketSize = 1048576;
@@ -39,5 +43,27 @@ namespace VSL
         /// The default sleep time for background threads while waiting for work.
         /// </summary>
         public const int SleepTime = 10;
+        private static Version _productVersion;
+        /// <summary>
+        /// Returns the product version of the current assembly with the specified precision.
+        /// </summary>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        public static string ProductVersion(int length)
+        {
+            switch (length)
+            {
+                case 1:
+                    return _productVersion.Major.ToString();
+                case 2:
+                    return string.Join(".", _productVersion.Major, _productVersion.Minor);
+                case 3:
+                    return string.Join(".", _productVersion.Major, _productVersion.Minor, _productVersion.Build);
+                case 4:
+                    return string.Join(".", _productVersion.Major, _productVersion.Minor, _productVersion.Build, _productVersion.Revision);
+                default:
+                    return null;
+            }
+        }
     }
 }

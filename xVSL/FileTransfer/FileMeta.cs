@@ -88,7 +88,7 @@ namespace VSL.FileTransfer
             if (binaryData == null) throw new ArgumentNullException("binaryData");
             if (binaryData.Length < 76) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.1 FileHeader packet must contain at least 76 bytes.");
             if (connectionVersion < Constants.CompatibilityVersion || connectionVersion > Constants.VersionNumber)
-                throw new NotSupportedException($"VSL {Constants.ProductVersion} only support connection versions from {Constants.CompatibilityVersion} to {Constants.VersionNumber} but not {connectionVersion}");
+                throw new NotSupportedException($"VSL {Constants.ProductVersion(4)} only support connection versions from {Constants.CompatibilityVersion} to {Constants.VersionNumber} but not {connectionVersion}");
 
             if (connectionVersion == 1)
                 Read_v1_1(new PacketBuffer(binaryData));

@@ -85,14 +85,19 @@ namespace VSL
             }
         }
         /// <summary>
+        /// Gets or sets the maximum network latency (ms) VSL will allow before closing the connection because of a timeout.
+        /// </summary>
+        public int NetworkMaxLatency { get; set; } = Constants.ReceiveTimeout;
+        /// <summary>
+        /// Gets or sets the minimal network bandwith (B/s) VSL will respect for receive operations before closing the connection because of a timeout.
+        /// </summary>
+        public int NetworkMinBandwith { get; set; } = Constants.ReceiveBandwith;
+        /// <summary>
         /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
         /// </summary>
         public virtual int ReceiveBufferSize
         {
-            get
-            {
-                return channel.ReceiveBufferSize;
-            }
+            get => channel.ReceiveBufferSize;
             set
             {
                 if (!disposedValue)
