@@ -248,7 +248,6 @@ namespace VSL
                         Logger.I("Connection was forcibly closed: " + reason);
                     channel.CloseConnection();
                     OnConnectionClosed(e);
-                    ThreadManager.Close();
                     Dispose();
                 }
         }

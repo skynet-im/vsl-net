@@ -123,11 +123,6 @@ namespace VSL
         }
 
         /// <summary>
-        /// Stops all running threads and disposes all associated resources.
-        /// </summary>
-        internal abstract void Close();
-
-        /// <summary>
         /// Invokes an <see cref="Action"/> synchronously.
         /// </summary>
         /// <param name="callback">Work to execute. The <see cref="CancellationToken"/> is going to be canceled when VSL is shutting down.</param>

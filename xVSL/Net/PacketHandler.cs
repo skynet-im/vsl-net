@@ -57,12 +57,16 @@ namespace VSL
                     }
                     else
                     {
-                        parent.ExceptionHandler.CloseConnection("WrongAlgorithm", $"Received {rule.Packet.ToString()} with {alg.ToString()} which is not allowed.");
+                        parent.ExceptionHandler.CloseConnection("WrongAlgorithm", 
+                            $"Received {rule.Packet.ToString()} with {alg.ToString()} which is not allowed.\r\n" +
+                            "\tat PacketHandler.HandleInternalPacket(Byte, Byte[], CryptoAlgorithm)");
                         return false;
                     }
                 }
             }
-            parent.ExceptionHandler.CloseConnection("UnknownPacket", $"Packet id {id} is not an internal packet and cannot be handled\r\n\tat PacketHandler.HandleInternalPacket()");
+            parent.ExceptionHandler.CloseConnection("UnknownPacket",
+                $"Packet id {id} is not an internal packet and cannot be handled\r\n" +
+                "\tat PacketHandler.HandleInternalPacket()");
             return false;
         }
 
@@ -76,7 +80,8 @@ namespace VSL
             if (parent.ConnectionVersion.Value < 2)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "VSL 1.1 and lower versions do not support keep-alive packets.");
+                    "VSL 1.1 and lower versions do not support keep-alive packets.\r\n" +
+                    "\tat PacketHandler.HandleP05KeepAlive(P05KeepAlive)");
                 return false;
             }
             if (p.Role == KeepAliveRole.Request)
@@ -93,7 +98,9 @@ namespace VSL
             }
             else
             {
-                parent.ExceptionHandler.CloseConnection("InvalidPacket", string.Format("Could not resume related packet with id {0}.", p.RelatedPacket));
+                parent.ExceptionHandler.CloseConnection("InvalidPacket",
+                    $"Could not resume related packet with id {p.RelatedPacket}.\r\n" +
+                    $"\tat PacketHandler.HandleP06Accepted(P06Accepted)");
                 return false;
             }
         }

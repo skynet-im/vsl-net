@@ -10,12 +10,14 @@ namespace VSL.Threading
     internal sealed class ThreadManagerAsyncAwait : ThreadManager
     {
         private ConcurrentQueue<WorkItem> queue;
+        private object disposeLock;
         private CancellationTokenSource mainCts;
         private CancellationToken mainCt;
 
         internal ThreadManagerAsyncAwait() : base(AsyncMode.AsyncAwait)
         {
             queue = new ConcurrentQueue<WorkItem>();
+            disposeLock = new object();
             mainCts = new CancellationTokenSource();
             mainCt = mainCts.Token;
         }
@@ -28,12 +30,6 @@ namespace VSL.Threading
         internal override void Start()
         {
             Start();
-        }
-
-        internal override void Close()
-        {
-            mainCts.Cancel();
-            Dispose();
         }
 
         public override void Invoke(Action<CancellationToken> callback)
@@ -69,10 +65,19 @@ namespace VSL.Threading
                     {
                         workItem.Work(itemCt);
                         workItem.WaitHandle?.Set();
-                        if (mainCt.IsCancellationRequested)
-                            return;
                     }
-                    await Task.Delay(parent.SleepTime, mainCt);
+                    Monitor.Enter(disposeLock);
+                    if (mainCt.IsCancellationRequested)
+                    {
+                        Monitor.Exit(disposeLock);
+                        return;
+                    }
+                    else
+                    {
+                        Task t = Task.Delay(parent.SleepTime, mainCt);
+                        Monitor.Exit(disposeLock);
+                        await t;
+                    }
                 }
             }
             catch (TaskCanceledException)
@@ -83,13 +88,16 @@ namespace VSL.Threading
             {
                 parent.ExceptionHandler.CloseUncaught(ex);
             }
-            
+
         }
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                mainCts.Dispose();
+                lock (disposeLock)
+                    mainCts.Cancel();
+                mainCts.Dispose(); // This will only dispose managed objects.
+                //CancellationToken.IsCancellationRequested is still available.
             }
             base.Dispose(disposing);
         }

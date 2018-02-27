@@ -132,7 +132,8 @@ namespace VSL.FileTransfer
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "Cannot resume file transfer for the received accepted packet.\r\n\tat FTSocket.OnPacketReceived(P06Accepted)");
+                    "Cannot resume file transfer for the received accepted packet.\r\n" +
+                    "\tat FTSocket.OnPacketReceived(P06Accepted)");
                 return false;
             }
             if (!packet.Accepted && packet.RelatedPacket == 7) // Cancellation is always made by denying P07OpenFileTransfer
@@ -217,7 +218,8 @@ namespace VSL.FileTransfer
             else // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
                 parent.ExceptionHandler.CloseConnection("InvalidRequest",
-                    "A new file transfer was requested before the last one was finished or aborted.\r\n\tat FTSocket.OnPacketReceived(P07OpenFileTransfer)");
+                    "A new file transfer was requested before the last one was finished or aborted.\r\n" +
+                    "\tat FTSocket.OnPacketReceived(P07OpenFileTransfer)");
                 return false;
             }
         }
@@ -227,19 +229,22 @@ namespace VSL.FileTransfer
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "Cannot resume file transfer for the received file header.\r\n\tat FTSocket.OnPacketReceived(P08FileHeader)");
+                    "Cannot resume file transfer for the received file header.\r\n" +
+                    "\tat FTSocket.OnPacketReceived(P08FileHeader)");
                 return false;
             }
             if (currentItem.Mode != StreamMode.GetHeader && currentItem.Mode != StreamMode.GetFile)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "The running file transfer is not supposed to receive a file header.\r\n\tat FTSocket.OnPacketReceived(P08FileHeader)");
+                    "The running file transfer is not supposed to receive a file header.\r\n" +
+                    "\tat FTSocket.OnPacketReceived(P08FileHeader)");
                 return false;
             }
             if (currentItem.FileMeta != null)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "The running file transfer has already received a file header.\r\n\tat FTSocket.OnPacketReceived(P08FileHeader)");
+                    "The running file transfer has already received a file header.\r\n" +
+                    "\tat FTSocket.OnPacketReceived(P08FileHeader)");
                 return false;
             }
             currentItem.FileMeta = new FileMeta(packet.BinaryData, parent.ConnectionVersion.Value);
