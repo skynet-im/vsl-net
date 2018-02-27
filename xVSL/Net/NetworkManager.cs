@@ -97,6 +97,11 @@ namespace VSL
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseUncaught(ex);
+                return false;
+            }
         }
         private bool ReceivePacket_Plaintext()
         {

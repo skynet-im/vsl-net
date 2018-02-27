@@ -32,11 +32,6 @@ namespace VSL.Threading
                 dispatcher = Dispatcher.CurrentDispatcher;
         }
 
-        internal override void Close()
-        {
-
-        }
-
         public override void Invoke(Action<CancellationToken> callback)
         {
             dispatcher.Invoke(() => callback(itemCt));

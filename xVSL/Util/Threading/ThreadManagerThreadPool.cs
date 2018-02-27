@@ -9,8 +9,9 @@ namespace VSL.Threading
 {
     internal sealed class ThreadManagerThreadPool : ThreadManager
     {
-        private ConcurrentQueue<WorkItem> queue; 
+        private ConcurrentQueue<WorkItem> queue;
         private Timer timer;
+        private object disposeLock;
         private CancellationTokenSource mainCts;
         private CancellationToken mainCt;
 
@@ -18,6 +19,7 @@ namespace VSL.Threading
         {
             queue = new ConcurrentQueue<WorkItem>();
             timer = new Timer(TimerCallback, null, -1, -1);
+            disposeLock = new object();
             mainCts = new CancellationTokenSource();
             mainCt = mainCts.Token;
         }
@@ -30,11 +32,6 @@ namespace VSL.Threading
         internal override void Start()
         {
             timer.Change(0, -1);
-        }
-
-        internal override void Close()
-        {
-            mainCts.Cancel();
         }
 
         public override void Invoke(Action<CancellationToken> callback)
@@ -69,15 +66,22 @@ namespace VSL.Threading
                 workItem.Work(itemCt);
                 workItem.WaitHandle?.Set();
             }
-            timer.Change(parent.SleepTime, -1);
+            lock (disposeLock)
+            {
+                if (!mainCt.IsCancellationRequested)
+                    timer.Change(parent.SleepTime, -1);
+            }
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
+                lock (disposeLock)
+                    mainCts.Cancel();
                 timer.Dispose();
-                mainCts.Dispose();
+                mainCts.Dispose(); // This will only dispose managed objects.
+                //CancellationToken.IsCancellationRequested is still available.
             }
             base.Dispose(disposing);
         }
