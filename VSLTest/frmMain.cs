@@ -35,11 +35,15 @@ namespace VSLTest
             {
                 btnStartServer.Enabled = false;
                 server.Start();
+                btnStartServer.Text = "Server stoppen";
+                btnStartServer.Enabled = true;
             }
             else
             {
-                btnStartServer.Enabled = true;
+                btnStartServer.Enabled = false;
                 server.Stop();
+                btnStartServer.Text = "Server starten";
+                btnStartServer.Enabled = true;
             }
         }
 
@@ -59,7 +63,7 @@ namespace VSLTest
                 btnConnect.Enabled = false;
             }
             else
-                vslClient.CloseConnection("The client disconnected");
+                vslClient.CloseConnection("The user requested to disconnect");
         }
 
         private void VSL_Open(object sender, EventArgs e)

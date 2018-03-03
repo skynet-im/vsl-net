@@ -26,11 +26,6 @@ namespace VSL.Threading
             
         }
 
-        internal override void Close()
-        {
-
-        }
-
         public override void Invoke(Action<CancellationToken> callback)
         {
             threadAccess.InvokeOnMainThread(() => callback(itemCt));

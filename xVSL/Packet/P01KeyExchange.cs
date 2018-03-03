@@ -32,7 +32,7 @@ namespace VSL.Packet
             OldestProduct = oldestProduct;
         }
 
-        public byte PacketID { get; } = 1;
+        public byte PacketId { get; } = 1;
 
         public uint? ConstantLength => 72;
 

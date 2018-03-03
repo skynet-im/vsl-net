@@ -18,7 +18,7 @@ namespace VSL.Packet
             BinaryData = binaryData;
         }
 
-        public byte PacketID { get; } = 8;
+        public byte PacketId { get; } = 8;
 
         public uint? ConstantLength => null;
 

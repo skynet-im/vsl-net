@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace VSL.FileTransfer.Streams
 {
+    [SecuritySafeCritical]
     internal class ShaStream : HashStream
     {
         private CryptoStream shaStream;
@@ -58,6 +60,7 @@ namespace VSL.FileTransfer.Streams
                 if (disposing)
                 {
                     shaStream.Dispose(); // all chained streams will be disposed with this call
+                    sha.Dispose();
                 }
 
                 disposedValue = true;

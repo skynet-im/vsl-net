@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security;
 using System.Text;
 
 namespace VSL
@@ -18,6 +19,7 @@ namespace VSL
             return FromBytes(buf, 0);
         }
 
+        [SecuritySafeCritical]
         internal unsafe static uint FromBytes(byte[] buf, int startIdx)
         {
             if (buf == null)
@@ -52,6 +54,7 @@ namespace VSL
             return final;
         }
 
+        [SecuritySafeCritical]
         internal unsafe static void ToBytes(uint n, byte[] buf, int startIdx)
         {
             uint* nn = &n;

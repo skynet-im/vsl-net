@@ -22,7 +22,7 @@ namespace VSL.Packet
             DataBlock = dataBlock;
         }
 
-        public byte PacketID { get; } = 9;
+        public byte PacketId { get; } = 9;
 
         public uint? ConstantLength => null;
 

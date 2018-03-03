@@ -22,7 +22,7 @@ namespace VSL.Packet
             ServerIV = serverIV;
         }
 
-        public byte PacketID { get; } = 4;
+        public byte PacketId { get; } = 4;
 
         public uint? ConstantLength => 32;
 

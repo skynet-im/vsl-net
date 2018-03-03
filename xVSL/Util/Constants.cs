@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+#if WINDOWS_UWP
+using Windows.ApplicationModel;
+#endif
 
 namespace VSL
 {
@@ -13,7 +16,12 @@ namespace VSL
     {
         static Constants()
         {
+#if WINDOWS_UWP
+            PackageVersion version = Package.Current.Id.Version;
+            _productVersion = new Version(version.Major, version.Minor, version.Build, version.Revision);
+#else
             _productVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+#endif
         }
         /// <summary>
         /// The installed version as ushort.

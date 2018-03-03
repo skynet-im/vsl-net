@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,6 +14,13 @@ namespace VSL.Crypt
     public static class Util
     {
         // © 2017 Daniel Lerch
+        static unsafe uint* _lookupPtr;
+        [SecuritySafeCritical]
+        static unsafe Util()
+        {
+            uint[] lookup = CreateLookup32Unsafe();
+            _lookupPtr = (uint*)GCHandle.Alloc(lookup, GCHandleType.Pinned).AddrOfPinnedObject();
+        }
         /// <summary>
         /// Splits a byte array into blocks
         /// </summary>
@@ -105,18 +114,24 @@ namespace VSL.Crypt
         }
 
         /// <summary>
-        /// Converts a byte array to a hexadecimal string
+        /// Converts a byte array to a hexadecimal string. This method uses a 32bit lookup table.
         /// </summary>
-        /// <param name="b">byte array to convert</param>
+        /// <param name="bytes"></param>
         /// <returns></returns>
-        public static string ToHexString(byte[] b)
+        /// <remarks>https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/24343727#24343727</remarks>
+        [SecuritySafeCritical]
+        public static unsafe string ToHexString(byte[] bytes)
         {
-            StringBuilder stb = new StringBuilder(b.Length);
-            for (int i = 0; i < b.Length; i++)
+            uint* lookupP = _lookupPtr;
+            string result = new string((char)0, bytes.Length * 2);
+            fixed (byte* bytesP = bytes)
+            fixed (char* resultP = result)
             {
-                stb.Append(b[i].ToString("x2"));
+                uint* resultP2 = (uint*)resultP;
+                for (int i = 0; i < bytes.Length; i++)
+                    resultP2[i] = lookupP[bytesP[i]];
             }
-            return stb.ToString();
+            return result;
         }
 
         /// <summary>
@@ -129,9 +144,7 @@ namespace VSL.Crypt
             if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
             byte[] final = new byte[hexadecimal.Length / 2];
             for (int i = 0; i < final.Length; i++)
-            {
-                final[i] = Convert.ToByte(new string(new char[] { hexadecimal[i * 2], hexadecimal[i * 2 + 1] }), 16);
-            }
+                final[i] = Convert.ToByte(hexadecimal.Substring(i * 2, 1), 16);
             return final;
         }
 
@@ -163,6 +176,20 @@ namespace VSL.Crypt
                 return normalSize - mod + blockSize;
             else
                 return normalSize;
+        }
+
+        private static uint[] CreateLookup32Unsafe()
+        {
+            uint[] result = new uint[256];
+            for (int i = 0; i < 256; i++)
+            {
+                string s = i.ToString("x2");
+                if (BitConverter.IsLittleEndian)
+                    result[i] = ((uint)s[0]) + ((uint)s[1] << 16);
+                else
+                    result[i] = ((uint)s[1]) + ((uint)s[0] << 16);
+            }
+            return result;
         }
     }
 }

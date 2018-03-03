@@ -24,7 +24,7 @@ namespace VSL.Packet
             ProblemCategory = problemCategory;
         }
 
-        public byte PacketID { get; } = 6;
+        public byte PacketId { get; } = 6;
 
         public uint? ConstantLength => 3;
 

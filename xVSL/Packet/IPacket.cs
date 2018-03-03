@@ -12,9 +12,9 @@ namespace VSL.Packet
     internal interface IPacket
     {
         /// <summary>
-        /// Returns the packet ID.
+        /// Returns the packet Id.
         /// </summary>
-        byte PacketID { get; }
+        byte PacketId { get; }
         /// <summary>
         /// Gets the constant length of this packet or if the length is dynamic.
         /// </summary>

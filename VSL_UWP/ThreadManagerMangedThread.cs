@@ -38,11 +38,6 @@ namespace VSL.Threading
             dispatcher = window.Dispatcher;
         }
 
-        internal override void Close()
-        {
-
-        }
-
         public override void Invoke(Action<CancellationToken> callback)
         {
             dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => callback(itemCt)).AsTask().Wait();

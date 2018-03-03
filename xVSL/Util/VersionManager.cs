@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Net;
 
 namespace VSL
 {
     internal static class VersionManager
     {
         private static Dictionary<ushort?, string> versions;
+        private static Dictionary<ushort, CryptoAlgorithm> netAlgs;
         static VersionManager()
         {
             versions = new Dictionary<ushort?, string>()
@@ -16,6 +18,12 @@ namespace VSL
                 { 0, "1.0" },
                 { 1, "1.1" },
                 { 2, "1.2" }
+            };
+            netAlgs = new Dictionary<ushort, CryptoAlgorithm>()
+            {
+                { 0, CryptoAlgorithm.AES_256_CBC_SP },
+                { 1, CryptoAlgorithm.AES_256_CBC_SP },
+                { 2, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3 }
             };
         }
 
@@ -63,6 +71,19 @@ namespace VSL
             if (latestClient < latestServer && latestClient >= oldestServer) // newer server
                 return latestClient;
             return null;
+        }
+
+        /// <summary>
+        /// Returns the default <see cref="CryptoAlgorithm"/> used for packet encryption.
+        /// </summary>
+        /// <param name="connectionVersion"></param>
+        /// <returns></returns>
+        internal static CryptoAlgorithm GetNetworkAlgorithm(ushort? connectionVersion)
+        {
+            if (!connectionVersion.HasValue || !netAlgs.TryGetValue(connectionVersion.Value, out CryptoAlgorithm alg))
+                return CryptoAlgorithm.None;
+            else
+                return alg;
         }
     }
 }

@@ -10,6 +10,7 @@ namespace VSL.Crypt
     /// <summary>
     /// The simple instance implementation of an AES crypto service provider.
     /// </summary>
+    [Obsolete("VSL.Crypt.AesStatic is deprecated, please use System.Security.Cryptography.Aes instead.", false)] // deprecated since v1.2.2
     public class AesCsp : IDisposable
     {
         // © 2017 Daniel Lerch
