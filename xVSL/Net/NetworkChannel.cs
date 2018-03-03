@@ -167,7 +167,11 @@ namespace VSL
                         threadsRunning = false;
                 }
             }
+#if DEBUG
+            catch (Exception ex) when (!System.Diagnostics.Debugger.IsAttached)
+#else
             catch (Exception ex)
+#endif
             {
                 parent.ExceptionHandler.CloseUncaught(ex);
             }
@@ -263,7 +267,11 @@ namespace VSL
             {
                 socket?.Shutdown(SocketShutdown.Both);
             }
+#if DEBUG
+            catch (Exception ex) when (!System.Diagnostics.Debugger.IsAttached)
+#else
             catch (Exception ex)
+#endif
             {
                 parent.ExceptionHandler.CloseUncaught(ex);
             }
@@ -274,7 +282,7 @@ namespace VSL
 #endif
         }
 
-        #region IDisposable Support
+#region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
         private void Dispose(bool disposing)
@@ -313,7 +321,7 @@ namespace VSL
             // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-        #endregion
+#endregion
         //  functions>
     }
 }

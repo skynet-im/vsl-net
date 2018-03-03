@@ -84,7 +84,11 @@ namespace VSL.Threading
             {
                 // shutting down
             }
+#if DEBUG
+            catch (Exception ex) when (!System.Diagnostics.Debugger.IsAttached)
+#else
             catch (Exception ex)
+#endif
             {
                 parent.ExceptionHandler.CloseUncaught(ex);
             }

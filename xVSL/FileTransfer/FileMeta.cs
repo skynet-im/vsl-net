@@ -86,14 +86,19 @@ namespace VSL.FileTransfer
         public FileMeta(byte[] binaryData, ushort connectionVersion)
         {
             if (binaryData == null) throw new ArgumentNullException("binaryData");
-            if (binaryData.Length < 76) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.1 FileHeader packet must contain at least 76 bytes.");
             if (connectionVersion < Constants.CompatibilityVersion || connectionVersion > Constants.VersionNumber)
                 throw new NotSupportedException($"VSL {Constants.ProductVersion(4)} only support connection versions from {Constants.CompatibilityVersion} to {Constants.VersionNumber} but not {connectionVersion}");
 
             if (connectionVersion == 1)
+            {
+                if (binaryData.Length < 44) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.1 FileHeader packet must contain at least 44 bytes.");
                 Read_v1_1(new PacketBuffer(binaryData));
+            }
             else if (connectionVersion == 2)
+            {
+                if (binaryData.Length < 78) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.2 FileHeader packet must contain at least 78 bytes.");
                 Read_v1_2(new PacketBuffer(binaryData));
+            }
         }
 
         /// <summary>
@@ -108,7 +113,7 @@ namespace VSL.FileTransfer
         public FileMeta(byte[] binaryData, byte[] hmacKey, byte[] aesKey)
         {
             if (binaryData == null) throw new ArgumentNullException("binaryData");
-            if (binaryData.Length < 77) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.2 FileHeader packet must contain at least 77 bytes.");
+            if (binaryData.Length < 78) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.2 FileHeader packet must contain at least 78 bytes.");
             if (hmacKey == null) throw new ArgumentNullException("hmacKey");
             if (hmacKey.Length != 32) throw new ArgumentOutOfRangeException("hmacKey", "An HMAC key must be 32 bytes in length.");
             if (aesKey == null) throw new ArgumentNullException("aesKey");
@@ -127,7 +132,10 @@ namespace VSL.FileTransfer
             LastAccessTime = buf.ReadDate();
             LastWriteTime = buf.ReadDate();
             Thumbnail = buf.ReadByteArray();
-            SHA256 = buf.ReadByteArray(32);
+            if (buf.Pending >= 32) // This is necessary as VSL 1.1 .NET does not even send an empty 32 byte array as SHA.
+                SHA256 = buf.ReadByteArray(32);
+            else
+                SHA256 = new byte[32]; // We leave an empty 32 byte array to prevent further crashes.
             Available = true;
         }
 

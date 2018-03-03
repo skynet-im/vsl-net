@@ -93,7 +93,11 @@ namespace VSL
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
+#if DEBUG
+            catch (Exception ex) when (!System.Diagnostics.Debugger.IsAttached)
+#else
             catch (Exception ex)
+#endif
             {
                 parent.ExceptionHandler.CloseUncaught(ex);
                 return false;
@@ -101,52 +105,44 @@ namespace VSL
         }
         private bool ReceivePacket_Plaintext()
         {
-            try
+            byte id; // read packet id
             {
-                byte id; // read packet id
-                {
-                    if (!parent.channel.TryRead(out byte[] buf, 1))
-                        return false;
-                    id = buf[0];
-                }
+                if (!parent.channel.TryRead(out byte[] buf, 1))
+                    return false;
+                id = buf[0];
+            }
 
-                bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
-                if (!success)
+            bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
+            if (!success)
+            {
+                parent.ExceptionHandler.CloseConnection("UnknownPacket",
+                    $"Received unknown internal plaintext packet with id {id}\r\n" +
+                    "\tat NetworkManager.ReceivePacket_Plaintext()");
+                return false;
+            }
+
+            uint length = 0; // read packet length
+            if (packet.ConstantLength.HasValue)
+                length = packet.ConstantLength.Value;
+            else
+            {
+                if (!parent.channel.TryRead(out byte[] buf, 4))
+                    return false;
+                length = BitConverter.ToUInt32(buf, 0);
+                if (length > Constants.MaxPacketSize)
                 {
-                    parent.ExceptionHandler.CloseConnection("UnknownPacket",
-                        $"Received unknown internal plaintext packet with id {id}\r\n" +
+                    parent.ExceptionHandler.CloseConnection("TooBigPacket",
+                        $"Tried to receive a packet of {length} bytes. Maximum admissible are {Constants.MaxPacketSize} bytes.\r\n" +
                         "\tat NetworkManager.ReceivePacket_Plaintext()");
                     return false;
                 }
-
-                uint length = 0; // read packet length
-                if (packet.ConstantLength.HasValue)
-                    length = packet.ConstantLength.Value;
-                else
-                {
-                    if (!parent.channel.TryRead(out byte[] buf, 4))
-                        return false;
-                    length = BitConverter.ToUInt32(buf, 0);
-                    if (length > Constants.MaxPacketSize)
-                    {
-                        parent.ExceptionHandler.CloseConnection("TooBigPacket",
-                            $"Tried to receive a packet of {length} bytes. Maximum admissible are {Constants.MaxPacketSize} bytes.\r\n" +
-                            "\tat NetworkManager.ReceivePacket_Plaintext()");
-                        return false;
-                    }
-                }
-
-                {
-                    if (!parent.channel.TryRead(out byte[] buf, Convert.ToInt32(length))) // read packet content
-                        return false;
-                    return parent.handler.HandleInternalPacket(id, buf, CryptoAlgorithm.None);
-                }
             }
-            catch (ArgumentOutOfRangeException ex) // PacketHandler.HandleInternalPacket() => IPacket.ReadPacket()
+
             {
-                parent.ExceptionHandler.CloseConnection(ex);
+                if (!parent.channel.TryRead(out byte[] buf, Convert.ToInt32(length))) // read packet content
+                    return false;
+                return parent.handler.HandleInternalPacket(id, buf, CryptoAlgorithm.None);
             }
-            return false;
         }
         private bool ReceivePacket_RSA_2048_OAEP()
         {
@@ -184,10 +180,6 @@ namespace VSL
                         "\tat NetworkManager.ReceivePacket_RSA_2048()");
                     return false;
                 }
-            }
-            catch (ArgumentOutOfRangeException ex) // PacketHandler.HandleInternalPacket() => IPacket.ReadPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (CryptographicException ex) // RSA.DecryptBlock()
             {
@@ -244,10 +236,6 @@ namespace VSL
                     parent.OnPacketReceived(id, content);
                     return true;
                 }
-            }
-            catch (ArgumentOutOfRangeException ex) // PacketHandler.HandleInternalPacket() => IPacket.ReadPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (CryptographicException ex) // AES.Decrypt()
             {
@@ -309,10 +297,6 @@ namespace VSL
                         }
                     }
                 }
-            }
-            catch (ArgumentOutOfRangeException ex) // PacketHandler.HandleInternalPacket() => IPacket.ReadPacket()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
             }
             catch (CryptographicException ex) // AES.Decrypt()
             {
@@ -429,7 +413,7 @@ namespace VSL
                     tailBlock = AesStatic.Encrypt(plaintext, AesKey, SendIV);
                 }
                 byte[] buf;
-                using (PacketBuffer pbuf = new PacketBuffer(headBlock.Length + tailBlock.Length))
+                using (PacketBuffer pbuf = new PacketBuffer(1 + headBlock.Length + tailBlock.Length))
                 {
                     pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_SP);
                     pbuf.WriteByteArray(headBlock, false);
