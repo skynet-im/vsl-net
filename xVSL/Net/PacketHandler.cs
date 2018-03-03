@@ -50,9 +50,16 @@ namespace VSL
                     if (rule.Algorithms.Contains(alg)) // TODO: [VSL 1.2.2] Contains needs O(n) for a search, a dictionary or an array<bool> would be much faster
                     {
                         IPacket packet = rule.Packet.New();
-                        PacketBuffer buf = new PacketBuffer(content);
-                        packet.ReadPacket(buf);
-                        buf.Dispose();
+                        try
+                        {
+                            using (PacketBuffer buf = new PacketBuffer(content))
+                                packet.ReadPacket(buf);
+                        }
+                        catch (ArgumentOutOfRangeException ex)
+                        {
+                            parent.ExceptionHandler.CloseConnection(ex);
+                            return false;
+                        }
                         return packet.HandlePacket(this);
                     }
                     else
