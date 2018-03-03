@@ -24,7 +24,14 @@ namespace CryptTest
             if (RbEncodingUTF8.Checked)
                 text = Encoding.UTF8.GetBytes(TbPlaintext.Text);
             else
-                text = Util.GetBytes(TbPlaintext.Text);
+            {
+                if (TbPlaintext.Text.Length % 2 != 0) return;
+                try
+                {
+                    text = Util.GetBytes(TbPlaintext.Text);
+                }
+                catch { return; }
+            }
             byte[] iteration1 = Hash.SHA256(text);
             byte[] iteration2 = Hash.SHA256(iteration1);
             Tb1Iteration.Text = Util.ToHexString(iteration1);

@@ -22,7 +22,7 @@ namespace VSL
         {
             foreach (PacketRule rule in RegisteredPackets)
             {
-                if (id == rule.Packet.PacketID)
+                if (id == rule.Packet.PacketId)
                 {
                     packet = rule.Packet;
                     return true;
@@ -45,7 +45,7 @@ namespace VSL
         {
             foreach (PacketRule rule in RegisteredPackets)
             {
-                if (id == rule.Packet.PacketID)
+                if (id == rule.Packet.PacketId)
                 {
                     if (rule.Algorithms.Contains(alg)) // TODO: [VSL 1.2.2] Contains needs O(n) for a search, a dictionary or an array<bool> would be much faster
                     {

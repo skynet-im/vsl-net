@@ -13,7 +13,7 @@ namespace VSL.Packet
 
         }
 
-        public byte PacketID { get; } = 2;
+        public byte PacketId { get; } = 2;
 
         public uint? ConstantLength => null;
 

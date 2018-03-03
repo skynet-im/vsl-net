@@ -56,7 +56,7 @@ namespace VSL.Packet
             ProductVersion = productVersion;
         }
 
-        public byte PacketID { get; } = 3;
+        public byte PacketId { get; } = 3;
 
         public uint? ConstantLength => null;
 

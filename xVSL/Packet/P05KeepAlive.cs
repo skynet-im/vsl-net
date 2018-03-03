@@ -20,7 +20,7 @@ namespace VSL.Packet
             Role = role;
         }
 
-        public byte PacketID { get; } = 4;
+        public byte PacketId { get; } = 4;
 
         public uint? ConstantLength => 0;
 

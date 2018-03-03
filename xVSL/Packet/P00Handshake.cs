@@ -20,7 +20,7 @@ namespace VSL.Packet
             RequestType = requestType;
         }
 
-        public byte PacketID { get; } = 0;
+        public byte PacketId { get; } = 0;
 
         public uint? ConstantLength => 1;
 

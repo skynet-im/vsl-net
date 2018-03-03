@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,6 +39,7 @@ namespace VSL.Crypt
         /// <summary>
         /// Copies a specified number of bytes from a source pointer to a destination pointer.
         /// </summary>
+        [SecuritySafeCritical]
         private unsafe static void BulkCopy(void* dst, void* src, int len)
         {
             var d = (byte*)dst;
@@ -74,6 +76,7 @@ namespace VSL.Crypt
         /// <summary>
         /// Copies a specified number of bytes from a source pointer to a destination pointer.
         /// </summary>
+        [SecuritySafeCritical]
         private unsafe static void BulkXor(void* dst, void* src, int len)
         {
             var d = (byte*)dst;
@@ -109,6 +112,7 @@ namespace VSL.Crypt
         /// <summary>
         /// Encode an integer to byte array on any alignment in little endian format.
         /// </summary>
+        [SecuritySafeCritical]
         private unsafe static void Encode32(byte* p, uint x)
         {
             p[0] = (byte)(x & 0xff);
@@ -120,6 +124,7 @@ namespace VSL.Crypt
         /// <summary>
         /// Decode an integer from byte array on any alignment in little endian format.
         /// </summary>
+        [SecuritySafeCritical]
         private unsafe static uint Decode32(byte* p)
         {
             return
@@ -132,6 +137,7 @@ namespace VSL.Crypt
         /// <summary>
         /// Apply the salsa20/8 core to the provided block.
         /// </summary>
+        [SecuritySafeCritical]
         private unsafe static void Salsa208(uint* B)
         {
             uint x0 = B[0];
@@ -212,6 +218,7 @@ namespace VSL.Crypt
         /// bytes in length; the output Bout must also be the same size.
         /// The temporary space X must be 64 bytes.
         /// </summary>
+        [SecuritySafeCritical]
         private unsafe static void BlockMix(uint* Bin, uint* Bout, uint* X, int r)
         {
             /* 1: X <-- B_{2r - 1} */
@@ -241,6 +248,7 @@ namespace VSL.Crypt
         /// <summary>
         /// Return the result of parsing B_{2r-1} as a little-endian integer.
         /// </summary>
+        [SecuritySafeCritical]
         private unsafe static long Integerify(uint* B, int r)
         {
             var X = (uint*)(((byte*)B) + (2 * r - 1) * 64);
@@ -255,6 +263,7 @@ namespace VSL.Crypt
         /// power of 2 greater than 1.  The arrays B, V, and XY must be aligned to a
         /// multiple of 64 bytes.
         /// </summary>
+        [SecuritySafeCritical]
         private unsafe static void SMix(byte* B, int r, int N, uint* V, uint* XY)
         {
             var X = XY;
@@ -311,6 +320,7 @@ namespace VSL.Crypt
         /// <summary>
         /// Compute and returns the result.
         /// </summary>
+        [SecuritySafeCritical]
         internal unsafe static byte[] ComputeHash(byte[] password, byte[] salt, int N, int r, int p)
         {
             var Ba = new byte[128 * r * p + 63];

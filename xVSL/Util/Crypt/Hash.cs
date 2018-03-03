@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.IO;
+using System.Security;
 
 namespace VSL.Crypt
 {
@@ -80,6 +81,7 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="buffer"></param>
         /// <returns></returns>
+        [SecuritySafeCritical]
         public static byte[] SHA256(byte[] buffer)
         {
 #if WINDOWS_UWP
@@ -104,6 +106,7 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
+        [SecuritySafeCritical]
         public static byte[] SHA256(Stream stream)
         {
 #if WINDOWS_UWP

@@ -363,7 +363,7 @@ namespace VSL.FileTransfer
             buf.WriteDate(CreationTime);
             buf.WriteDate(LastAccessTime);
             buf.WriteDate(LastWriteTime);
-            buf.WriteByteArray(Thumbnail);
+            buf.WriteByteArray(Thumbnail, true);
             buf.WriteByteArray(SHA256, false);
         }
 
@@ -381,7 +381,7 @@ namespace VSL.FileTransfer
             buf.WriteDate(CreationTime);
             buf.WriteDate(LastAccessTime);
             buf.WriteDate(LastWriteTime);
-            buf.WriteByteArray(Thumbnail);
+            buf.WriteByteArray(Thumbnail, true);
             buf.WriteByteArray(SHA256, false);
             if (FileEncryption == ContentAlgorithm.Aes256Cbc)
                 buf.WriteByteArray(FileKey, false);

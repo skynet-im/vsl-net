@@ -19,10 +19,6 @@ namespace VSL
         internal VSLSocket parent;
         internal bool Ready4Aes = false;
         private string rsaKey;
-#if !WINDOWS_UWP
-        private AesCsp enc;
-        private AesCsp dec;
-#endif
         private HMACSHA256 hmacProvider;
         //  fields>
         // <constructor
@@ -67,7 +63,7 @@ namespace VSL
                     case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
                         if (!Ready4Aes)
                         {
-                            parent.ExceptionHandler.CloseConnection("InvalidOperation", 
+                            parent.ExceptionHandler.CloseConnection("InvalidOperation",
                                 "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n" +
                                 "\tat NetworkManager.OnDataReceive()");
                             return false;
@@ -117,7 +113,9 @@ namespace VSL
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 if (!success)
                 {
-                    parent.ExceptionHandler.CloseConnection("UnknownPacket", "Received unknown internal plaintext packet with id " + id + "\r\n\tat NetworkManager.ReceivePacket_Plaintext()");
+                    parent.ExceptionHandler.CloseConnection("UnknownPacket",
+                        $"Received unknown internal plaintext packet with id {id}\r\n" +
+                        "\tat NetworkManager.ReceivePacket_Plaintext()");
                     return false;
                 }
 
@@ -131,7 +129,9 @@ namespace VSL
                     length = BitConverter.ToUInt32(buf, 0);
                     if (length > Constants.MaxPacketSize)
                     {
-                        parent.ExceptionHandler.CloseConnection("TooBigPacket", string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes.\r\n\tat NetworkManager.ReceivePacket_Plaintext()", length, Constants.MaxPacketSize));
+                        parent.ExceptionHandler.CloseConnection("TooBigPacket",
+                            $"Tried to receive a packet of {length} bytes. Maximum admissible are {Constants.MaxPacketSize} bytes.\r\n" +
+                            "\tat NetworkManager.ReceivePacket_Plaintext()");
                         return false;
                     }
                 }
@@ -168,7 +168,9 @@ namespace VSL
                         length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
                         if (length > 209) // 214 - 1 (id) - 4 (uint) => 209
                         {
-                            parent.ExceptionHandler.CloseConnection("TooBigPacket", string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are 209 bytes.\r\n\tat NetworkManager.ReceivePacket_RSA_2048()", length, Constants.MaxPacketSize));
+                            parent.ExceptionHandler.CloseConnection("TooBigPacket",
+                                $"Tried to receive a packet of {length} bytes. Maximum admissible are 209 bytes.\r\n" +
+                                "\tat NetworkManager.ReceivePacket_RSA_2048()");
                             return false;
                         }
                         index += 4;
@@ -177,7 +179,9 @@ namespace VSL
                 }
                 else
                 {
-                    parent.ExceptionHandler.CloseConnection("UnknownPacket", "Received unknown internal RSA packet with id " + id + "\r\n\tat NetworkManager.ReceivePacket_RSA_2048()");
+                    parent.ExceptionHandler.CloseConnection("UnknownPacket",
+                        $"Received unknown internal RSA packet with id {id}\r\n" +
+                        "\tat NetworkManager.ReceivePacket_RSA_2048()");
                     return false;
                 }
             }
@@ -198,11 +202,7 @@ namespace VSL
                 int index = 1;
                 if (!parent.channel.TryRead(out byte[] ciphertext, 16))
                     return false;
-#if WINDOWS_UWP
-                byte[] plaintext = AesStatic.Decrypt(ciphertext, _aesKey, _receiveIV);
-#else
-                byte[] plaintext = dec.Decrypt(ciphertext); //CryptographicException
-#endif
+                byte[] plaintext = AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV); //CryptographicException
                 byte id = plaintext[0];
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 uint length = 0;
@@ -214,7 +214,9 @@ namespace VSL
                     index += 4;
                     if (length > Constants.MaxPacketSize)
                     {
-                        parent.ExceptionHandler.CloseConnection("TooBigPacket", string.Format("Tried to receive a packet of {0} bytes. Maximum admissible are {1} bytes.\r\n\tat NetworkManager.ReceivePacket_Plaintext()", length, Constants.MaxPacketSize));
+                        parent.ExceptionHandler.CloseConnection("TooBigPacket",
+                            $"Tried to receive a packet of {length} bytes. Maximum admissible are {Constants.MaxPacketSize} bytes.\r\n" +
+                            "\tat NetworkManager.ReceivePacket_Plaintext()");
                         return false;
                     }
                 }
@@ -225,11 +227,7 @@ namespace VSL
                     int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
                     if (!parent.channel.TryRead(out ciphertext, pendingBlocks * 16))
                         return false;
-#if WINDOWS_UWP
-                    plaintext = Util.ConnectBytes(plaintext, AesStatic.Decrypt(ciphertext, _aesKey, _receiveIV));
-#else
-                    plaintext = Util.ConnectBytes(plaintext, dec.Decrypt(ciphertext));
-#endif
+                    plaintext = Util.ConnectBytes(plaintext, AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV));
                 }
                 int startIndex = Convert.ToInt32(plaintext.Length - length);
                 byte[] content = Util.SkipBytes(plaintext, startIndex); // remove random bytes
@@ -277,47 +275,37 @@ namespace VSL
                 }
                 byte[] iv = Util.TakeBytes(cipherblock, 16);
                 byte[] ciphertext = Util.SkipBytes(cipherblock, 16);
-#if WINDOWS_UWP
-                byte[] b_plaintext = AesStatic.Decrypt(ciphertext, _aesKey, iv);
-#else
-                dec.IV = iv;
-                byte[] b_plaintext = dec.Decrypt(ciphertext);
-#endif
-                using (System.IO.MemoryStream ms_plaintext = new System.IO.MemoryStream(b_plaintext))
+                using (PacketBuffer plaintext = new PacketBuffer(AesStatic.Decrypt(ciphertext, AesKey, iv)))
                 {
-                    using (System.IO.BinaryReader plaintext = new System.IO.BinaryReader(ms_plaintext))
+                    while (plaintext.Position < plaintext.Length - 1)
                     {
-                        while (ms_plaintext.Position < ms_plaintext.Length - 1)
+                        byte id = plaintext.ReadByte();
+                        bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
+                        uint length = 0;
+                        if (success && packet.ConstantLength.HasValue)
+                            length = packet.ConstantLength.Value;
+                        else
+                            length = plaintext.ReadUInt();
+                        if (length > plaintext.Pending)
                         {
-                            byte id = plaintext.ReadByte();
-                            bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
-                            uint length = 0;
-                            if (success && packet.ConstantLength.HasValue)
-                                length = packet.ConstantLength.Value;
-                            else
-                                length = plaintext.ReadUInt32();
-                            long pending = ms_plaintext.Length - ms_plaintext.Position;
-                            if (length > pending)
-                            {
-                                parent.ExceptionHandler.CloseConnection("TooBigPacket",
-                                    $"Tried to receive a packet with {length} bytes length although only {pending} bytes are available.\r\n" +
-                                    $"\tat NetworkManager.ReceivePacket_AES_256_CBC_MP2()");
+                            parent.ExceptionHandler.CloseConnection("TooBigPacket",
+                                $"Tried to receive a packet with {length} bytes length although only {plaintext.Pending} bytes are available.\r\n" +
+                                $"\tat NetworkManager.ReceivePacket_AES_256_CBC_MP2()");
+                            return false;
+                        }
+                        byte[] content = plaintext.ReadByteArray((int)length);
+                        if (success)
+                        {
+                            if (parent.Logger.InitD)
+                                parent.Logger.D($"Received internal AES packet: ID={id} Length={content.Length}");
+                            if (!parent.handler.HandleInternalPacket(id, content, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3))
                                 return false;
-                            }
-                            byte[] content = plaintext.ReadBytes(Convert.ToInt32(length));
-                            if (success)
-                            {
-                                if (parent.Logger.InitD)
-                                    parent.Logger.D($"Received internal AES packet: ID={id} Length={content.Length}");
-                                if (!parent.handler.HandleInternalPacket(id, content, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3))
-                                    return false;
-                            }
-                            else
-                            {
-                                if (parent.Logger.InitD)
-                                    parent.Logger.D($"Received external AES packet: ID={255 - id} Length={content.Length}");
-                                parent.OnPacketReceived(id, content);
-                            }
+                        }
+                        else
+                        {
+                            if (parent.Logger.InitD)
+                                parent.Logger.D($"Received external AES packet: ID={255 - id} Length={content.Length}");
+                            parent.OnPacketReceived(id, content);
                         }
                     }
                 }
@@ -334,61 +322,66 @@ namespace VSL
         }
         #endregion receive
         #region send
-        internal bool SendPacket(byte id, byte[] content)
-        {
-            byte[] head = Util.ConnectBytes(new byte[1] { id }, BitConverter.GetBytes(Convert.ToUInt32(content.Length)));
-            if (parent.ConnectionVersion < 2)
-                return SendPacket(CryptoAlgorithm.AES_256_CBC_SP, head, content);
-            if (parent.ConnectionVersion == 2)
-                return SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, head, content);
-            return false;
-        }
-        internal bool SendPacket(Packet.IPacket packet)
-        {
-            if (parent.ConnectionVersion < 2)
-                return SendPacket(CryptoAlgorithm.AES_256_CBC_SP, packet);
-            if (parent.ConnectionVersion == 2)
-                return SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, packet);
-            return false;
-        }
+        internal bool SendPacket(byte id, byte[] content) => SendPacket(VersionManager.GetNetworkAlgorithm(parent.ConnectionVersion), id, content);
+        internal bool SendPacket(CryptoAlgorithm alg, byte id, byte[] content) => SendPacket(alg, id, true, content);
+        internal bool SendPacket(Packet.IPacket packet) => SendPacket(VersionManager.GetNetworkAlgorithm(parent.ConnectionVersion), packet);
         internal bool SendPacket(CryptoAlgorithm alg, Packet.IPacket packet)
         {
-            byte[] head = new byte[1] { packet.PacketID };
-            PacketBuffer buf = new PacketBuffer();
-            packet.WritePacket(buf);
-            byte[] content = buf.ToArray();
-            buf.Dispose();
-            if (!packet.ConstantLength.HasValue)
-                head = Util.ConnectBytes(head, BitConverter.GetBytes(Convert.ToUInt32(content.Length)));
-            return SendPacket(alg, head, content);
+            byte[] content;
+            using (PacketBuffer buf = new PacketBuffer())
+            {
+                packet.WritePacket(buf);
+                content = buf.ToArray();
+            }
+            return SendPacket(alg, packet.PacketId, !packet.ConstantLength.HasValue, content);
         }
-        internal bool SendPacket(CryptoAlgorithm alg, byte[] head, byte[] content)
+        private bool SendPacket(CryptoAlgorithm alg, byte realId, bool size, byte[] content)
         {
             switch (alg)
             {
                 case CryptoAlgorithm.None:
-                    return SendPacket_Plaintext(head, content);
+                    return SendPacket_Plaintext(realId, size, content);
                 case CryptoAlgorithm.RSA_2048_OAEP:
-                    return SendPacket_RSA_2048_OAEP(head, content);
+                    return SendPacket_RSA_2048_OAEP(realId, size, content);
                 case CryptoAlgorithm.AES_256_CBC_SP:
-                    return SendPacket_AES_256_CBC_SP(head, content);
+                    return SendPacket_AES_256_CBC_SP(realId, size, content);
                 case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
-                    return SendPacket_AES_256_CBC_HMAC_SH256_MP3(head, content);
+                    return SendPacket_AES_256_CBC_HMAC_SHA256_MP3(realId, size, content);
                 default:
                     throw new InvalidOperationException();
             }
         }
-        private bool SendPacket_Plaintext(byte[] head, byte[] content)
+        private bool SendPacket_Plaintext(byte realId, bool size, byte[] content)
         {
-            byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.None), head, content);
+            int length = 2 + (size ? 4 : 0) + content.Length;
+            byte[] buf;
+            using (PacketBuffer pbuf = new PacketBuffer(length))
+            {
+                pbuf.WriteByte((byte)CryptoAlgorithm.None);
+                pbuf.WriteByte(realId);
+                if (size) pbuf.WriteUInt((uint)content.Length);
+                pbuf.WriteByteArray(content, false);
+                buf = pbuf.ToArray();
+            }
             return buf.Length == parent.channel.Send(buf);
         }
-        private bool SendPacket_RSA_2048_OAEP(byte[] head, byte[] content)
+        private bool SendPacket_RSA_2048_OAEP(byte realId, bool size, byte[] content)
         {
             try
             {
-                byte[] ciphertext = Crypt.RsaStatic.EncryptBlock(Util.ConnectBytes(head, content), rsaKey);
-                byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.RSA_2048_OAEP), ciphertext);
+                int length = 1 + (size ? 4 : 0) + content.Length;
+                byte[] plain;
+                using (PacketBuffer pbuf = new PacketBuffer(length))
+                {
+                    pbuf.WriteByte(realId);
+                    if (size) pbuf.WriteUInt((uint)content.Length);
+                    pbuf.WriteByteArray(content, false);
+                    plain = pbuf.ToArray();
+                }
+                byte[] ciphertext = RsaStatic.EncryptBlock(plain, rsaKey);
+                byte[] buf = new byte[1 + ciphertext.Length];
+                buf[0] = (byte)CryptoAlgorithm.RSA_2048_OAEP;
+                Array.Copy(ciphertext, 0, buf, 1, ciphertext.Length);
                 return buf.Length == parent.channel.Send(buf);
             }
             catch (CryptographicException ex)
@@ -402,67 +395,85 @@ namespace VSL
                 return false;
             }
         }
-        private bool SendPacket_AES_256_CBC_SP(byte[] head, byte[] content)
+        private bool SendPacket_AES_256_CBC_SP(byte realId, bool size, byte[] content)
         {
             try
             {
+                int headLength = 1 + (size ? 4 : 0);
                 int blocks = 1;
                 int saltLength;
-                if (head.Length + 2 + content.Length < 16) // 2 random bytes
-                {
-                    saltLength = 15 - head.Length - content.Length; // padding
-                }
+                if (headLength + 2 + content.Length < 16) // 2 random bytes
+                    saltLength = 15 - headLength - content.Length; // 16 - 1 (padding) = 15
                 else
                 {
-                    blocks = Convert.ToInt32(Math.Ceiling((head.Length + 4 + content.Length) / 16d)); // 2 random bytes + 2x padding
-                    saltLength = blocks * 16 - head.Length - content.Length - 2; // padding
+                    blocks = Util.GetTotalSize(headLength + 4 + content.Length, 16) / 16; // 2 random bytes + 2x padding
+                    saltLength = blocks * 16 - headLength - content.Length - 2; // 2x padding
                 }
                 byte[] salt = new byte[saltLength];
                 Random random = new Random();
                 random.NextBytes(salt);
-                byte[] plaintext = Util.ConnectBytes(head, salt, content);
-#if WINDOWS_UWP
-                byte[] headBlock = AesStatic.Encrypt(Util.TakeBytes(plaintext, 15), _aesKey, _sendIV);
-#else
-                byte[] headBlock = enc.Encrypt(Util.TakeBytes(plaintext, 15));
-#endif
+                byte[] plaintext;
+                using (PacketBuffer pbuf = new PacketBuffer(headLength + saltLength + content.Length))
+                {
+                    pbuf.WriteByte(realId);
+                    if (size) pbuf.WriteUInt((uint)content.Length);
+                    pbuf.WriteByteArray(salt, false);
+                    pbuf.WriteByteArray(content, false);
+                    plaintext = pbuf.ToArray();
+                }
+                byte[] headBlock = AesStatic.Encrypt(Util.TakeBytes(plaintext, 15), AesKey, SendIV);
                 byte[] tailBlock = new byte[0];
                 if (plaintext.Length > 15)
                 {
                     plaintext = Util.SkipBytes(plaintext, 15);
-#if WINDOWS_UWP
-                    tailBlock = AesStatic.Encrypt(plaintext, _aesKey, _sendIV);
-#else
-                    tailBlock = enc.Encrypt(plaintext);
-#endif
+                    tailBlock = AesStatic.Encrypt(plaintext, AesKey, SendIV);
                 }
-                byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.AES_256_CBC_SP), headBlock, tailBlock);
+                byte[] buf;
+                using (PacketBuffer pbuf = new PacketBuffer(headBlock.Length + tailBlock.Length))
+                {
+                    pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_SP);
+                    pbuf.WriteByteArray(headBlock, false);
+                    pbuf.WriteByteArray(tailBlock, false);
+                    buf = pbuf.ToArray();
+                }
                 bool success = buf.Length == parent.channel.Send(buf);
-                if (head[0] <= 9 && parent.Logger.InitD)
-                    parent.Logger.D(string.Format("Sent internal AES packet: ID={0} Length={1} {2}b", head[0], buf.Length, blocks));
+                if (realId <= 9 && parent.Logger.InitD)
+                    parent.Logger.D(string.Format("Sent internal AES packet: ID={0} Length={1} {2}b", realId, buf.Length, blocks));
                 else if (parent.Logger.InitD)
-                    parent.Logger.D(string.Format("Sent external AES packet: ID={0} Length={1} {2}b", 255 - head[0], buf.Length, blocks));
+                    parent.Logger.D(string.Format("Sent external AES packet: ID={0} Length={1} {2}b", 255 - realId, buf.Length, blocks));
                 return success;
             }
-            catch (System.Security.Cryptography.CryptographicException ex) //Invalid key/iv
+            catch (CryptographicException ex) //Invalid key/iv
             {
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
         }
-        private bool SendPacket_AES_256_CBC_HMAC_SH256_MP3(byte[] head, byte[] content)
+        private bool SendPacket_AES_256_CBC_HMAC_SHA256_MP3(byte realId, bool size, byte[] content)
         {
-#if WINDOWS_UWP
+            int headLength = 1 + (size ? 4 : 0) + content.Length;
+            byte[] plaintext;
+            using (PacketBuffer pbuf = new PacketBuffer(headLength))
+            {
+                pbuf.WriteByte(realId);
+                if (size) pbuf.WriteUInt((uint)content.Length);
+                pbuf.WriteByteArray(content, false);
+                plaintext = pbuf.ToArray();
+            }
             byte[] iv = AesStatic.GenerateIV();
-            byte[] ciphertext = AesStatic.Encrypt(Util.ConnectBytes(head, content), _aesKey, iv);
-#else
-            byte[] iv = enc.GenerateIV(true);
-            byte[] ciphertext = enc.Encrypt(Util.ConnectBytes(head, content));
-#endif
-            byte[] blocks = UInt24.ToBytes(Convert.ToUInt32(ciphertext.Length / 16 - 1));
+            byte[] ciphertext = AesStatic.Encrypt(plaintext, AesKey, iv);
+            byte[] blocks = UInt24.ToBytes((uint)ciphertext.Length / 16 - 1);
             byte[] cipherblock = Util.ConnectBytes(iv, ciphertext);
             byte[] hmac = hmacProvider.ComputeHash(cipherblock);
-            byte[] buf = Util.ConnectBytes(GetPrefix(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3), blocks, hmac, cipherblock);
+            byte[] buf;
+            using (PacketBuffer pbuf = new PacketBuffer(1 + 3 + hmac.Length + cipherblock.Length))
+            {
+                pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3);
+                pbuf.WriteByteArray(blocks, false);
+                pbuf.WriteByteArray(hmac, false);
+                pbuf.WriteByteArray(cipherblock, false);
+                buf = pbuf.ToArray();
+            }
             return buf.Length == parent.channel.Send(buf);
         }
         #endregion send
@@ -472,42 +483,13 @@ namespace VSL
         /// </summary>
         internal void GenerateKeys()
         {
-#if WINDOWS_UWP
-            _aesKey = AesStatic.GenerateKey();
-            _receiveIV = AesStatic.GenerateIV();
-            _sendIV = AesStatic.GenerateIV();
-#else
-            enc = new AesCsp();
-            _aesKey = enc.GenerateKey(true);
-            _receiveIV = enc.GenerateIV(false);
-            _sendIV = enc.GenerateIV(true);
-            dec = new AesCsp(_aesKey, _receiveIV);
-            HmacKey = Util.ConnectBytes(_sendIV, _receiveIV);
-#endif
+            AesKey = AesStatic.GenerateKey();
+            ReceiveIV = AesStatic.GenerateIV();
+            SendIV = AesStatic.GenerateIV();
+            HmacKey = Util.ConnectBytes(SendIV, ReceiveIV);
             Ready4Aes = true;
         }
-        private byte[] _aesKey;
-        internal byte[] AesKey
-        {
-            get
-            {
-                return _aesKey;
-            }
-            set
-            {
-                _aesKey = value;
-#if !WINDOWS_UWP
-                if (enc == null)
-                    enc = new AesCsp(value);
-                else
-                    enc.Key = value;
-                if (dec == null)
-                    dec = new AesCsp(value);
-                else
-                    dec.Key = value;
-#endif
-            }
-        }
+        internal byte[] AesKey { get; set; }
         private byte[] _hmacKey;
         internal byte[] HmacKey
         {
@@ -521,48 +503,9 @@ namespace VSL
                     hmacProvider.Key = value;
             }
         }
-        private byte[] _receiveIV;
-        internal byte[] ReceiveIV
-        {
-            get
-            {
-                return _receiveIV;
-            }
-            set
-            {
-#if WINDOWS_UWP
-                _receiveIV = value;
-#else
-                if (dec == null) throw new InvalidOperationException("You have to asign the key before the iv");
-                _receiveIV = value;
-                dec.IV = value;
-#endif
-            }
-        }
-        private byte[] _sendIV;
-        internal byte[] SendIV
-        {
-            get
-            {
-                return _sendIV;
-            }
-            set
-            {
-#if WINDOWS_UWP
-                _sendIV = value;
-#else
-                if (enc == null) throw new InvalidOperationException("You have to asign the key before the iv");
-                _sendIV = value;
-                enc.IV = value;
-#endif
-            }
-        }
+        internal byte[] ReceiveIV { get; set; }
+        internal byte[] SendIV { get; set; }
         #endregion
-        private byte[] GetPrefix(CryptoAlgorithm algorithm)
-        {
-            return new byte[1] { (byte)algorithm };
-        }
-
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
@@ -573,10 +516,7 @@ namespace VSL
                 if (disposing)
                 {
                     // -TODO: dispose managed state (managed objects).
-#if !WINDOWS_UWP
-                    enc?.Dispose();
-                    dec?.Dispose();
-#endif
+                    hmacProvider?.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.

@@ -23,7 +23,7 @@ namespace VSL.Packet
             StreamMode = streamMode;
         }
 
-        public byte PacketID { get; } = 7;
+        public byte PacketId { get; } = 7;
 
         public uint? ConstantLength => null;
 

@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using VSL.Crypt;
 
 namespace VSL.FileTransfer.Streams
 {
+    [SecuritySafeCritical]
     internal class AesShaStream : HashStream
     {
         private CryptoStream topStream;

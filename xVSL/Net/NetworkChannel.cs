@@ -154,7 +154,7 @@ namespace VSL
                     cache.Enqeue(Crypt.Util.TakeBytes(e.Buffer, len));
                     ReceivedBytes += len;
                 }
-                else
+                else if (threadsRunning)
                 {
                     threadsRunning = false;
                     parent.ExceptionHandler.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
@@ -203,11 +203,13 @@ namespace VSL
             {
                 if (cycle >= cycles)
                 {
-                    parent.ExceptionHandler.CloseConnection("Timeout", $"Waiting for {count} bytes took over {cycles * wait} ms.\r\n\tat NetworkChannel.TryRead()");
+                    parent.ExceptionHandler.CloseConnection("Timeout",
+                        $"Waiting for {count} bytes took over {cycles * wait} ms.\r\n" +
+                        $"\tat NetworkChannel.TryRead(out byte[], int)");
                     buf = null;
                     return false;
                 }
-                if (ct.WaitHandle.WaitOne(wait))
+                if (ct.WaitHandle.WaitOne(wait)) // shutting down
                 {
                     buf = null;
                     return false;
@@ -216,7 +218,9 @@ namespace VSL
             }
             if (!cache.Dequeue(out buf, count))
             {
-                parent.ExceptionHandler.CloseConnection("DequeuingError", $"Could not dequeue {count} bytes.\r\n\tat NetworkChannel.TryRead()");
+                parent.ExceptionHandler.CloseConnection("DequeuingError",
+                    $"Could not dequeue {count} bytes.\r\n" +
+                    $"\tat NetworkChannel.TryRead(out byte[], int)");
                 return false;
             }
             return true;
