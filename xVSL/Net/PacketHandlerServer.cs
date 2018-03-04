@@ -12,28 +12,35 @@ namespace VSL
     {
         // <fields
         new internal VSLServer parent;
+        private static PacketRule[] rules;
         //  fields>
 
         // <constructor
-        internal PacketHandlerServer(VSLServer parent)
+        static PacketHandlerServer()
         {
-            this.parent = parent;
-            base.parent = parent;
-            RegisteredPackets = new List<PacketRule>
-            {
+            rules = InitRules(
                 new PacketRule(new P00Handshake(), CryptoAlgorithm.None),
                 new PacketRule(new P01KeyExchange(), CryptoAlgorithm.RSA_2048_OAEP),
                 // P02Certificate   -   Not supported in VSL 1.1
                 // P03FinishHandshake - Client only
                 new PacketRule(new P04ChangeIV(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
-                // P05KeepAlive     -   Not supported in VSL 1.1
+                new PacketRule(new P05KeepAlive(), CryptoAlgorithm.None),  // since VSL 1.2.2
                 new PacketRule(new P06Accepted(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
                 new PacketRule(new P07OpenFileTransfer(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
                 new PacketRule(new P08FileHeader(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
                 new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3)
-            };
+            );
+        }
+        internal PacketHandlerServer(VSLServer parent)
+        {
+            this.parent = parent;
+            base.parent = parent;
         }
         //  constructor>
+
+        // <properties
+        protected override PacketRule[] RegisteredPackets => rules;
+        //  properties>
 
         // <functions
         internal override bool HandleP00Handshake(P00Handshake p)

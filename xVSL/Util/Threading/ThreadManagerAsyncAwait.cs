@@ -85,14 +85,17 @@ namespace VSL.Threading
                 // shutting down
             }
 #if DEBUG
-            catch (Exception ex) when (!System.Diagnostics.Debugger.IsAttached)
+            catch (Exception ex) when (parent.CatchApplicationExceptions)
 #else
             catch (Exception ex)
 #endif
             {
                 parent.ExceptionHandler.CloseUncaught(ex);
             }
-
+            finally
+            {
+                Monitor.Exit(disposeLock);
+            }
         }
         protected override void Dispose(bool disposing)
         {

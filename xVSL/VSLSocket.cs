@@ -64,6 +64,10 @@ namespace VSL
         //  constructor>
         #region properties
         /// <summary>
+        /// Gets whether VSL should catch exceptions thrown in an event handler.
+        /// </summary>
+        public bool CatchApplicationExceptions { get; set; } = true;
+        /// <summary>
         /// Gets a value indicating whether a working and secure connection is available.
         /// </summary>
         public bool ConnectionAvailable => connectionAvailable;

@@ -40,17 +40,29 @@ namespace VSL.Threading
 
         public override void Invoke(Action<CancellationToken> callback)
         {
-            dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => callback(itemCt)).AsTask().Wait();
+            dispatcher.RunAsync(CoreDispatcherPriority.Normal, Work(callback)).AsTask().Wait();
         }
 
         public override Task InvokeAsync(Action<CancellationToken> callback)
         {
-            return dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => callback(itemCt)).AsTask();
+            return dispatcher.RunAsync(CoreDispatcherPriority.Normal, Work(callback)).AsTask();
         }
 
         public override async void QueueWorkItem(Action<CancellationToken> callback)
         {
-            await dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => callback(itemCt));
+            await dispatcher.RunAsync(CoreDispatcherPriority.Normal, Work(callback));
         }
+
+        private DispatchedHandler Work(Action<CancellationToken> callback) => delegate
+        {
+            try
+            {
+                callback(itemCt);
+            }
+            catch (Exception ex) when (parent.CatchApplicationExceptions)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
+        };
     }
 }
