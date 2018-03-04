@@ -34,17 +34,29 @@ namespace VSL.Threading
 
         public override void Invoke(Action<CancellationToken> callback)
         {
-            dispatcher.Invoke(() => callback(itemCt));
+            dispatcher.Invoke(Work(callback));
         }
 
         public override async Task InvokeAsync(Action<CancellationToken> callback)
         {
-            await dispatcher.InvokeAsync(() => callback(itemCt));
+            await dispatcher.InvokeAsync(Work(callback));
         }
 
         public override void QueueWorkItem(Action<CancellationToken> callback)
         {
-            ThreadPool.QueueUserWorkItem((o) => dispatcher.Invoke(() => callback(itemCt)));
+            ThreadPool.QueueUserWorkItem((o) => dispatcher.Invoke(Work(callback)));
         }
+
+        private Action Work(Action<CancellationToken> callback) => delegate
+        {
+            try
+            {
+                callback(itemCt);
+            }
+            catch (Exception ex) when (parent.CatchApplicationExceptions)
+            {
+                parent.ExceptionHandler.CloseUncaught(ex);
+            }
+        };
     }
 }

@@ -15,22 +15,34 @@ namespace VSL
     {
         // <fields
         internal VSLSocket parent;
-        protected List<PacketRule> RegisteredPackets;
         //  fields>
+
+        // <constructor (helper)
+        protected static PacketRule[] InitRules(params PacketRule[] rules)
+        {
+            PacketRule[] final = new PacketRule[10];
+            foreach (PacketRule rule in rules)
+            {
+                final[rule.Packet.PacketId] = rule;
+            }
+            return final;
+        }
+        //  constructor>
+
+        // <properties
+        protected abstract PacketRule[] RegisteredPackets { get; }
+        //  properties>
+
         // <functions
         internal bool TryGetPacket(byte id, out IPacket packet)
         {
-            foreach (PacketRule rule in RegisteredPackets)
+            if (id >= RegisteredPackets.Length)
             {
-                if (id == rule.Packet.PacketId)
-                {
-                    packet = rule.Packet;
-                    return true;
-                }
+                packet = null;
+                return false;
             }
-
-            packet = null;
-            return false;
+            packet = RegisteredPackets[id].Packet;
+            return packet != null;
         }
 
         /// <summary>
@@ -43,38 +55,40 @@ namespace VSL
         /// <returns></returns>
         internal bool HandleInternalPacket(byte id, byte[] content, CryptoAlgorithm alg)
         {
-            foreach (PacketRule rule in RegisteredPackets)
+            if (id >= RegisteredPackets.Length)
             {
-                if (id == rule.Packet.PacketId)
-                {
-                    if (rule.Algorithms.Contains(alg)) // TODO: [VSL 1.2.2] Contains needs O(n) for a search, a dictionary or an array<bool> would be much faster
-                    {
-                        IPacket packet = rule.Packet.New();
-                        try
-                        {
-                            using (PacketBuffer buf = new PacketBuffer(content))
-                                packet.ReadPacket(buf);
-                        }
-                        catch (ArgumentOutOfRangeException ex)
-                        {
-                            parent.ExceptionHandler.CloseConnection(ex);
-                            return false;
-                        }
-                        return packet.HandlePacket(this);
-                    }
-                    else
-                    {
-                        parent.ExceptionHandler.CloseConnection("WrongAlgorithm", 
-                            $"Received {rule.Packet.ToString()} with {alg.ToString()} which is not allowed.\r\n" +
-                            "\tat PacketHandler.HandleInternalPacket(Byte, Byte[], CryptoAlgorithm)");
-                        return false;
-                    }
-                }
+                parent.ExceptionHandler.CloseConnection("UnknownPacket",
+                    $"Packet id {id} is not an internal packet and cannot be handled\r\n" +
+                    "\tat PacketHandler.HandleInternalPacket(Byte, Byte[], CryptoAlgorithm)");
+                return false;
             }
-            parent.ExceptionHandler.CloseConnection("UnknownPacket",
-                $"Packet id {id} is not an internal packet and cannot be handled\r\n" +
-                "\tat PacketHandler.HandleInternalPacket()");
-            return false;
+            PacketRule rule = RegisteredPackets[id];
+            if (!rule.Available)
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidPacket",
+                    $"Packet id {id} is no valid internal packet for this instance and cannot be handled\r\n" +
+                    "\tat PacketHandler.HandleInternalPacket(Byte, Byte[], CryptoAlgorithm)");
+                return false;
+            }
+            if (!rule.VerifyAlgorithm(alg))
+            {
+                parent.ExceptionHandler.CloseConnection("WrongAlgorithm",
+                    $"Received {rule.Packet.ToString()} with {alg.ToString()} which is not allowed.\r\n" +
+                    "\tat PacketHandler.HandleInternalPacket(Byte, Byte[], CryptoAlgorithm)");
+                return false;
+            }
+            IPacket packet = rule.Packet.New();
+            try
+            {
+                using (PacketBuffer buf = new PacketBuffer(content))
+                    packet.ReadPacket(buf);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+                return false;
+            }
+            return packet.HandlePacket(this);
         }
 
         internal abstract bool HandleP00Handshake(P00Handshake p);
@@ -95,7 +109,7 @@ namespace VSL
                 return parent.manager.SendPacket(new P05KeepAlive(KeepAliveRole.Response));
             else
                 return true;
-            // TODO: [VSL 1.2.2] API and timeout for keep-alives
+            // TODO: [VSL 1.2.3] API and timeout for keep-alives
         }
         internal bool HandleP06Accepted(P06Accepted p)
         {

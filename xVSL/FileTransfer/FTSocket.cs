@@ -63,9 +63,10 @@ namespace VSL.FileTransfer
         /// Cancels a pending request or a running file transfer.
         /// </summary>
         /// <param name="e"></param>
-        public void Cancel(FTEventArgs e) // Client & Server
+        public void Cancel(FTEventArgs e)
         {
-            parent.manager.SendPacket(new P06Accepted(false, 7, ProblemCategory.None)); // this packet cancels any request or running transfer
+            parent.manager.SendPacket(new P06Accepted(false, 7, ProblemCategory.None)); // This packet cancels any request or running transfer.
+            e.Assign(parent, this); // This assignment is necessary for FTEventArgs to print exceptions and raise events.
             e.CloseStream(false);
             currentItem = null;
         }
@@ -74,7 +75,7 @@ namespace VSL.FileTransfer
         /// Requests the header of a remote file. All further information is specfied in the <see cref="FTEventArgs"/>.
         /// </summary>
         /// <param name="e">Specifies an identifier for the remote file, a local path and many more information of the file header to download.</param>
-        public void DownloadHeader(FTEventArgs e) // Client
+        public void DownloadHeader(FTEventArgs e)
         {
             e.Assign(parent, this);
             e.Mode = StreamMode.GetHeader;
@@ -86,7 +87,7 @@ namespace VSL.FileTransfer
         /// Requests a remote file with its header. All further information is specfied in the <see cref="FTEventArgs"/>. After a <see cref="FileMeta"/> was received you can start the actual download with <see cref="Continue(FTEventArgs)"/>.
         /// </summary>
         /// <param name="e">Specifies an identifier for the remote file, a local path and many more information of the file to download.</param>
-        public void Download(FTEventArgs e) // Client
+        public void Download(FTEventArgs e)
         {
             e.Assign(parent, this);
             e.Mode = StreamMode.GetFile;
@@ -98,7 +99,7 @@ namespace VSL.FileTransfer
         /// Requests the permission to upload a file with its header. All further information is specfied in the <see cref="FTEventArgs"/>.
         /// </summary>
         /// <param name="e">Specifies an remote identifier for the file, a local path and many more information of the file to upload.</param>
-        public void Upload(FTEventArgs e) // Client
+        public void Upload(FTEventArgs e)
         {
             e.Assign(parent, this);
             e.Mode = StreamMode.PushFile;
@@ -116,7 +117,8 @@ namespace VSL.FileTransfer
             if (e.Mode != StreamMode.GetFile)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidOperation",
-                    $"You cannot continue a file transfer operation with {e.Mode}. Only file transfer with StreamMode.GetFile can be continued.\r\n" +
+                    $"You cannot continue a file transfer operation with {e.Mode}. " +
+                    "Only file transfer with StreamMode.GetFile can be continued.\r\n" +
                     "\tat FTSocket.Continue(FTEventArgs)");
                 return false;
             }

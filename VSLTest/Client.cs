@@ -23,6 +23,7 @@ namespace VSLTest
             Vsl.PacketReceived += Vsl_PacketReceived;
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
             Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
+            Vsl.CatchApplicationExceptions = false;
             Vsl.Logger.PrintDebugMessages = true;
             Vsl.Logger.PrintExceptionMessages = true;
             Vsl.Logger.PrintInfoMessages = true;

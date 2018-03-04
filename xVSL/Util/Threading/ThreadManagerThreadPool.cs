@@ -63,7 +63,14 @@ namespace VSL.Threading
                 return;
             while (queue.TryDequeue(out WorkItem workItem))
             {
-                workItem.Work(itemCt);
+                try
+                {
+                    workItem.Work(itemCt);
+                }
+                catch (Exception ex) when (parent.CatchApplicationExceptions)
+                {
+                    parent.ExceptionHandler.CloseUncaught(ex);
+                }
                 workItem.WaitHandle?.Set();
             }
             lock (disposeLock)

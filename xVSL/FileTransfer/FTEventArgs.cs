@@ -70,10 +70,22 @@ namespace VSL.FileTransfer
         public string Path { get; internal set; }
         internal HashStream Stream { get; private set; }
 
-        internal void Assign(VSLSocket parent, FTSocket socket)
+        /// <summary>
+        /// Assigns this <see cref="FTEventArgs"/> to a <see cref="FTSocket"/>. If it is already assigned, the method returns false.
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="socket"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"/>
+        internal bool Assign(VSLSocket parent, FTSocket socket)
         {
-            this.parent = parent;
-            this.socket = socket;
+            if (this.parent == null || this.socket == null)
+            {
+                this.parent = parent ?? throw new ArgumentNullException("parent");
+                this.socket = socket ?? throw new ArgumentNullException("socket");
+                return true;
+            }
+            else return false;
         }
 
         internal bool OpenStream()
@@ -142,7 +154,7 @@ namespace VSL.FileTransfer
                 {
                     OnCanceled();
                     parent.ExceptionHandler.CloseConnection(ex);
-                    CloseStreamInternal(false, false);
+                    CloseStreamInternal(false, false); // We don't want to close connection twice -> no events.
                     return false;
                 }
                 byte[] hash = Stream.Hash;
