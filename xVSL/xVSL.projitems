@@ -53,7 +53,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AesStatic.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AesCsp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ECDH.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Enums.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ContentAlgorithm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Hash.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\RsaStatic.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ScryptCsp.cs" />

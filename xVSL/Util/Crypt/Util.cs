@@ -11,6 +11,7 @@ namespace VSL.Crypt
     /// <summary>
     /// Provides useful functions for cryptography
     /// </summary>
+    // TODO: Move to VSL\Util\Util.cs
     public static class Util
     {
         // © 2017 Daniel Lerch
@@ -22,7 +23,7 @@ namespace VSL.Crypt
             _lookupPtr = (uint*)GCHandle.Alloc(lookup, GCHandleType.Pinned).AddrOfPinnedObject();
         }
         /// <summary>
-        /// Splits a byte array into blocks
+        /// Splits a byte array into blocks.
         /// </summary>
         /// <param name="b"></param>
         /// <param name="blocksize"></param>
@@ -30,7 +31,7 @@ namespace VSL.Crypt
         public static byte[][] SplitBytes(byte[] b, int blocksize)
         {
             int length = b.Length;
-            int blocks = Convert.ToInt32(Math.Ceiling(length / Convert.ToDouble(blocksize)));
+            int blocks = GetTotalSize(length, blocksize) / blocksize;
             byte[][] final = new byte[blocks][];
             if (length == 0)
             {
@@ -50,22 +51,30 @@ namespace VSL.Crypt
         }
 
         /// <summary>
-        /// Connects mutiple byte arrays to one
+        /// Concatenates multiple byte arrays to one.
         /// </summary>
-        /// <param name="b">two-dimensional byte array to connect</param>
+        /// <param name="arrays">An array of byte arrays to concatenate.</param>
         /// <returns></returns>
-        public static byte[] ConnectBytes(params byte[][] b)
+        [Obsolete("Util.ConnectBytes(Byte[][]) is deprecated. Please use Util.ConcatBytes(Byte[][]) instead.", false)]
+        public static byte[] ConnectBytes(params byte[][] arrays) => ConcatBytes(arrays);
+
+        /// <summary>
+        /// Concatenates multiple byte arrays to one.
+        /// </summary>
+        /// <param name="arrays">An array of byte arrays to concatenate.</param>
+        /// <returns></returns>
+        public static byte[] ConcatBytes(params byte[][] arrays)
         {
             int n = 0;
-            for (int i = 0; i < b.Length; i++)
+            for (int i = 0; i < arrays.Length; i++)
             {
-                n += b[i].Length;
+                n += arrays[i].Length;
             }
             byte[] final = new byte[n];
             n = 0;
-            for (int i = 0; i < b.Length; i++)
+            for (int i = 0; i < arrays.Length; i++)
             {
-                byte[] c = b[i];
+                byte[] c = arrays[i];
                 Array.Copy(c, 0, final, n, c.Length);
                 n += c.Length;
             }
@@ -116,19 +125,19 @@ namespace VSL.Crypt
         /// <summary>
         /// Converts a byte array to a hexadecimal string. This method uses a 32bit lookup table.
         /// </summary>
-        /// <param name="bytes"></param>
+        /// <param name="buffer"></param>
         /// <returns></returns>
         /// <remarks>https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/24343727#24343727</remarks>
         [SecuritySafeCritical]
-        public static unsafe string ToHexString(byte[] bytes)
+        public static unsafe string ToHexString(byte[] buffer)
         {
             uint* lookupP = _lookupPtr;
-            string result = new string((char)0, bytes.Length * 2);
-            fixed (byte* bytesP = bytes)
+            string result = new string((char)0, buffer.Length * 2);
+            fixed (byte* bytesP = buffer)
             fixed (char* resultP = result)
             {
                 uint* resultP2 = (uint*)resultP;
-                for (int i = 0; i < bytes.Length; i++)
+                for (int i = 0; i < buffer.Length; i++)
                     resultP2[i] = lookupP[bytesP[i]];
             }
             return result;

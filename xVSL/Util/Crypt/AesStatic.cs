@@ -31,11 +31,11 @@ namespace VSL.Crypt
 #endif
         }
         /// <summary>
-        /// Executes an AES encryption
+        /// Executes an AES encryption.
         /// </summary>
-        /// <param name="buffer">Plaintext</param>
-        /// <param name="key">AES key (128 or 256 bit)</param>
-        /// <param name="iv">Optional initialization vector (128 bit)</param>
+        /// <param name="buffer">Plaintext.</param>
+        /// <param name="key">AES key (128 or 256 bit).</param>
+        /// <param name="iv">Initialization vector (128 bit).</param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <returns></returns>
@@ -73,9 +73,9 @@ namespace VSL.Crypt
         /// <summary>
         /// Executes an AES decryption.
         /// </summary>
-        /// <param name="buffer">Ciphertext</param>
-        /// <param name="key">AES key (128 or 256 bit)</param>
-        /// <param name="iv">Optional initialization vector (128 bit)</param>
+        /// <param name="buffer">Ciphertext.</param>
+        /// <param name="key">AES key (128 or 256 bit).</param>
+        /// <param name="iv">Initialization vector (128 bit).</param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <exception cref="CryptographicException"/>
@@ -113,12 +113,12 @@ namespace VSL.Crypt
             return Task.Run(() => DecryptInternal(buffer, key, iv));
         }
         /// <summary>
-        /// Generates a new 256 bit AES key
+        /// Generates a new 256 bit AES key.
         /// </summary>
         public static byte[] GenerateKey() => GenerateRandom(32);
 
         /// <summary>
-        /// Generates a new initialization vector.
+        /// Generates a new 128 bit initialization vector.
         /// </summary>
         public static byte[] GenerateIV() => GenerateRandom(16);
 

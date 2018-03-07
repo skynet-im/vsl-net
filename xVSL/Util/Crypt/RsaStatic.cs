@@ -10,14 +10,14 @@ using System.Xml;
 namespace VSL.Crypt
 {
     /// <summary>
-    /// The simple implementation of the RSA algorithm in VSL
+    /// The simple implementation of the RSA algorithm in VSL.
     /// </summary>
     public static class RsaStatic
     {
         // © 2017 Daniel Lerch
         #region Encrypt
         /// <summary>
-        /// Encrypts one block using RSA with OAEP
+        /// Encrypts one block using RSA with OAEP.
         /// </summary>
         /// <param name="plaintext">Data to encrypt (max. 214 bytes)</param>
         /// <param name="key">Public key (xmlstring)</param>

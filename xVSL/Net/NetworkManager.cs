@@ -16,7 +16,7 @@ namespace VSL
     internal sealed class NetworkManager : IDisposable
     {
         // <fields
-        internal VSLSocket parent;
+        private VSLSocket parent;
         internal bool Ready4Aes = false;
         private string rsaKey;
         private HMACSHA256 hmacProvider;
@@ -216,10 +216,11 @@ namespace VSL
                 if (length > plaintext.Length - 2) // 2 random bytes
                 {
                     int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
+                    // TODO: Replace with Modulus
                     int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
                     if (!parent.channel.TryRead(out ciphertext, pendingBlocks * 16))
                         return false;
-                    plaintext = Util.ConnectBytes(plaintext, AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV));
+                    plaintext = Util.ConcatBytes(plaintext, AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV));
                 }
                 int startIndex = Convert.ToInt32(plaintext.Length - length);
                 byte[] content = Util.SkipBytes(plaintext, startIndex); // remove random bytes
@@ -447,7 +448,7 @@ namespace VSL
             byte[] iv = AesStatic.GenerateIV();
             byte[] ciphertext = AesStatic.Encrypt(plaintext, AesKey, iv);
             byte[] blocks = UInt24.ToBytes((uint)ciphertext.Length / 16 - 1);
-            byte[] cipherblock = Util.ConnectBytes(iv, ciphertext);
+            byte[] cipherblock = Util.ConcatBytes(iv, ciphertext);
             byte[] hmac = hmacProvider.ComputeHash(cipherblock);
             byte[] buf;
             using (PacketBuffer pbuf = new PacketBuffer(1 + 3 + hmac.Length + cipherblock.Length))
@@ -470,7 +471,7 @@ namespace VSL
             AesKey = AesStatic.GenerateKey();
             ReceiveIV = AesStatic.GenerateIV();
             SendIV = AesStatic.GenerateIV();
-            HmacKey = Util.ConnectBytes(SendIV, ReceiveIV);
+            HmacKey = Util.ConcatBytes(SendIV, ReceiveIV);
             Ready4Aes = true;
         }
         internal byte[] AesKey { get; set; }

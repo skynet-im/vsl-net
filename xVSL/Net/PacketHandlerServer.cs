@@ -78,7 +78,7 @@ namespace VSL
 
             if (vslVersion.Value == 2)
             {
-                parent.manager.HmacKey = Crypt.Util.ConnectBytes(p.ClientIV, p.ServerIV);
+                parent.manager.HmacKey = Crypt.Util.ConcatBytes(p.ClientIV, p.ServerIV);
                 parent.manager.Ready4Aes = true;
 
                 if (!parent.manager.SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
