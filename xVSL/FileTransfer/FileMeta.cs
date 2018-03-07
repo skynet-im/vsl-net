@@ -310,7 +310,7 @@ namespace VSL.FileTransfer
                             byte[] ciphertext = AesStatic.Encrypt(plaindata, AesKey, iv); // pre-compute cipher block for HMAC
 
                             using (HMACSHA256 hmac = new HMACSHA256(HmacKey))
-                                buf.WriteByteArray(hmac.ComputeHash(Util.ConnectBytes(iv, ciphertext)), false); // compute and write HMAC of iv and ciphertext
+                                buf.WriteByteArray(hmac.ComputeHash(Util.ConcatBytes(iv, ciphertext)), false); // compute and write HMAC of iv and ciphertext
                             buf.WriteByteArray(iv, false);
                             buf.WriteByteArray(ciphertext, false);
                         }
