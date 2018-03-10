@@ -46,7 +46,8 @@ namespace VSL.FileTransfer
         public Identifier(byte[] id)
         {
             Mode = IdentificationMode.ByteArray;
-            ID = id;
+            ID = id ?? throw new ArgumentNullException("id");
+            if (id.Length > 65536) throw new ArgumentOutOfRangeException("id");
         }
         /// <summary>
         /// Creates a new instance of the Identifier class.
@@ -55,8 +56,8 @@ namespace VSL.FileTransfer
         /// <exception cref="ArgumentNullException"></exception>
         public Identifier(string id)
         {
-            Mode = IdentificationMode.ByteArray;
-            ID = id;
+            Mode = IdentificationMode.String;
+            ID = id ?? throw new ArgumentNullException("id");
         }
         /// <summary>
         /// Supported identifier types.
@@ -87,8 +88,8 @@ namespace VSL.FileTransfer
         /// <returns></returns>
         public static Identifier FromBinary(PacketBuffer buf)
         {
-            IdentificationMode Type = (IdentificationMode)buf.ReadByte();
-            switch (Type)
+            IdentificationMode type = (IdentificationMode)buf.ReadByte();
+            switch (type)
             {
                 case IdentificationMode.UInt32:
                     return new Identifier(buf.ReadUInt());
@@ -131,7 +132,7 @@ namespace VSL.FileTransfer
                     break;
                 case IdentificationMode.ByteArray:
                     byte[] id = (byte[])ID;
-                    buf.WriteUShort(Convert.ToUInt16(id.Length));
+                    buf.WriteUShort((ushort)(id.Length - 1));
                     buf.WriteByteArray(id, false);
                     break;
                 case IdentificationMode.String:

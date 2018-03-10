@@ -9,20 +9,20 @@ namespace VSL.Net
     {
         internal bool Available { get; }
         internal IPacket Packet { get; }
-        private bool[] Algorithms;
+        private bool[] algorithms;
 
-        internal PacketRule(IPacket packet, params CryptoAlgorithm[] algorithms)
+        internal PacketRule(IPacket packet, params CryptoAlgorithm[] algs)
         {
             Packet = packet;
-            Algorithms = new bool[4];
-            foreach (CryptoAlgorithm alg in algorithms)
-                Algorithms[(byte)alg] = true;
+            algorithms = new bool[4];
+            foreach (CryptoAlgorithm alg in algs)
+                algorithms[(byte)alg] = true;
             Available = true;
         }
 
         internal bool VerifyAlgorithm(CryptoAlgorithm algorithm)
         {
-            return Algorithms[(byte)algorithm];
+            return algorithms[(byte)algorithm];
         }
     }
 }

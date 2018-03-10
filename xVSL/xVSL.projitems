@@ -34,7 +34,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandlerClient.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketHandlerServer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Net\PacketRule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Packet\ConnectionType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Packet\ConnectionState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\IPacket.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\KeepAliveRole.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Packet\P00Handshake.cs" />
