@@ -121,7 +121,7 @@ namespace VSL
                 return false;
             }
 
-            uint length = 0; // read packet length
+            uint length; // read packet length
             if (packet.ConstantLength.HasValue)
                 length = packet.ConstantLength.Value;
             else
@@ -151,7 +151,7 @@ namespace VSL
                 int index = 1;
                 if (!parent.channel.TryRead(out byte[] ciphertext, 256))
                     return false;
-                byte[] plaintext = Crypt.RsaStatic.DecryptBlock(ciphertext, rsaKey);
+                byte[] plaintext = RsaStatic.DecryptBlock(ciphertext, rsaKey);
                 byte id = plaintext[0]; // index = 1
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 if (success)
@@ -216,7 +216,6 @@ namespace VSL
                 if (length > plaintext.Length - 2) // 2 random bytes
                 {
                     int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
-                    // TODO: Replace with Modulus
                     int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
                     if (!parent.channel.TryRead(out ciphertext, pendingBlocks * 16))
                         return false;
@@ -269,8 +268,9 @@ namespace VSL
                     while (plaintext.Position < plaintext.Length - 1)
                     {
                         byte id = plaintext.ReadByte();
+                        // TODO: [Warning] TryGetPacket returns false also for some internal packets!
                         bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
-                        uint length = 0;
+                        uint length;
                         if (success && packet.ConstantLength.HasValue)
                             length = packet.ConstantLength.Value;
                         else

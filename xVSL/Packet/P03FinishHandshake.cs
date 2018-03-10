@@ -8,11 +8,17 @@ namespace VSL.Packet
 {
     internal class P03FinishHandshake : IPacket
     {
-        internal ConnectionState ConnectionState;
-        internal string Address;
-        internal ushort Port;
-        internal ushort VSLVersion;
-        internal ushort ProductVersion;
+        internal ConnectionState ConnectionState { get; private set; }
+        internal string Address { get; private set; }
+        internal ushort Port { get; private set; }
+        /// <summary>
+        /// Gets the VSL protocol version used for this connection. This value is available since VSL 1.2.
+        /// </summary>
+        internal ushort VSLVersion { get; private set; }
+        /// <summary>
+        /// Gets the product protocol version used for this connection. This value is available since VSL 1.2.
+        /// </summary>
+        internal ushort ProductVersion { get; private set; }
 
         internal P03FinishHandshake()
         {
@@ -26,7 +32,7 @@ namespace VSL.Packet
         internal P03FinishHandshake(ConnectionState connectionState)
         {
             if (connectionState != ConnectionState.CompatibilityMode && connectionState != ConnectionState.NotCompatible)
-                throw new InvalidOperationException("P03FinishHandshake.P03FinishHandshake(ConnectionState) is only allowed with ConnectionState.CompatibilityMode or onnectionState.NotCompatible");
+                throw new ArgumentException("P03FinishHandshake.P03FinishHandshake(ConnectionState) is only allowed with ConnectionState.CompatibilityMode or onnectionState.NotCompatible", "connectionState");
             ConnectionState = connectionState;
         }
 

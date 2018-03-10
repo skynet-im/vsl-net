@@ -73,21 +73,21 @@ namespace VSL
 
         // <functions
         /// <summary>
-        /// Connects the TCP Client asynchronously
+        /// Connects the TCP Client asynchronously.
         /// </summary>
-        /// <param name="address">IP address or hostname</param>
-        /// <param name="port">Port</param>
-        /// <param name="serverKey">Public RSA key of the server</param>
+        /// <param name="hostname">IP address or hostname.</param>
+        /// <param name="port">TCP port to connect.</param>
+        /// <param name="serverKey">Public RSA key of the server.</param>
         /// <returns></returns>
-        public async Task ConnectAsync(string address, int port, string serverKey)
+        public async Task ConnectAsync(string hostname, int port, string serverKey)
         {
             // <check args
-            if (string.IsNullOrEmpty(address)) throw new ArgumentNullException();
+            if (string.IsNullOrEmpty(hostname)) throw new ArgumentNullException();
             if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException();
             if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException();
             //  check args>
 
-            IPAddress[] ipaddr = await Dns.GetHostAddressesAsync(address);
+            IPAddress[] ipaddr = await Dns.GetHostAddressesAsync(hostname);
             TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
             tcp.Client.DualMode = true;
             await tcp.ConnectAsync(ipaddr, port);

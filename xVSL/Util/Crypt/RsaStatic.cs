@@ -19,8 +19,8 @@ namespace VSL.Crypt
         /// <summary>
         /// Encrypts one block using RSA with OAEP.
         /// </summary>
-        /// <param name="plaintext">Data to encrypt (max. 214 bytes)</param>
-        /// <param name="key">Public key (xmlstring)</param>
+        /// <param name="plaintext">Data to encrypt (max. 214 bytes).</param>
+        /// <param name="key">Public key as xml string.</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <exception cref="CryptographicException"></exception>
@@ -40,7 +40,7 @@ namespace VSL.Crypt
         /// Encrypts data using RSA with OAEP.
         /// </summary>
         /// <param name="plaintext">Data to encrypt with any length.</param>
-        /// <param name="key">Public key (xmlstring).</param>
+        /// <param name="key">Public key as xml string.</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="CryptographicException"></exception>
         /// <returns></returns>
@@ -74,10 +74,10 @@ namespace VSL.Crypt
         #endregion
         #region Decrypt
         /// <summary>
-        /// Decrypts one block using RSA with OAEP
+        /// Decrypts one block using RSA with OAEP.
         /// </summary>
-        /// <param name="ciphertext">Data to decrypt (256 bytes)</param>
-        /// <param name="key">Private key (xmlstring)</param>
+        /// <param name="ciphertext">Data to decrypt as a single 256 byte block.</param>
+        /// <param name="key">Private key as xml string.</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <exception cref="CryptographicException"></exception>
@@ -92,10 +92,10 @@ namespace VSL.Crypt
         }
 
         /// <summary>
-        /// Decrypts data using RSA with OAEP
+        /// Decrypts data using RSA with OAEP.
         /// </summary>
-        /// <param name="ciphertext">data to decrypt</param>
-        /// <param name="key">Private key (xmlstring)</param>
+        /// <param name="ciphertext">Data to decrypt in multiple 256 byte blocks.</param>
+        /// <param name="key">Private key as xml string.</param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <exception cref="CryptographicException"/>
