@@ -163,7 +163,10 @@ namespace VSL.FileTransfer
                     // Do not check hash for VSL 1.1 because this version always sends an empty field.
                     parent.ExceptionHandler.CloseConnection("FileCorrupted",
                         "The integrity checking resulted in a corrupted message.\r\n" +
-                        "\tat FTEventArgs.CloseStream(bool)");
+                        "\tat FTEventArgs.CloseStream(Boolean)");
+                    if (parent.Logger.InitD)
+                        parent.Logger.D($"Expected hash was {Util.ToHexString(FileMeta.SHA256)} " +
+                            $"but the hash over the transfered data is {Util.ToHexString(hash)}.");
                     CloseStreamInternal(false, false);
                     return false;
                 }

@@ -16,10 +16,6 @@ namespace VSL
     public abstract class VSLSocket : IDisposable
     {
         // <fields
-        /// <summary>
-        /// Specifies if a working and secure connection is available.
-        /// </summary>
-        private bool connectionAvailable = false;
         private object connectionLostLock;
         private bool connectionLost = false;
         private DateTime connectionLostTime = DateTime.MinValue;
@@ -70,7 +66,7 @@ namespace VSL
         /// <summary>
         /// Gets a value indicating whether a working and secure connection is available.
         /// </summary>
-        public bool ConnectionAvailable => connectionAvailable;
+        public bool ConnectionAvailable { get; private set; }
         /// <summary>
         /// Gets the protocol version that is used for this connection as <see cref="string"/>.
         /// </summary>
@@ -131,7 +127,7 @@ namespace VSL
         /// </summary>
         internal virtual void OnConnectionEstablished()
         {
-            connectionAvailable = true;
+            ConnectionAvailable = true;
             ThreadManager.Start();
             ThreadManager.QueueWorkItem((ct) => ConnectionEstablished?.Invoke(this, new EventArgs()));
             if (Logger.InitI)
@@ -277,7 +273,7 @@ namespace VSL
         /// <returns>Returns the <see cref="ConnectionClosedEventArgs"/> for the upcoming event.</returns>
         private ConnectionClosedEventArgs PrepareOnConnectionClosed(string reason)
         {
-            connectionAvailable = false;
+            ConnectionAvailable = false;
             connectionLost = true;
             connectionLostTime = DateTime.Now;
             ThreadManager.Shutdown();

@@ -141,6 +141,8 @@ namespace VSL
             {
                 if (!parent.channel.TryRead(out byte[] buf, Convert.ToInt32(length))) // read packet content
                     return false;
+                if (parent.Logger.InitD)
+                    parent.Logger.D($"Received internal plaintext packet: ID={id} Length={length}");
                 return parent.handler.HandleInternalPacket(id, buf, CryptoAlgorithm.None);
             }
         }
@@ -171,6 +173,8 @@ namespace VSL
                         }
                         index += 4;
                     }
+                    if (parent.Logger.InitD)
+                        parent.Logger.D($"Received internal RSA packet: ID={id} Length={length}");
                     return parent.handler.HandleInternalPacket(id, Util.TakeBytes(plaintext, Convert.ToInt32(length), index), CryptoAlgorithm.RSA_2048_OAEP);
                 }
                 else

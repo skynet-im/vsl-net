@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using VSL;
 
 namespace VSLTest
 {
@@ -13,6 +14,8 @@ namespace VSLTest
     {
         private int port;
         private string keypair;
+        TcpListener listener4;
+        TcpListener listener6;
 
         public Server(int port, string keypair)
         {
@@ -22,11 +25,11 @@ namespace VSLTest
 
         public bool Running { get; private set; }
 
-        public void Start()
+        public void Start(bool localhost, bool useDispatcher)
         {
-            var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-            TcpListener listener4 = new TcpListener(IPAddress.Loopback, port);
-            TcpListener listener6 = new TcpListener(IPAddress.IPv6Loopback, port);
+            var dispatcher = useDispatcher ? System.Windows.Threading.Dispatcher.CurrentDispatcher : null;
+            listener4 = new TcpListener(localhost ? IPAddress.Loopback : IPAddress.Any, port);
+            listener6 = new TcpListener(localhost ? IPAddress.IPv6Loopback : IPAddress.IPv6Any, port);
             listener4.Start();
             listener6.Start();
             Running = true;
@@ -35,9 +38,13 @@ namespace VSLTest
                 TcpListener listener = (TcpListener)state;
                 while (Running)
                 {
-                    Socket native = listener.AcceptSocket();
-                    Client c = new Client(native, dispatcher);
-                    Interlocked.Increment(ref Program.Connects);
+                    try
+                    {
+                        Socket native = listener.AcceptSocket();
+                        Client c = new Client(native, dispatcher);
+                        Interlocked.Increment(ref Program.Connects);
+                    }
+                    catch (SocketException) { return; }
                 }
             }
             ThreadPool.QueueUserWorkItem(waitCallback, listener4);
@@ -48,6 +55,8 @@ namespace VSLTest
         {
             Running = false;
             Program.Clients.ParallelForEach((c) => c.CloseConnection("Stopping server"));
+            listener4?.Stop();
+            listener6?.Stop();
         }
     }
 }
