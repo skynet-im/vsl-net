@@ -200,8 +200,9 @@ namespace VSL
         /// <returns>Returns whether the function could successfully read all requested bytes.</returns>
         internal bool TryRead(out byte[] buf, int count)
         {
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
             const int wait = 10; // frequency to look for new data
-            int cycles = (parent.NetworkMaxLatency + 1000 * count / parent.NetworkMinBandwith) / wait;
+            int cycles = (int)(parent.NetworkMaxLatency + 1000f * count / parent.NetworkMinBandwith) / wait;
             int cycle = 0;
             while (cache.Length < count)
             {
@@ -282,7 +283,7 @@ namespace VSL
 #endif
         }
 
-#region IDisposable Support
+        #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
         private void Dispose(bool disposing)
@@ -321,7 +322,7 @@ namespace VSL
             // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
-#endregion
+        #endregion
         //  functions>
     }
 }

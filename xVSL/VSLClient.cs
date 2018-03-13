@@ -18,15 +18,15 @@ namespace VSL
     {
         // <fields
         new internal PacketHandlerClient handler;
-        internal ushort LatestProduct;
-        internal ushort OldestProduct;
+        private ushort latestProduct;
+        private ushort oldestProduct;
         private int _networkBufferSize = Constants.ReceiveBufferSize;
         //  fields>
 
         // <constructor
 #if !__IOS__
         /// <summary>
-        /// Creates a VSL Client using <see cref="Threading.AsyncMode"/> that has to be connected.
+        /// Creates a VSL Client using <see cref="Threading.AsyncMode.ManagedThread"/> that has to be connected.
         /// </summary>
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
@@ -44,8 +44,8 @@ namespace VSL
         {
             InitializeComponent(threadManager);
 
-            LatestProduct = latestProduct;
-            OldestProduct = oldestProduct;
+            this.latestProduct = latestProduct;
+            this.oldestProduct = oldestProduct;
         }
         //  constructor>
 
@@ -106,7 +106,7 @@ namespace VSL
             manager.GenerateKeys();
             await s;
             await Task.Run(() => manager.SendPacket(CryptoAlgorithm.RSA_2048_OAEP, new P01KeyExchange(manager.AesKey, manager.SendIV,
-                manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, LatestProduct, OldestProduct)));
+                manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, latestProduct, oldestProduct)));
             //  key exchange>
         }
         //  functions>

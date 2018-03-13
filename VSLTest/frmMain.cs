@@ -24,6 +24,7 @@ namespace VSLTest
         public FrmMain()
         {
             InitializeComponent();
+            ToolTipMain.SetToolTip(LbFileKey, "Zum Generieren eines Schlüssels klicken.");
             Text = string.Format(Text, Constants.ProductVersion(4));
             server = new Server(Program.Port, Program.Keypair);
             pentest = new PenetrationTest();
@@ -34,7 +35,8 @@ namespace VSLTest
             if (!server.Running)
             {
                 btnStartServer.Enabled = false;
-                server.Start();
+                CbLocalhost.Enabled = false;
+                server.Start(CbLocalhost.Checked, true);
                 btnStartServer.Text = "Server stoppen";
                 btnStartServer.Enabled = true;
             }
@@ -44,6 +46,7 @@ namespace VSLTest
                 server.Stop();
                 btnStartServer.Text = "Server starten";
                 btnStartServer.Enabled = true;
+                CbLocalhost.Enabled = true;
             }
         }
 
@@ -56,6 +59,7 @@ namespace VSLTest
                 vslClient.Logger.PrintExceptionMessages = true;
                 vslClient.Logger.PrintInfoMessages = true;
                 vslClient.Logger.PrintUncaughtExceptions = true;
+                vslClient.CatchApplicationExceptions = false;
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
                 vslClient.PacketReceived += VslClient_Received;
@@ -133,7 +137,7 @@ namespace VSLTest
                 algorithm = ContentAlgorithm.Aes256CbcHmacSha256;
                 byte[] keys = Util.GetBytes(TbFileKey.Text);
                 hmacKey = Util.TakeBytes(keys, 32);
-                aesKey = Util.TakeBytes(keys, 32);
+                aesKey = Util.TakeBytes(keys, 32, 32);
             }
             FTEventArgs args = new FTEventArgs(new Identifier(0), new FileMeta(path, algorithm, hmacKey, aesKey, null), path);
             args.Progress += VslClient_FTProgress;
@@ -171,7 +175,7 @@ namespace VSLTest
 
         private void VslClient_FTProgress(object sender, FTProgressEventArgs e)
         {
-            pbFileTransfer.Value = Convert.ToInt32(e.Percentage * 100);
+            PbFileTransfer.Value = Convert.ToInt32(e.Percentage * 100);
         }
 
         private void VslClient_FTFinished(object sender, EventArgs e)

@@ -17,9 +17,19 @@ namespace VSLTest
     {
         private VSLServer Vsl;
         private FileMeta lastMeta;
+        /// <summary>
+        /// Creates a VSLServer with <see cref="VSL.Threading.AsyncMode.ManagedThread"/>. If no <see cref="Dispatcher"/> is provided <see cref="VSL.Threading.AsyncMode.ThreadPool"/> is used.
+        /// </summary>
+        /// <param name="native"></param>
+        /// <param name="dispatcher"></param>
         public Client(Socket native, Dispatcher dispatcher)
         {
-            Vsl = new VSLServer(native, 0, 0, Program.Keypair, ThreadManager.CreateManagedThread(dispatcher));
+            ThreadManager thrmgr;
+            if (dispatcher == null)
+                thrmgr = ThreadManager.CreateThreadPool();
+            else
+                thrmgr = ThreadManager.CreateManagedThread(dispatcher);
+            Vsl = new VSLServer(native, 0, 0, Program.Keypair, thrmgr);
             Vsl.PacketReceived += Vsl_PacketReceived;
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
             Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
@@ -28,9 +38,6 @@ namespace VSLTest
             Vsl.Logger.PrintExceptionMessages = true;
             Vsl.Logger.PrintInfoMessages = true;
             Vsl.Logger.PrintUncaughtExceptions = true;
-            Vsl.Logger.InvokeDebugMessages = false;
-            Vsl.Logger.InvokeExceptionMessages = false;
-            Vsl.Logger.InvokeInfoMessages = false;
             Program.Clients.Add(this);
             Vsl.Start();
         }

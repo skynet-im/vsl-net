@@ -33,7 +33,7 @@
             this.btnConnect = new System.Windows.Forms.Button();
             this.btnClientSendPacket = new System.Windows.Forms.Button();
             this.btnReceiveFile = new System.Windows.Forms.Button();
-            this.pbFileTransfer = new System.Windows.Forms.ProgressBar();
+            this.PbFileTransfer = new System.Windows.Forms.ProgressBar();
             this.btnServerSendPacket = new System.Windows.Forms.Button();
             this.btnPenetrationTest = new System.Windows.Forms.Button();
             this.LbServer = new System.Windows.Forms.Label();
@@ -42,6 +42,8 @@
             this.btnSendFile = new System.Windows.Forms.Button();
             this.TbFileKey = new System.Windows.Forms.TextBox();
             this.LbFileKey = new System.Windows.Forms.Label();
+            this.CbLocalhost = new System.Windows.Forms.CheckBox();
+            this.ToolTipMain = new System.Windows.Forms.ToolTip(this.components);
             this.SuspendLayout();
             // 
             // btnStartServer
@@ -86,12 +88,12 @@
             this.btnReceiveFile.UseVisualStyleBackColor = true;
             this.btnReceiveFile.Click += new System.EventHandler(this.BtnReceiveFile_Click);
             // 
-            // pbFileTransfer
+            // PbFileTransfer
             // 
-            this.pbFileTransfer.Location = new System.Drawing.Point(12, 226);
-            this.pbFileTransfer.Name = "pbFileTransfer";
-            this.pbFileTransfer.Size = new System.Drawing.Size(260, 23);
-            this.pbFileTransfer.TabIndex = 4;
+            this.PbFileTransfer.Location = new System.Drawing.Point(12, 226);
+            this.PbFileTransfer.Name = "PbFileTransfer";
+            this.PbFileTransfer.Size = new System.Drawing.Size(260, 23);
+            this.PbFileTransfer.TabIndex = 4;
             // 
             // btnServerSendPacket
             // 
@@ -116,7 +118,7 @@
             // LbServer
             // 
             this.LbServer.AutoSize = true;
-            this.LbServer.Location = new System.Drawing.Point(13, 71);
+            this.LbServer.Location = new System.Drawing.Point(9, 104);
             this.LbServer.Name = "LbServer";
             this.LbServer.Size = new System.Drawing.Size(54, 13);
             this.LbServer.TabIndex = 7;
@@ -165,11 +167,24 @@
             this.LbFileKey.Text = "Key";
             this.LbFileKey.Click += new System.EventHandler(this.LbFileKey_Click);
             // 
+            // CbLocalhost
+            // 
+            this.CbLocalhost.AutoSize = true;
+            this.CbLocalhost.Checked = true;
+            this.CbLocalhost.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.CbLocalhost.Location = new System.Drawing.Point(13, 74);
+            this.CbLocalhost.Name = "CbLocalhost";
+            this.CbLocalhost.Size = new System.Drawing.Size(68, 17);
+            this.CbLocalhost.TabIndex = 12;
+            this.CbLocalhost.Text = "localhost";
+            this.CbLocalhost.UseVisualStyleBackColor = true;
+            // 
             // FrmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.CbLocalhost);
             this.Controls.Add(this.LbFileKey);
             this.Controls.Add(this.TbFileKey);
             this.Controls.Add(this.btnSendFile);
@@ -177,7 +192,7 @@
             this.Controls.Add(this.LbServer);
             this.Controls.Add(this.btnPenetrationTest);
             this.Controls.Add(this.btnServerSendPacket);
-            this.Controls.Add(this.pbFileTransfer);
+            this.Controls.Add(this.PbFileTransfer);
             this.Controls.Add(this.btnReceiveFile);
             this.Controls.Add(this.btnClientSendPacket);
             this.Controls.Add(this.btnConnect);
@@ -196,7 +211,7 @@
         private System.Windows.Forms.Button btnConnect;
         private System.Windows.Forms.Button btnClientSendPacket;
         private System.Windows.Forms.Button btnReceiveFile;
-        private System.Windows.Forms.ProgressBar pbFileTransfer;
+        private System.Windows.Forms.ProgressBar PbFileTransfer;
         private System.Windows.Forms.Button btnServerSendPacket;
         private System.Windows.Forms.Button btnPenetrationTest;
         private System.Windows.Forms.Label LbServer;
@@ -205,6 +220,8 @@
         private System.Windows.Forms.Button btnSendFile;
         private System.Windows.Forms.TextBox TbFileKey;
         private System.Windows.Forms.Label LbFileKey;
+        private System.Windows.Forms.CheckBox CbLocalhost;
+        private System.Windows.Forms.ToolTip ToolTipMain;
     }
 }
 

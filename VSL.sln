@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSL_UWP", "VSL_UWP\VSL_UWP.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptTest", "CryptTest\CryptTest.csproj", "{CF683924-E7B5-4D34-AA73-2368B8EBA98B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSLUnitTest", "VSLUnitTest\VSLUnitTest.csproj", "{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		xVSL\xVSL.projitems*{7d1b2c18-41b4-4942-b5c3-de6fbf9b40a9}*SharedItemsImports = 13
@@ -113,6 +115,22 @@ Global
 		{CF683924-E7B5-4D34-AA73-2368B8EBA98B}.Release|x64.Build.0 = Release|Any CPU
 		{CF683924-E7B5-4D34-AA73-2368B8EBA98B}.Release|x86.ActiveCfg = Release|Any CPU
 		{CF683924-E7B5-4D34-AA73-2368B8EBA98B}.Release|x86.Build.0 = Release|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Debug|ARM.Build.0 = Debug|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Debug|x64.Build.0 = Debug|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Debug|x86.Build.0 = Debug|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Release|Any CPU.Build.0 = Release|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Release|ARM.ActiveCfg = Release|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Release|ARM.Build.0 = Release|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Release|x64.ActiveCfg = Release|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Release|x64.Build.0 = Release|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Release|x86.ActiveCfg = Release|Any CPU
+		{677A9AF3-FE95-4CB3-909B-72B4D7BEF630}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -121,7 +139,7 @@ Global
 		SolutionGuid = {104042D2-1DF2-4C9B-86B4-EF08982E71CA}
 	EndGlobalSection
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 8
+		SccNumberOfProjects = 9
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = https://vectordata.visualstudio.com/
 		SccLocalPath0 = .
@@ -147,5 +165,8 @@ Global
 		SccProjectUniqueName7 = CryptTest\\CryptTest.csproj
 		SccProjectName7 = CryptTest
 		SccLocalPath7 = CryptTest
+		SccProjectUniqueName8 = VSLUnitTest\\VSLUnitTest.csproj
+		SccProjectName8 = VSLUnitTest
+		SccLocalPath8 = VSLUnitTest
 	EndGlobalSection
 EndGlobal
