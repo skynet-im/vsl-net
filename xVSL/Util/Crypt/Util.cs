@@ -15,12 +15,14 @@ namespace VSL.Crypt
     public static class Util
     {
         // © 2017 Daniel Lerch
-        static unsafe uint* _lookupPtr;
+        static unsafe uint* _encodePtr;
+        static byte[] decodeTable;
         [SecuritySafeCritical]
         static unsafe Util()
         {
-            uint[] lookup = CreateLookup32Unsafe();
-            _lookupPtr = (uint*)GCHandle.Alloc(lookup, GCHandleType.Pinned).AddrOfPinnedObject();
+            uint[] encode = CreateEncodeLookup32();
+            _encodePtr = (uint*)GCHandle.Alloc(encode, GCHandleType.Pinned).AddrOfPinnedObject();
+            decodeTable = CreateDecodeLookup8();
         }
         /// <summary>
         /// Splits a byte array into blocks.
@@ -131,7 +133,7 @@ namespace VSL.Crypt
         [SecuritySafeCritical]
         public static unsafe string ToHexString(byte[] buffer)
         {
-            uint* lookupP = _lookupPtr;
+            uint* lookupP = _encodePtr;
             string result = new string((char)0, buffer.Length * 2);
             fixed (byte* bytesP = buffer)
             fixed (char* resultP = result)
@@ -148,13 +150,32 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="hexadecimal">hexadecimal string to convert</param>
         /// <returns></returns>
+        /// <exception cref="ArgumentException"/>
         public static byte[] GetBytes(string hexadecimal)
         {
             if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
             byte[] final = new byte[hexadecimal.Length / 2];
             for (int i = 0; i < final.Length; i++)
-                final[i] = Convert.ToByte(hexadecimal.Substring(i * 2, 1), 16);
+                final[i] = Convert.ToByte(hexadecimal.Substring(i * 2, 2), 16);
             return final;
+        }
+
+        /// <summary>
+        /// Converts a hexadecimal string to a byte array. Invalid chars are ignored and converted to 0x00
+        /// </summary>
+        /// <param name="hexadecimal"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"/>
+        public static byte[] GetBytesUnchecked(string hexadecimal)
+        {
+            if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
+            byte[] result = new byte[hexadecimal.Length / 2];
+            byte[] decode = decodeTable;
+            for (int c = 0, b = 0; c < hexadecimal.Length; c += 2, b++)
+            {
+                result[b] = (byte)((decode[hexadecimal[c]] << 4) | decode[hexadecimal[c + 1]]);
+            }
+            return result;
         }
 
         /// <summary>
@@ -187,7 +208,7 @@ namespace VSL.Crypt
                 return normalSize;
         }
 
-        private static uint[] CreateLookup32Unsafe()
+        private static uint[] CreateEncodeLookup32()
         {
             uint[] result = new uint[256];
             for (int i = 0; i < 256; i++)
@@ -197,6 +218,24 @@ namespace VSL.Crypt
                     result[i] = ((uint)s[0]) + ((uint)s[1] << 16);
                 else
                     result[i] = ((uint)s[1]) + ((uint)s[0] << 16);
+            }
+            return result;
+        }
+
+        private static byte[] CreateDecodeLookup8()
+        {
+            byte[] result = new byte[256];
+            for (int i = 48; i < 58; i++) // unicode chars 0..9
+            {
+                result[i] = (byte)(i - 48);
+            }
+            for (int i = 65; i < 71; i++) // unicode chars A..F
+            {
+                result[i] = (byte)(i - 65 + 10);
+            }
+            for (int i = 97; i < 103; i++) // unicode chars a..f
+            {
+                result[i] = (byte)(i - 97 + 10);
             }
             return result;
         }
