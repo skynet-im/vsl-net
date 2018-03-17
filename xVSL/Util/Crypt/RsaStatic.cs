@@ -14,7 +14,7 @@ namespace VSL.Crypt
     /// </summary>
     public static class RsaStatic
     {
-        // © 2017 Daniel Lerch
+        // © 2017-2018 Daniel Lerch
         #region Encrypt
         /// <summary>
         /// Encrypts one block using RSA with OAEP.
@@ -27,9 +27,9 @@ namespace VSL.Crypt
         /// <returns></returns>
         public static byte[] EncryptBlock(byte[] plaintext, string key)
         {
-            if (plaintext == null) throw new ArgumentNullException("Plaintext must not be null");
-            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
-            if (plaintext.Length > 214) throw new ArgumentOutOfRangeException("One block must measure 214 bytes");
+            if (plaintext == null) throw new ArgumentNullException(nameof(plaintext));
+            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
+            if (plaintext.Length > 214) throw new ArgumentOutOfRangeException(nameof(plaintext), plaintext.Length, "One block must measure 214 bytes");
             using (var rsa = CreateProvider(key))
             {
                 return EncryptInternal(rsa, plaintext);
@@ -46,8 +46,8 @@ namespace VSL.Crypt
         /// <returns></returns>
         public static byte[] Encrypt(byte[] plaintext, string key)
         {
-            if (plaintext == null) throw new ArgumentNullException("Plaintext must not be null");
-            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
+            if (plaintext == null) throw new ArgumentNullException(nameof(plaintext));
+            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
             int blocks = Util.GetTotalSize(plaintext.Length, 214) / 214;
             byte[] ciphertext = new byte[blocks * 256];
             using (var rsa = CreateProvider(key))
@@ -84,9 +84,9 @@ namespace VSL.Crypt
         /// <returns></returns>
         public static byte[] DecryptBlock(byte[] ciphertext, string key)
         {
-            if (ciphertext == null) throw new ArgumentNullException("Plaintext must not be null");
-            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
-            if (ciphertext.Length != 256) throw new ArgumentOutOfRangeException("One block must measure 256 bytes");
+            if (ciphertext == null) throw new ArgumentNullException(nameof(ciphertext));
+            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(ciphertext));
+            if (ciphertext.Length != 256) throw new ArgumentOutOfRangeException(nameof(ciphertext), ciphertext.Length, "One block must measure 256 bytes");
             using (var rsa = CreateProvider(key))
                 return DecryptInternal(rsa, ciphertext);
         }
@@ -102,9 +102,9 @@ namespace VSL.Crypt
         /// <returns></returns>
         public static byte[] Decrypt(byte[] ciphertext, string key)
         {
-            if (ciphertext == null) throw new ArgumentNullException("Plaintext must not be null");
-            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException("Key must not be null");
-            if (ciphertext.Length % 256 != 0) throw new ArgumentOutOfRangeException("The blocksize must be 256 bytes");
+            if (ciphertext == null) throw new ArgumentNullException(nameof(ciphertext));
+            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(ciphertext));
+            if (ciphertext.Length % 256 != 0) throw new ArgumentOutOfRangeException(nameof(ciphertext), ciphertext.Length % 256, "The blocksize must be 256 bytes");
             int blocks = ciphertext.Length / 256;
             byte[] tmp_plaintext = new byte[(blocks - 1) * 214];
             using (var rsa = CreateProvider(key))
@@ -175,7 +175,7 @@ namespace VSL.Crypt
         /// <returns></returns>
         public static string ExtractPublicKey(string privateKey)
         {
-            if (privateKey == null) throw new ArgumentNullException("PrivateKey must not be null");
+            if (privateKey == null) throw new ArgumentNullException(nameof(privateKey));
 #if WINDOWS_UWP
             using (var rsa = System.Security.Cryptography.RSA.Create())
             {

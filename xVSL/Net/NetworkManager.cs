@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Security.Cryptography;
 using VSL.Crypt;
 using VSL.Net;
+using VSL.BinaryTools;
 
 namespace VSL
 {
@@ -267,7 +268,7 @@ namespace VSL
                 }
                 byte[] iv = Util.TakeBytes(cipherblock, 16);
                 byte[] ciphertext = Util.SkipBytes(cipherblock, 16);
-                using (PacketBuffer plaintext = new PacketBuffer(AesStatic.Decrypt(ciphertext, AesKey, iv)))
+                using (PacketBuffer plaintext = PacketBuffer.CreateStatic(AesStatic.Decrypt(ciphertext, AesKey, iv)))
                 {
                     while (plaintext.Position < plaintext.Length - 1)
                     {
@@ -317,7 +318,7 @@ namespace VSL
         internal bool SendPacket(CryptoAlgorithm alg, Packet.IPacket packet)
         {
             byte[] content;
-            using (PacketBuffer buf = new PacketBuffer())
+            using (PacketBuffer buf = PacketBuffer.CreateDynamic())
             {
                 packet.WritePacket(buf);
                 content = buf.ToArray();
@@ -344,7 +345,7 @@ namespace VSL
         {
             int length = 2 + (size ? 4 : 0) + content.Length;
             byte[] buf;
-            using (PacketBuffer pbuf = new PacketBuffer(length))
+            using (PacketBuffer pbuf = PacketBuffer.CreateStatic(length))
             {
                 pbuf.WriteByte((byte)CryptoAlgorithm.None);
                 pbuf.WriteByte(realId);
@@ -360,7 +361,7 @@ namespace VSL
             {
                 int length = 1 + (size ? 4 : 0) + content.Length;
                 byte[] plain;
-                using (PacketBuffer pbuf = new PacketBuffer(length))
+                using (PacketBuffer pbuf = PacketBuffer.CreateStatic(length))
                 {
                     pbuf.WriteByte(realId);
                     if (size) pbuf.WriteUInt((uint)content.Length);
@@ -402,7 +403,7 @@ namespace VSL
                 Random random = new Random();
                 random.NextBytes(salt);
                 byte[] plaintext;
-                using (PacketBuffer pbuf = new PacketBuffer(headLength + saltLength + content.Length))
+                using (PacketBuffer pbuf = PacketBuffer.CreateStatic(headLength + saltLength + content.Length))
                 {
                     pbuf.WriteByte(realId);
                     if (size) pbuf.WriteUInt((uint)content.Length);
@@ -418,7 +419,7 @@ namespace VSL
                     tailBlock = AesStatic.Encrypt(plaintext, AesKey, SendIV);
                 }
                 byte[] buf;
-                using (PacketBuffer pbuf = new PacketBuffer(1 + headBlock.Length + tailBlock.Length))
+                using (PacketBuffer pbuf = PacketBuffer.CreateStatic(1 + headBlock.Length + tailBlock.Length))
                 {
                     pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_SP);
                     pbuf.WriteByteArray(headBlock, false);
@@ -442,7 +443,7 @@ namespace VSL
         {
             int headLength = 1 + (size ? 4 : 0) + content.Length;
             byte[] plaintext;
-            using (PacketBuffer pbuf = new PacketBuffer(headLength))
+            using (PacketBuffer pbuf = PacketBuffer.CreateStatic(headLength))
             {
                 pbuf.WriteByte(realId);
                 if (size) pbuf.WriteUInt((uint)content.Length);
@@ -455,7 +456,7 @@ namespace VSL
             byte[] cipherblock = Util.ConcatBytes(iv, ciphertext);
             byte[] hmac = hmacProvider.ComputeHash(cipherblock);
             byte[] buf;
-            using (PacketBuffer pbuf = new PacketBuffer(1 + 3 + hmac.Length + cipherblock.Length))
+            using (PacketBuffer pbuf = PacketBuffer.CreateStatic(1 + 3 + hmac.Length + cipherblock.Length))
             {
                 pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3);
                 pbuf.WriteByteArray(blocks, false);

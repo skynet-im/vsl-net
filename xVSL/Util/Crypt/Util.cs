@@ -57,7 +57,7 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="arrays">An array of byte arrays to concatenate.</param>
         /// <returns></returns>
-        [Obsolete("Util.ConnectBytes(Byte[][]) is deprecated. Please use Util.ConcatBytes(Byte[][]) instead.", false)]
+        [Obsolete("Util.ConnectBytes(Byte[][]) is deprecated. Please use Util.ConcatBytes(Byte[][]) instead.", false)] // deprecated since 1.3
         public static byte[] ConnectBytes(params byte[][] arrays) => ConcatBytes(arrays);
 
         /// <summary>
@@ -133,6 +133,7 @@ namespace VSL.Crypt
         [SecuritySafeCritical]
         public static unsafe string ToHexString(byte[] buffer)
         {
+            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
             uint* lookupP = _encodePtr;
             string result = new string((char)0, buffer.Length * 2);
             fixed (byte* bytesP = buffer)
@@ -153,7 +154,8 @@ namespace VSL.Crypt
         /// <exception cref="ArgumentException"/>
         public static byte[] GetBytes(string hexadecimal)
         {
-            if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
+            if (hexadecimal == null) throw new ArgumentNullException(nameof(hexadecimal));
+            if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally", nameof(hexadecimal));
             byte[] final = new byte[hexadecimal.Length / 2];
             for (int i = 0; i < final.Length; i++)
                 final[i] = Convert.ToByte(hexadecimal.Substring(i * 2, 2), 16);
@@ -168,7 +170,8 @@ namespace VSL.Crypt
         /// <exception cref="ArgumentException"/>
         public static byte[] GetBytesUnchecked(string hexadecimal)
         {
-            if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally");
+            if (hexadecimal == null) throw new ArgumentNullException(nameof(hexadecimal));
+            if (hexadecimal.Length % 2 != 0) throw new ArgumentException("String has to be formatted hexadecimally", nameof(hexadecimal));
             byte[] result = new byte[hexadecimal.Length / 2];
             byte[] decode = decodeTable;
             for (int c = 0, b = 0; c < hexadecimal.Length; c += 2, b++)

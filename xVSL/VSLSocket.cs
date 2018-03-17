@@ -172,10 +172,10 @@ namespace VSL
         /// <exception cref="InvalidOperationException"/>
         public bool SendPacket(byte id, byte[] content)
         {
-            if (content == null) throw new ArgumentNullException("content");
-            if (id >= 246) throw new ArgumentOutOfRangeException("id", "must be lower than 246 because of internal VSL packets");
+            if (content == null) throw new ArgumentNullException(nameof(content));
+            if (id >= 246) throw new ArgumentOutOfRangeException(nameof(id), "must be lower than 246 because of internal VSL packets");
             if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
-                throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
+                throw new ObjectDisposedException(nameof(VSLSocket), "This VSLSocket was disposed over 100ms ago.");
             if (!ConnectionAvailable)
             {
                 if (!connectionLost)
@@ -190,7 +190,7 @@ namespace VSL
                         spanText = Math.Round(spanMilliseconds).ToString() + " ms";
                     else
                         spanText = Math.Round(spanMilliseconds, 1).ToString() + " sek";
-                    throw new InvalidOperationException(string.Format("VSL has lost its connection {0} ago. Build up a new connection before sending a packet.", spanText));
+                    throw new InvalidOperationException($"VSL has lost its connection {spanText} ago. Build up a new connection before sending a packet.");
                 }
             }
             return manager.SendPacket(Convert.ToByte(255 - id), content);
@@ -239,7 +239,7 @@ namespace VSL
         public void CloseConnection(string reason)
         {
             if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
-                throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
+                throw new ObjectDisposedException(nameof(VSLSocket), "This VSLSocket was disposed over 100ms ago.");
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {

@@ -110,7 +110,7 @@ namespace VSL.FileTransfer
         /// <returns></returns>
         public byte[] ToBinary()
         {
-            PacketBuffer buf = new PacketBuffer();
+            PacketBuffer buf = PacketBuffer.CreateDynamic();
             ToBinary(buf);
             return buf.ToArray();
         }

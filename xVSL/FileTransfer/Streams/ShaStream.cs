@@ -33,6 +33,8 @@ namespace VSL.FileTransfer.Streams
         {
             if (mode != CryptoStreamMode.Read)
                 throw new InvalidOperationException("You cannot read from a stream in write mode.");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
 
             int done = shaStream.Read(buffer, offset, count);
             _position += done;
@@ -45,6 +47,8 @@ namespace VSL.FileTransfer.Streams
                 throw new InvalidOperationException("You cannot write on a stream in read mode.");
             if (HasFlushedFinalBlock)
                 throw new InvalidOperationException("You cannot write on the stream when the final block was already flushed.");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
 
             shaStream.Write(buffer, offset, count);
             _position += count;

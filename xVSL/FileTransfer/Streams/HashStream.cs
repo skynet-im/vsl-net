@@ -17,7 +17,7 @@ namespace VSL.FileTransfer.Streams
 
         public HashStream(Stream stream, CryptoStreamMode mode)
         {
-            this.stream = stream ?? throw new ArgumentNullException("stream");
+            this.stream = stream ?? throw new ArgumentNullException(nameof(stream));
             if (mode == CryptoStreamMode.Read && !stream.CanRead)
                 throw new ArgumentException("You cannot use CryptoStreamMode.Read with a not readable stream.");
             else if (mode == CryptoStreamMode.Write && !stream.CanWrite)

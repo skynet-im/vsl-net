@@ -24,9 +24,9 @@ namespace VSL.FileTransfer.Streams
 
         internal AesShaStream(Stream stream, byte[] key, CryptoStreamMode mode, CryptographicOperation operation) : base(stream, mode)
         {
-            this.key = key ?? throw new ArgumentNullException("key");
+            this.key = key ?? throw new ArgumentNullException(nameof(key));
             if (key.Length != 32)
-                throw new ArgumentOutOfRangeException("key", "The AES key must have a length of 256 bit.");
+                throw new ArgumentOutOfRangeException(nameof(key), "The AES key must have a length of 256 bit.");
             if (operation == CryptographicOperation.Encrypt)
                 iv = AesStatic.GenerateIV();
             else if (operation == CryptographicOperation.Decrypt) { }
@@ -54,6 +54,8 @@ namespace VSL.FileTransfer.Streams
                 throw new InvalidOperationException("You cannot read from a stream in write mode.");
             if (HasFlushedFinalBlock)
                 throw new InvalidOperationException("You cannot write on the stream when the final block was already flushed.");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
             int done = 0;
 
             if (operation == CryptographicOperation.Encrypt)
@@ -112,6 +114,8 @@ namespace VSL.FileTransfer.Streams
                 throw new InvalidOperationException("You cannot write on a stream in read mode.");
             if (HasFlushedFinalBlock)
                 throw new InvalidOperationException("You cannot write on the stream when the final block was already flushed.");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
             int done = 0;
 
             if (operation == CryptographicOperation.Encrypt)

@@ -80,7 +80,7 @@ namespace VSL
             IPacket packet = rule.Packet.New();
             try
             {
-                using (PacketBuffer buf = new PacketBuffer(content))
+                using (PacketBuffer buf = PacketBuffer.CreateStatic(content))
                     packet.ReadPacket(buf);
             }
             catch (ArgumentOutOfRangeException ex)

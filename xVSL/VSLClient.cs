@@ -82,9 +82,9 @@ namespace VSL
         public async Task ConnectAsync(string hostname, int port, string serverKey)
         {
             // <check args
-            if (string.IsNullOrEmpty(hostname)) throw new ArgumentNullException();
-            if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException();
-            if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException();
+            if (string.IsNullOrEmpty(hostname)) throw new ArgumentNullException(nameof(hostname));
+            if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException(nameof(port), port, "You must provide a valid port number");
+            if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException(nameof(serverKey));
             //  check args>
 
             IPAddress[] ipaddr = await Dns.GetHostAddressesAsync(hostname);
