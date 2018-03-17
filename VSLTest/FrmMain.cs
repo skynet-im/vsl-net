@@ -197,7 +197,7 @@ namespace VSLTest
             if (args.FileMeta.Algorithm == ContentAlgorithm.Aes256CbcHmacSha256 && !string.IsNullOrWhiteSpace(TbFileKey.Text))
             {
                 byte[] keys = Util.GetBytes(TbFileKey.Text);
-                args.FileMeta.Decrypt(Util.TakeBytes(keys, 32), Util.TakeBytes(keys, 32));
+                args.FileMeta.Decrypt(Util.TakeBytes(keys, 32), Util.TakeBytes(keys, 32, 32));
             }
             vslClient.FileTransfer.Continue(args);
         }

@@ -85,19 +85,19 @@ namespace VSL.FileTransfer
         /// <exception cref="NotSupportedException"/>
         public FileMeta(byte[] binaryData, ushort connectionVersion)
         {
-            if (binaryData == null) throw new ArgumentNullException("binaryData");
+            if (binaryData == null) throw new ArgumentNullException(nameof(binaryData));
             if (connectionVersion < Constants.CompatibilityVersion || connectionVersion > Constants.VersionNumber)
                 throw new NotSupportedException($"VSL {Constants.ProductVersion(4)} only support connection versions from {Constants.CompatibilityVersion} to {Constants.VersionNumber} but not {connectionVersion}");
 
             if (connectionVersion == 1)
             {
-                if (binaryData.Length < 44) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.1 FileHeader packet must contain at least 44 bytes.");
-                Read_v1_1(new PacketBuffer(binaryData));
+                if (binaryData.Length < 44) throw new ArgumentOutOfRangeException(nameof(binaryData), binaryData.Length, "A valid v1.1 FileHeader packet must contain at least 44 bytes.");
+                Read_v1_1(PacketBuffer.CreateStatic(binaryData));
             }
             else if (connectionVersion == 2)
             {
-                if (binaryData.Length < 78) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.2 FileHeader packet must contain at least 78 bytes.");
-                Read_v1_2(new PacketBuffer(binaryData));
+                if (binaryData.Length < 78) throw new ArgumentOutOfRangeException(nameof(binaryData), binaryData.Length, "A valid v1.2 FileHeader packet must contain at least 78 bytes.");
+                Read_v1_2(PacketBuffer.CreateStatic(binaryData));
             }
         }
 
@@ -112,14 +112,14 @@ namespace VSL.FileTransfer
         /// <exception cref="CryptographicException"/>
         public FileMeta(byte[] binaryData, byte[] hmacKey, byte[] aesKey)
         {
-            if (binaryData == null) throw new ArgumentNullException("binaryData");
-            if (binaryData.Length < 78) throw new ArgumentOutOfRangeException("binaryData", "A valid v1.2 FileHeader packet must contain at least 78 bytes.");
-            if (hmacKey == null) throw new ArgumentNullException("hmacKey");
-            if (hmacKey.Length != 32) throw new ArgumentOutOfRangeException("hmacKey", "An HMAC key must be 32 bytes in length.");
-            if (aesKey == null) throw new ArgumentNullException("aesKey");
-            if (aesKey.Length != 32) throw new ArgumentOutOfRangeException("aesKey", "An AES key must be 32 bytes in length.");
+            if (binaryData == null) throw new ArgumentNullException(nameof(binaryData));
+            if (binaryData.Length < 78) throw new ArgumentOutOfRangeException(nameof(binaryData), binaryData.Length, "A valid v1.2 FileHeader packet must contain at least 78 bytes.");
+            if (hmacKey == null) throw new ArgumentNullException(nameof(hmacKey));
+            if (hmacKey.Length != 32) throw new ArgumentOutOfRangeException(nameof(hmacKey), hmacKey.Length, "An HMAC key must be 32 bytes in length.");
+            if (aesKey == null) throw new ArgumentNullException(nameof(aesKey));
+            if (aesKey.Length != 32) throw new ArgumentOutOfRangeException(nameof(aesKey), aesKey.Length, "An AES key must be 32 bytes in length.");
 
-            Read_v1_2(new PacketBuffer(binaryData), hmacKey, aesKey);
+            Read_v1_2(PacketBuffer.CreateStatic(binaryData), hmacKey, aesKey);
         }
 
         private void Read_v1_1(PacketBuffer buf)
@@ -158,20 +158,10 @@ namespace VSL.FileTransfer
                 Read_v1_2_Core(buf);
             else if (Algorithm == ContentAlgorithm.Aes256CbcHmacSha256)
             {
-                byte[] hmac = buf.ReadByteArray(32);
-                using (HMACSHA256 csp = new HMACSHA256(hmacKey))
-                {
-                    int pos = buf.Position;
-                    int pending = buf.Pending;
-                    if (!hmac.SequenceEqual(csp.ComputeHash(buf.ReadByteArray(pending))))
-                        throw new CryptographicException("MessageCorrupted: The integrity checking resulted in a corrupted message.");
-                    buf.Position = pos;
-                    HmacKey = hmacKey;
-                }
-                byte[] iv = buf.ReadByteArray(16);
-                byte[] plain = AesStatic.Decrypt(buf.ReadByteArray(buf.Pending), aesKey, iv);
+                byte[] plain = AesStatic.DecryptWithHmac(buf, -1, hmacKey, aesKey);
+                HmacKey = hmacKey; // Assign public properties after successful decryption
                 AesKey = aesKey;
-                using (PacketBuffer innerBuf = new PacketBuffer(plain))
+                using (PacketBuffer innerBuf = PacketBuffer.CreateStatic(plain))
                     Read_v1_2_Core(innerBuf);
                 Available = true;
             }
@@ -208,12 +198,12 @@ namespace VSL.FileTransfer
         /// <exception cref="ArgumentOutOfRangeException"/>
         public void Decrypt(byte[] hmacKey, byte[] aesKey)
         {
-            if (hmacKey == null) throw new ArgumentNullException("hmacKey");
-            if (hmacKey.Length != 32) throw new ArgumentOutOfRangeException("hmacKey", "An HMAC key must be 32 bytes in length.");
-            if (aesKey == null) throw new ArgumentNullException("aesKey");
-            if (aesKey.Length != 32) throw new ArgumentOutOfRangeException("aesKey", "An AES key must be 32 bytes in length.");
+            if (hmacKey == null) throw new ArgumentNullException(nameof(hmacKey));
+            if (hmacKey.Length != 32) throw new ArgumentOutOfRangeException(nameof(hmacKey), hmacKey.Length, "An HMAC key must be 32 bytes in length.");
+            if (aesKey == null) throw new ArgumentNullException(nameof(aesKey));
+            if (aesKey.Length != 32) throw new ArgumentOutOfRangeException(nameof(aesKey), aesKey.Length, "An AES key must be 32 bytes in length.");
 
-            using (PacketBuffer buf = new PacketBuffer(GetBinaryData(Constants.VersionNumber)))
+            using (PacketBuffer buf = PacketBuffer.CreateStatic(GetBinaryData(Constants.VersionNumber)))
                 Read_v1_2(buf, hmacKey, aesKey);
         }
         #region read from file
@@ -235,16 +225,16 @@ namespace VSL.FileTransfer
         /// <param name="hmacKey">256 bit HMAC key to verify integrity of this <see cref="FileMeta"/>.</param>
         /// <param name="aesKey">256 bit AES key to encrypt this <see cref="FileMeta"/>.</param>
         /// <param name="fileKey">256 bit AES key to encrypt the associated file.</param>
+        /// <exception cref="ArgumentException"/>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
-        /// <exception cref="NotSupportedException"/>
         /// <exception cref="FileNotFoundException"/>
         public FileMeta(string path, ContentAlgorithm algorithm, byte[] hmacKey, byte[] aesKey, byte[] fileKey)
         {
             if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             if (algorithm != ContentAlgorithm.None && algorithm != ContentAlgorithm.Aes256CbcHmacSha256)
-                throw new NotSupportedException("This content algorithm is not supported.");
+                throw new ArgumentException("This content algorithm is not supported.", nameof(algorithm));
 
             Algorithm = algorithm;
             AesKey = aesKey;
@@ -256,17 +246,17 @@ namespace VSL.FileTransfer
                 if (AesKey == null)
                     AesKey = AesStatic.GenerateKey();
                 else if (AesKey.Length != 32)
-                    throw new ArgumentOutOfRangeException("aesKey");
+                    throw new ArgumentOutOfRangeException(nameof(aesKey));
 
                 if (hmacKey == null)
                     HmacKey = AesStatic.GenerateKey();
                 else if (HmacKey.Length != 32)
-                    throw new ArgumentOutOfRangeException("hmacKey");
+                    throw new ArgumentOutOfRangeException(nameof(hmacKey));
 
                 if (fileKey == null)
                     FileKey = AesStatic.GenerateKey();
                 else if (FileKey.Length != 32)
-                    throw new ArgumentOutOfRangeException("fileKey");
+                    throw new ArgumentOutOfRangeException(nameof(fileKey));
 
                 FileEncryption = ContentAlgorithm.Aes256Cbc; // The file needs no HMAC as we have an SHA256
             }
@@ -282,7 +272,7 @@ namespace VSL.FileTransfer
         /// <returns></returns>
         public byte[] GetBinaryData(ushort version)
         {
-            using (PacketBuffer buf = new PacketBuffer())
+            using (PacketBuffer buf = PacketBuffer.CreateDynamic())
             {
                 if (version == 1)
                     Write_v1_1(buf);
@@ -298,22 +288,11 @@ namespace VSL.FileTransfer
                         Write_v1_2_Header(buf); // write header anyway because we always these data
 
                         if (Available)
-                        {
-                            byte[] plaindata;
-                            using (PacketBuffer ibuf = new PacketBuffer())
+                            using (PacketBuffer ibuf = PacketBuffer.CreateDynamic())
                             {
                                 Write_v1_2_Core(ibuf);
-                                plaindata = ibuf.ToArray();
+                                AesStatic.EncryptWithHmac(ibuf.ToArray(), buf, false, HmacKey, AesKey);
                             }
-
-                            byte[] iv = AesStatic.GenerateIV();
-                            byte[] ciphertext = AesStatic.Encrypt(plaindata, AesKey, iv); // pre-compute cipher block for HMAC
-
-                            using (HMACSHA256 hmac = new HMACSHA256(HmacKey))
-                                buf.WriteByteArray(hmac.ComputeHash(Util.ConcatBytes(iv, ciphertext)), false); // compute and write HMAC of iv and ciphertext
-                            buf.WriteByteArray(iv, false);
-                            buf.WriteByteArray(ciphertext, false);
-                        }
                         else
                             buf.WriteByteArray(encryptedContent, false); // write all pre-read encrypted content including hmac, iv, etc.
                     }
@@ -329,7 +308,7 @@ namespace VSL.FileTransfer
         /// <returns></returns>
         public byte[] GetPlainData(ushort version)
         {
-            using (PacketBuffer buf = new PacketBuffer())
+            using (PacketBuffer buf = PacketBuffer.CreateDynamic())
             {
                 if (version == 1)
                     Write_v1_1(buf);
@@ -347,7 +326,7 @@ namespace VSL.FileTransfer
             FileInfo fi = new FileInfo(path);
             if (!fi.Exists) throw new FileNotFoundException("File to load data could not be found.", path);
             byte[] hash = null;
-            Task hashT = Task.Run(() => hash = Hash.SHA256(path));
+            Task hashT = Task.Run(() => hash = Hash.SHA256File(path));
             Name = fi.Name;
             if (FileEncryption == ContentAlgorithm.None)
                 Length = fi.Length;

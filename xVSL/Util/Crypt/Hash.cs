@@ -45,9 +45,16 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public static byte[] SHA1(string fileName)
+        [Obsolete("VSL.Crypt.Hash.SHA1(String) is deprecated. Please use VSL.Crypt.Hash.SHA1File(String) instead.", false)] // deprecated since VSL 1.3
+        public static byte[] SHA1(string fileName) => SHA1File(fileName);
+        /// <summary>
+        /// Computes the SHA1 hash of a file.
+        /// </summary>
+        /// <param name="path">The path to open a <see cref="FileStream"/> and compute the hash.</param>
+        /// <returns></returns>
+        public static byte[] SHA1File(string path)
         {
-            using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
                 return SHA1(fs);
         }
         /// <summary>
@@ -96,9 +103,16 @@ namespace VSL.Crypt
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public static byte[] SHA256(string fileName)
+        [Obsolete("VSL.Crypt.Hash.SHA256(String) is deprecated. Please use VSL.Crypt.Hash.SHA256File(String) instead.", false)] // deprecated since VSL 1.3
+        public static byte[] SHA256(string fileName) => SHA256File(fileName);
+        /// <summary>
+        /// Computes the SHA256 hash of a file.
+        /// </summary>
+        /// <param name="path">The path to open a <see cref="FileStream"/> and compute the hash.</param>
+        /// <returns></returns>
+        public static byte[] SHA256File(string path)
         {
-            using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
                 return SHA256(fs);
         }
         /// <summary>

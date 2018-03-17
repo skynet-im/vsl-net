@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using VSL;
 using VSL.Crypt;
 
 namespace VSLUnitTest
@@ -59,6 +60,25 @@ namespace VSLUnitTest
             byte[] decrypted = AesStatic.Decrypt(ciphertext, key, iv);
             Assert.IsNotNull(decrypted);
             CollectionAssert.AreEqual(plaintext, decrypted);
+        }
+
+        [TestMethod]
+        public void TestAesHmac()
+        {
+            byte[] hmac = AesStatic.GenerateKey();
+            byte[] key = AesStatic.GenerateKey();
+            byte[] iv = AesStatic.GenerateIV();
+
+            Random random = new Random();
+            byte[] plaintext = new byte[69854];
+            random.NextBytes(plaintext);
+
+            PacketBuffer ciphertext = PacketBuffer.CreateDynamic();
+            AesStatic.EncryptWithHmac(plaintext, ciphertext, false, hmac, key);
+            ciphertext.Position = 0;
+            byte[] result = AesStatic.DecryptWithHmac(ciphertext, -1, hmac, key);
+
+            CollectionAssert.AreEqual(plaintext, result);
         }
 
         [TestMethod]
