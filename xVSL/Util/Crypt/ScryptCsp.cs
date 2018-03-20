@@ -321,12 +321,12 @@ namespace VSL.Crypt
         /// Compute and returns the result.
         /// </summary>
         [SecuritySafeCritical]
-        internal unsafe static byte[] ComputeHash(byte[] password, byte[] salt, int N, int r, int p)
+        internal unsafe static byte[] ComputeHash(byte[] password, byte[] salt, int N, int r, int p, int dklen)
         {
             var Ba = new byte[128 * r * p + 63];
             var XYa = new byte[256 * r + 63];
             var Va = new byte[128 * r * N + 63];
-            var buf = new byte[32];
+            var buf = new byte[dklen];
 
             var mac = new HMACSHA256(password);
 

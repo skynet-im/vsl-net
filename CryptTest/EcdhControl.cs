@@ -18,27 +18,27 @@ namespace CryptTest
             InitializeComponent();
         }
 
-        private void btnECDHAliceGenParams_Click(object sender, EventArgs e)
+        private void BtnAliceGenParams_Click(object sender, EventArgs e)
         {
             ECDH.GenerateKey(out byte[] privateKey, out byte[] publicKey);
             TbAlicePrivate.Text = Util.ToHexString(privateKey);
             TbAlicePublic.Text = Util.ToHexString(publicKey);
         }
 
-        private void btnECDHBobGenParams_Click(object sender, EventArgs e)
+        private void BtnBobGenParams_Click(object sender, EventArgs e)
         {
             ECDH.GenerateKey(out byte[] privateKey, out byte[] publicKey);
             TbBobPrivate.Text = Util.ToHexString(privateKey);
             TbBobPublic.Text = Util.ToHexString(publicKey);
         }
 
-        private void btnECDHCreateKey_Click(object sender, EventArgs e)
+        private void BtnCreateKey_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(TbAlicePrivate.Text) || string.IsNullOrEmpty(TbAlicePublic.Text))
-                btnECDHAliceGenParams_Click(null, null);
+                BtnAliceGenParams_Click(null, null);
 
             if (string.IsNullOrEmpty(TbBobPrivate.Text) || string.IsNullOrEmpty(TbBobPublic.Text))
-                btnECDHBobGenParams_Click(null, null);
+                BtnBobGenParams_Click(null, null);
 
             byte[] alicePrivate = Util.GetBytes(TbAlicePrivate.Text);
             byte[] alicePublic = Util.GetBytes(TbAlicePublic.Text);

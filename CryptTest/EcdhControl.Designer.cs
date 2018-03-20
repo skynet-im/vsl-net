@@ -33,11 +33,11 @@
             this.TbBobPublic = new System.Windows.Forms.TextBox();
             this.Label15 = new System.Windows.Forms.Label();
             this.TbAlicePublic = new System.Windows.Forms.TextBox();
-            this.btnECDHCreateKey = new System.Windows.Forms.Button();
+            this.BtnCreateKey = new System.Windows.Forms.Button();
             this.TbAliceKey = new System.Windows.Forms.TextBox();
             this.Label13 = new System.Windows.Forms.Label();
-            this.btnECDHBobGenParams = new System.Windows.Forms.Button();
-            this.btnECDHAliceGenParams = new System.Windows.Forms.Button();
+            this.BtnBobGenParams = new System.Windows.Forms.Button();
+            this.BtnAliceGenParams = new System.Windows.Forms.Button();
             this.Label12 = new System.Windows.Forms.Label();
             this.TbBobPrivate = new System.Windows.Forms.TextBox();
             this.Label11 = new System.Windows.Forms.Label();
@@ -83,15 +83,15 @@
             this.TbAlicePublic.Size = new System.Drawing.Size(191, 20);
             this.TbAlicePublic.TabIndex = 23;
             // 
-            // btnECDHCreateKey
+            // BtnCreateKey
             // 
-            this.btnECDHCreateKey.Location = new System.Drawing.Point(273, 160);
-            this.btnECDHCreateKey.Name = "btnECDHCreateKey";
-            this.btnECDHCreateKey.Size = new System.Drawing.Size(106, 23);
-            this.btnECDHCreateKey.TabIndex = 22;
-            this.btnECDHCreateKey.Text = "Create Key";
-            this.btnECDHCreateKey.UseVisualStyleBackColor = true;
-            this.btnECDHCreateKey.Click += new System.EventHandler(this.btnECDHCreateKey_Click);
+            this.BtnCreateKey.Location = new System.Drawing.Point(273, 160);
+            this.BtnCreateKey.Name = "BtnCreateKey";
+            this.BtnCreateKey.Size = new System.Drawing.Size(106, 23);
+            this.BtnCreateKey.TabIndex = 22;
+            this.BtnCreateKey.Text = "Create Key";
+            this.BtnCreateKey.UseVisualStyleBackColor = true;
+            this.BtnCreateKey.Click += new System.EventHandler(this.BtnCreateKey_Click);
             // 
             // TbAliceKey
             // 
@@ -109,25 +109,25 @@
             this.Label13.TabIndex = 20;
             this.Label13.Text = "Key";
             // 
-            // btnECDHBobGenParams
+            // BtnBobGenParams
             // 
-            this.btnECDHBobGenParams.Location = new System.Drawing.Point(273, 92);
-            this.btnECDHBobGenParams.Name = "btnECDHBobGenParams";
-            this.btnECDHBobGenParams.Size = new System.Drawing.Size(106, 23);
-            this.btnECDHBobGenParams.TabIndex = 19;
-            this.btnECDHBobGenParams.Text = "Generate Params";
-            this.btnECDHBobGenParams.UseVisualStyleBackColor = true;
-            this.btnECDHBobGenParams.Click += new System.EventHandler(this.btnECDHBobGenParams_Click);
+            this.BtnBobGenParams.Location = new System.Drawing.Point(273, 92);
+            this.BtnBobGenParams.Name = "BtnBobGenParams";
+            this.BtnBobGenParams.Size = new System.Drawing.Size(106, 23);
+            this.BtnBobGenParams.TabIndex = 19;
+            this.BtnBobGenParams.Text = "Generate Params";
+            this.BtnBobGenParams.UseVisualStyleBackColor = true;
+            this.BtnBobGenParams.Click += new System.EventHandler(this.BtnBobGenParams_Click);
             // 
-            // btnECDHAliceGenParams
+            // BtnAliceGenParams
             // 
-            this.btnECDHAliceGenParams.Location = new System.Drawing.Point(273, 23);
-            this.btnECDHAliceGenParams.Name = "btnECDHAliceGenParams";
-            this.btnECDHAliceGenParams.Size = new System.Drawing.Size(106, 23);
-            this.btnECDHAliceGenParams.TabIndex = 18;
-            this.btnECDHAliceGenParams.Text = "Generate Params";
-            this.btnECDHAliceGenParams.UseVisualStyleBackColor = true;
-            this.btnECDHAliceGenParams.Click += new System.EventHandler(this.btnECDHAliceGenParams_Click);
+            this.BtnAliceGenParams.Location = new System.Drawing.Point(273, 23);
+            this.BtnAliceGenParams.Name = "BtnAliceGenParams";
+            this.BtnAliceGenParams.Size = new System.Drawing.Size(106, 23);
+            this.BtnAliceGenParams.TabIndex = 18;
+            this.BtnAliceGenParams.Text = "Generate Params";
+            this.BtnAliceGenParams.UseVisualStyleBackColor = true;
+            this.BtnAliceGenParams.Click += new System.EventHandler(this.BtnAliceGenParams_Click);
             // 
             // Label12
             // 
@@ -170,11 +170,11 @@
             this.Controls.Add(this.TbBobPublic);
             this.Controls.Add(this.Label15);
             this.Controls.Add(this.TbAlicePublic);
-            this.Controls.Add(this.btnECDHCreateKey);
+            this.Controls.Add(this.BtnCreateKey);
             this.Controls.Add(this.TbAliceKey);
             this.Controls.Add(this.Label13);
-            this.Controls.Add(this.btnECDHBobGenParams);
-            this.Controls.Add(this.btnECDHAliceGenParams);
+            this.Controls.Add(this.BtnBobGenParams);
+            this.Controls.Add(this.BtnAliceGenParams);
             this.Controls.Add(this.Label12);
             this.Controls.Add(this.TbBobPrivate);
             this.Controls.Add(this.Label11);
@@ -193,11 +193,11 @@
         internal System.Windows.Forms.TextBox TbBobPublic;
         internal System.Windows.Forms.Label Label15;
         internal System.Windows.Forms.TextBox TbAlicePublic;
-        internal System.Windows.Forms.Button btnECDHCreateKey;
+        internal System.Windows.Forms.Button BtnCreateKey;
         internal System.Windows.Forms.TextBox TbAliceKey;
         internal System.Windows.Forms.Label Label13;
-        internal System.Windows.Forms.Button btnECDHBobGenParams;
-        internal System.Windows.Forms.Button btnECDHAliceGenParams;
+        internal System.Windows.Forms.Button BtnBobGenParams;
+        internal System.Windows.Forms.Button BtnAliceGenParams;
         internal System.Windows.Forms.Label Label12;
         internal System.Windows.Forms.TextBox TbBobPrivate;
         internal System.Windows.Forms.Label Label11;

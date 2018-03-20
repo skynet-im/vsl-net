@@ -141,7 +141,7 @@ namespace VSL.Crypt
         /// <returns>Binary 256bit hash.</returns>
         public static byte[] Scrypt(byte[] password, byte[] salt)
         {
-            return Scrypt(password, salt, 16384, 8, 0);
+            return Scrypt(password, salt, 16384, 8, 0, 32);
         }
         /// <summary>
         /// This password hashing system tries to thwart off-line password
@@ -154,10 +154,11 @@ namespace VSL.Crypt
         /// <param name="n"></param>
         /// <param name="r"></param>
         /// <param name="p"></param>
+        /// <param name="dklen"></param>
         /// <returns>Binary 256bit hash.</returns>
-        public static byte[] Scrypt(byte[] password, byte[] salt, int n, int r, int p)
+        public static byte[] Scrypt(byte[] password, byte[] salt, int n, int r, int p, int dklen)
         {
-            return ScryptCsp.ComputeHash(password, salt, n, r, p);
+            return ScryptCsp.ComputeHash(password, salt, n, r, p, dklen);
         }
 #endregion
     }
