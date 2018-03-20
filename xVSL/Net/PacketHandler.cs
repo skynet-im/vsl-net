@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.FileTransfer;
 using VSL.Net;
 using VSL.Packet;
 
@@ -127,13 +128,7 @@ namespace VSL
         }
         internal virtual bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
-            if (parent.ConnectionVersion.Value < 2)
-            {
-                byte original = p.StreamMode.InverseToByte();
-                if (original == 2) // StreamMode.PushHeader (zero based index 2) is not implemented in VSL 1.1
-                    original++;
-                p.StreamMode = FileTransfer.StreamMode.InverseFromByte(original);
-            }
+            p.ReverseStreamMode(parent.ConnectionVersion.Value);
             return parent.FileTransfer.OnPacketReceived(p);
         }
         internal bool HandleP08FileHeader(P08FileHeader p)
