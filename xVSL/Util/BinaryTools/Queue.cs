@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Collections.Concurrent;
-using static VSL.Crypt.Util;
+using VSL.BinaryTools;
 
 namespace VSL
 {
@@ -17,7 +13,6 @@ namespace VSL
         // <fields
         private ConcurrentQueue<byte[]> queue;
         private byte[] cache;
-        private int _length;
         //  fields>
 
         // <constructor
@@ -35,10 +30,7 @@ namespace VSL
         /// <summary>
         /// The count of bytes in the queue
         /// </summary>
-        public int Length
-        {
-            get { return _length; }
-        }
+        public int Length { get; private set; }
         //  properties>
 
         // <functions
@@ -67,7 +59,7 @@ namespace VSL
                 {
                     Array.Copy(cache, buffer, count);
                     done = count;
-                    cache = SkipBytes(cache, count);
+                    cache = cache.Skip(count);
                 }
                 else
                 {
@@ -84,7 +76,7 @@ namespace VSL
                     if (missing < buf.Length)
                     {
                         Array.Copy(buf, 0, buffer, done, missing);
-                        cache = SkipBytes(buf, missing);
+                        cache = buf.Skip(missing);
                         done += missing;
                         break;
                     }
@@ -113,7 +105,7 @@ namespace VSL
             int i = 0;
             if (cache != null) i = cache.Length;
             foreach (byte[] b in queue) { i += b.Length; }
-            _length = i;
+            Length = i;
         }
         //  functions>
     }

@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
+using VSL.BinaryTools;
 using VSL.Crypt;
 using VSL.FileTransfer;
 
@@ -136,8 +137,8 @@ namespace VSLTest
             {
                 algorithm = ContentAlgorithm.Aes256CbcHmacSha256;
                 byte[] keys = Util.GetBytes(TbFileKey.Text);
-                hmacKey = Util.TakeBytes(keys, 32);
-                aesKey = Util.TakeBytes(keys, 32, 32);
+                hmacKey = keys.Take(32);
+                aesKey = keys.Skip(32);
             }
             FTEventArgs args = new FTEventArgs(new Identifier(0), new FileMeta(path, algorithm, hmacKey, aesKey, null), path);
             args.Progress += VslClient_FTProgress;
@@ -197,7 +198,7 @@ namespace VSLTest
             if (args.FileMeta.Algorithm == ContentAlgorithm.Aes256CbcHmacSha256 && !string.IsNullOrWhiteSpace(TbFileKey.Text))
             {
                 byte[] keys = Util.GetBytes(TbFileKey.Text);
-                args.FileMeta.Decrypt(Util.TakeBytes(keys, 32), Util.TakeBytes(keys, 32, 32));
+                args.FileMeta.Decrypt(keys.Take(32), keys.Skip(32));
             }
             vslClient.FileTransfer.Continue(args);
         }

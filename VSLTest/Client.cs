@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Threading;
 using VSL;
+using VSL.BinaryTools;
 using VSL.FileTransfer;
 
 namespace VSLTest
@@ -57,7 +58,7 @@ namespace VSLTest
             if (e.Content.Length > 1024)
                 MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, e.Content.Length));
             else
-                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, VSL.Crypt.Util.ToHexString(e.Content)));
+                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, Util.ToHexString(e.Content)));
         }
 
         private void Vsl_ConnectionClosed(object sender, ConnectionClosedEventArgs e)

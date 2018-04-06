@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
+using VSL.BinaryTools;
 using VSL.Crypt;
 using VSL.Net;
-using VSL.BinaryTools;
 
 namespace VSL
 {
@@ -164,7 +161,8 @@ namespace VSL
                         length = packet.ConstantLength.Value;
                     else
                     {
-                        length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
+                        length = BitConverter.ToUInt32(plaintext, index);
+                        index += 4;
                         if (length > 209) // 214 - 1 (id) - 4 (uint) => 209
                         {
                             parent.ExceptionHandler.CloseConnection("TooBigPacket",
@@ -172,11 +170,10 @@ namespace VSL
                                 "\tat NetworkManager.ReceivePacket_RSA_2048()");
                             return false;
                         }
-                        index += 4;
                     }
                     if (parent.Logger.InitD)
                         parent.Logger.D($"Received internal RSA packet: ID={id} Length={length}");
-                    return parent.handler.HandleInternalPacket(id, Util.TakeBytes(plaintext, Convert.ToInt32(length), index), CryptoAlgorithm.RSA_2048_OAEP);
+                    return parent.handler.HandleInternalPacket(id, plaintext.TakeAt(index, (int)length), CryptoAlgorithm.RSA_2048_OAEP);
                 }
                 else
                 {
@@ -200,14 +197,14 @@ namespace VSL
                 if (!parent.channel.TryRead(out byte[] ciphertext, 16))
                     return false;
                 byte[] plaintext = AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV); //CryptographicException
-                byte id = plaintext[0];
+                byte id = plaintext[0]; // index = 1
                 bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
                 uint length = 0;
                 if (success && packet.ConstantLength.HasValue)
                     length = packet.ConstantLength.Value;
                 else
                 {
-                    length = BitConverter.ToUInt32(Util.TakeBytes(plaintext, 4, index), 0);
+                    length = BitConverter.ToUInt32(plaintext, index);
                     index += 4;
                     if (length > Constants.MaxPacketSize)
                     {
@@ -217,7 +214,7 @@ namespace VSL
                         return false;
                     }
                 }
-                plaintext = Util.SkipBytes(plaintext, index);
+                plaintext = plaintext.Skip(index);
                 if (length > plaintext.Length - 2) // 2 random bytes
                 {
                     int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
@@ -227,7 +224,7 @@ namespace VSL
                     plaintext = Util.ConcatBytes(plaintext, AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV));
                 }
                 int startIndex = Convert.ToInt32(plaintext.Length - length);
-                byte[] content = Util.SkipBytes(plaintext, startIndex); // remove random bytes
+                byte[] content = plaintext.Skip(startIndex); // remove random bytes
                 if (success)
                 {
                     if (parent.Logger.InitD)
@@ -255,10 +252,10 @@ namespace VSL
                 if (!parent.channel.TryRead(out byte[] buf, 35)) // 3 (length) + 32 (HMAC)
                     return false;
                 int blocks = Convert.ToInt32(UInt24.FromBytes(buf, 0));
-                byte[] hmac = Util.TakeBytes(buf, 32, 3);
+                byte[] hmac = buf.Skip(3);
                 if (!parent.channel.TryRead(out byte[] cipherblock, (blocks + 2) * 16)) // inclusive iv
                     return false;
-                if (!hmac.SequenceEqual(hmacProvider.ComputeHash(cipherblock)))
+                if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
                 {
                     parent.ExceptionHandler.CloseConnection("MessageCorrupted",
                         "The integrity checking resulted in a corrupted message.\r\n" +
@@ -266,8 +263,8 @@ namespace VSL
                         "\tblock count: " + blocks);
                     return false;
                 }
-                byte[] iv = Util.TakeBytes(cipherblock, 16);
-                byte[] ciphertext = Util.SkipBytes(cipherblock, 16);
+                byte[] iv = cipherblock.Take(16);
+                byte[] ciphertext = cipherblock.Skip(16);
                 using (PacketBuffer plaintext = PacketBuffer.CreateStatic(AesStatic.Decrypt(ciphertext, AesKey, iv)))
                 {
                     while (plaintext.Position < plaintext.Length - 1)
@@ -411,12 +408,12 @@ namespace VSL
                     pbuf.WriteByteArray(content, false);
                     plaintext = pbuf.ToArray();
                 }
-                byte[] headBlock = AesStatic.Encrypt(Util.TakeBytes(plaintext, 15), AesKey, SendIV);
+                byte[] headBlock = AesStatic.Encrypt(plaintext.Take(15), AesKey, SendIV);
                 byte[] tailBlock = new byte[0];
                 if (plaintext.Length > 15)
                 {
-                    plaintext = Util.SkipBytes(plaintext, 15);
-                    tailBlock = AesStatic.Encrypt(plaintext, AesKey, SendIV);
+                    plaintext = plaintext.Skip(15); // skip done bytes
+                    tailBlock = AesStatic.Encrypt(plaintext, AesKey, SendIV); // encrypt remaining data
                 }
                 byte[] buf;
                 using (PacketBuffer pbuf = PacketBuffer.CreateStatic(1 + headBlock.Length + tailBlock.Length))

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
+using VSL.BinaryTools;
 #if WINDOWS_UWP
 using Windows.Security.Cryptography;
 using Windows.Storage.Streams;
@@ -241,7 +241,7 @@ namespace VSL.Crypt
             byte[] ciphertext = source.ReadByteArray(outerLength - 48);
             // Verify integrity
             using (var hmacCsp = new HMACSHA256(hmacKey))
-                if (!hmac.SequenceEqual(hmacCsp.ComputeHash(Util.ConcatBytes(iv, ciphertext))))
+                if (!hmac.SafeEquals(hmacCsp.ComputeHash(Util.ConcatBytes(iv, ciphertext))))
                     throw new CryptographicException("Message Corrupted: The HMAC values are not equal. The encrypted block may be tampered.");
             // Decrypt data
             return DecryptInternal(ciphertext, aesKey, iv);

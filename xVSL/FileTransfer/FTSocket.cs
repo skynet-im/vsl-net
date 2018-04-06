@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
+using VSL.BinaryTools;
 using VSL.Crypt;
 using VSL.Packet;
 
@@ -200,7 +200,7 @@ namespace VSL.FileTransfer
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
-            if (!parent.manager.SendPacket(new P09FileDataBlock(pos, Util.TakeBytes(buffer, count)))) return false;
+            if (!parent.manager.SendPacket(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
             currentItem.OnProgress();
             if (count < buffer.Length)
                 return currentItem.CloseStream(true);

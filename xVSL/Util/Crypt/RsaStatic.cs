@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.Xml;
+using VSL.BinaryTools;
 
 namespace VSL.Crypt
 {
@@ -54,11 +54,12 @@ namespace VSL.Crypt
             {
                 Parallel.For(0, blocks - 1, (i) =>
                 {
-                    byte[] buf = EncryptInternal(rsa, Util.TakeBytes(plaintext, 214, i * 214));
+                    byte[] buf = EncryptInternal(rsa, plaintext.TakeAt(i * 214, 214));
                     Array.Copy(buf, 0, ciphertext, i * 256, 256);
                 });
-                int llen = plaintext.Length % 214;
-                byte[] lbuf = EncryptInternal(rsa, Util.TakeBytes(plaintext, llen != 0 ? llen : 214, (blocks - 1) * 214));
+                int lidx = (blocks - 1) * 214;
+                int llen = plaintext.Length - lidx;
+                byte[] lbuf = EncryptInternal(rsa, plaintext.TakeAt(lidx, llen));
                 Array.Copy(lbuf, 0, ciphertext, (blocks - 1) * 256, 256);
             }
             return ciphertext;
@@ -111,10 +112,10 @@ namespace VSL.Crypt
             {
                 Parallel.For(0, blocks - 1, (i) =>
                 {
-                    byte[] buf = DecryptInternal(rsa, Util.TakeBytes(ciphertext, 256, i * 256));
+                    byte[] buf = DecryptInternal(rsa, ciphertext.TakeAt(i * 256, 256));
                     Array.Copy(buf, 0, tmp_plaintext, i * 214, buf.Length);
                 });
-                byte[] lbuf = DecryptInternal(rsa, Util.TakeBytes(ciphertext, 256, (blocks - 1) * 256));
+                byte[] lbuf = DecryptInternal(rsa, ciphertext.TakeAt((blocks - 1) * 256, 256));
                 byte[] plaintext = new byte[(blocks - 1) * 214 + lbuf.Length];
                 Array.Copy(tmp_plaintext, plaintext, (blocks - 1) * 214);
                 Array.Copy(lbuf, 0, plaintext, (blocks - 1) * 214, lbuf.Length);

@@ -56,7 +56,6 @@ namespace VSL.Crypt
             {
                 *(uint*)d = *(uint*)s;
                 d += 4;
-
                 s += 4;
                 len -= 4;
             }

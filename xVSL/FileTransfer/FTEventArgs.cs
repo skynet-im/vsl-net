@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
+using VSL.BinaryTools;
 using VSL.Crypt;
 using VSL.FileTransfer.Streams;
 
@@ -158,7 +158,7 @@ namespace VSL.FileTransfer
                     return false;
                 }
                 byte[] hash = Stream.Hash;
-                if (FileMeta.Available && parent.ConnectionVersion.Value > 1 && !hash.SequenceEqual(FileMeta.SHA256))
+                if (FileMeta.Available && parent.ConnectionVersion.Value > 1 && !hash.SafeEquals(FileMeta.SHA256))
                 {
                     // Do not check hash for VSL 1.1 because this version always sends an empty field.
                     parent.ExceptionHandler.CloseConnection("FileCorrupted",

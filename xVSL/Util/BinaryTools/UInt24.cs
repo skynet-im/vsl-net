@@ -9,7 +9,8 @@ namespace VSL.BinaryTools
     {
         internal static uint FromBytes(byte[] buf)
         {
-            if (buf == null) throw new ArgumentNullException(nameof(buf));
+            if (buf == null)
+                throw new ArgumentNullException(nameof(buf));
             if (buf.Length < 3)
                 throw new ArgumentOutOfRangeException(nameof(buf), buf.Length, "The buffer must have a size of at least 3 bytes");
             return FromBytes(buf, 0);
@@ -18,13 +19,15 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         internal unsafe static uint FromBytes(byte[] buf, int startIdx)
         {
-            if (buf == null) throw new ArgumentNullException(nameof(buf));
-            if (startIdx < 0) throw new ArgumentOutOfRangeException(nameof(startIdx), startIdx, "The start index must not be negative.");
+            if (buf == null)
+                throw new ArgumentNullException(nameof(buf));
+            if (startIdx < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIdx), startIdx, "The start index must not be negative.");
             if (startIdx > buf.Length - 3) // prevent buffer overflow
                 throw new ArgumentOutOfRangeException(nameof(startIdx), startIdx,
                     "The start index must be small enough to keep three bytes remaining.");
-            byte[] tmp = new byte[4];
-            fixed (byte* array = tmp)
+
+            byte* array = stackalloc byte[4];
             fixed (byte* buffer = buf)
             {
                 if (BitConverter.IsLittleEndian)
@@ -51,11 +54,14 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         internal unsafe static void ToBytes(uint n, byte[] buf, int startIdx)
         {
-            if (buf == null) throw new ArgumentNullException(nameof(buf));
-            if (startIdx < 0) throw new ArgumentOutOfRangeException(nameof(startIdx), startIdx, "The start index must not be negative.");
+            if (buf == null)
+                throw new ArgumentNullException(nameof(buf));
+            if (startIdx < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIdx), startIdx, "The start index must not be negative.");
             if (startIdx > buf.Length - 3) // prevent buffer overflow
                 throw new ArgumentOutOfRangeException(nameof(startIdx), startIdx,
                     "The start index must be small enough to keep three bytes remaining.");
+
             uint* nn = &n;
             fixed (byte* array = buf)
             {
