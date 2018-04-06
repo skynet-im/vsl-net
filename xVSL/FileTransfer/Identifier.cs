@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.BinaryTools;
 
 namespace VSL.FileTransfer
 {
@@ -154,7 +155,7 @@ namespace VSL.FileTransfer
                 case IdentificationMode.UInt64:
                     return Convert.ToString((ulong)ID);
                 case IdentificationMode.ByteArray:
-                    return Crypt.Util.ToHexString((byte[])ID);
+                    return Util.ToHexString((byte[])ID);
                 case IdentificationMode.String:
                     return (string)ID;
                 default:

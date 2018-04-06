@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using VSL.BinaryTools;
 
 namespace VSL
 {
@@ -151,7 +150,7 @@ namespace VSL
                 int len = e.BytesTransferred;
                 if (len > 0)
                 {
-                    cache.Enqeue(Crypt.Util.TakeBytes(e.Buffer, len));
+                    cache.Enqeue(e.Buffer.Take(len));
                     ReceivedBytes += len;
                 }
                 else if (threadsRunning)

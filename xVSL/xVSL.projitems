@@ -51,6 +51,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Packet\RequestType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\BinaryTools\PacketBufferDynamic.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\BinaryTools\PacketBufferStatic.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Util\BinaryTools\Util.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\AesStatic.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ECDH.cs" />
@@ -58,7 +59,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Hash.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\RsaStatic.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\ScryptCsp.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Util\Crypt\Util.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\ExceptionHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Logger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\BinaryTools\PacketBuffer.cs" />

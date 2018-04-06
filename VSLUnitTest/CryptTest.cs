@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Text;
 using VSL;
+using VSL.BinaryTools;
 using VSL.Crypt;
 
 namespace VSLUnitTest
