@@ -104,11 +104,9 @@ namespace VSL
         private bool ReceivePacket_Plaintext()
         {
             byte id; // read packet id
-            {
-                if (!parent.channel.TryRead(out byte[] buf, 1))
-                    return false;
-                id = buf[0];
-            }
+            if (!parent.channel.TryRead(out byte[] buf, 1))
+                return false;
+            id = buf[0];
 
             bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
             if (!success)
@@ -124,7 +122,7 @@ namespace VSL
                 length = packet.ConstantLength.Value;
             else
             {
-                if (!parent.channel.TryRead(out byte[] buf, 4))
+                if (!parent.channel.TryRead(out buf, 4))
                     return false;
                 length = BitConverter.ToUInt32(buf, 0);
                 if (length > Constants.MaxPacketSize)
@@ -136,13 +134,11 @@ namespace VSL
                 }
             }
 
-            {
-                if (!parent.channel.TryRead(out byte[] buf, Convert.ToInt32(length))) // read packet content
-                    return false;
-                if (parent.Logger.InitD)
-                    parent.Logger.D($"Received internal plaintext packet: ID={id} Length={length}");
-                return parent.handler.HandleInternalPacket(id, buf, CryptoAlgorithm.None);
-            }
+            if (!parent.channel.TryRead(out buf, Convert.ToInt32(length))) // read packet content
+                return false;
+            if (parent.Logger.InitD)
+                parent.Logger.D($"Received internal plaintext packet: ID={id} Length={length}");
+            return parent.handler.HandleInternalPacket(id, buf, CryptoAlgorithm.None);
         }
         private bool ReceivePacket_RSA_2048_OAEP()
         {

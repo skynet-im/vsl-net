@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
-using VSL.FileTransfer;
 using VSL.Net;
 using VSL.Packet;
 
@@ -16,14 +15,12 @@ namespace VSL
     /// </summary>
     public sealed class VSLClient : VSLSocket
     {
-        // <fields
         new internal PacketHandlerClient handler;
         private ushort latestProduct;
         private ushort oldestProduct;
         private int _networkBufferSize = Constants.ReceiveBufferSize;
-        //  fields>
+        private TaskCompletionSource<int> tcs;
 
-        // <constructor
 #if !__IOS__
         /// <summary>
         /// Creates a VSL Client using <see cref="Threading.AsyncMode.ManagedThread"/> that has to be connected.
@@ -47,9 +44,7 @@ namespace VSL
             this.latestProduct = latestProduct;
             this.oldestProduct = oldestProduct;
         }
-        //  constructor>
 
-        // <properties
         /// <summary>
         /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
         /// </summary>
@@ -69,9 +64,7 @@ namespace VSL
                     base.ReceiveBufferSize = value;
             }
         }
-        //  properties>
 
-        // <functions
         /// <summary>
         /// Connects the TCP Client asynchronously.
         /// </summary>
@@ -79,36 +72,96 @@ namespace VSL
         /// <param name="port">TCP port to connect.</param>
         /// <param name="serverKey">Public RSA key of the server.</param>
         /// <returns></returns>
-        public async Task ConnectAsync(string hostname, int port, string serverKey)
+        public Task ConnectAsync(string hostname, int port, string serverKey)
         {
-            // <check args
-            if (string.IsNullOrEmpty(hostname)) throw new ArgumentNullException(nameof(hostname));
-            if (port < 0 || port > 65535) throw new ArgumentOutOfRangeException(nameof(port), port, "You must provide a valid port number");
-            if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException(nameof(serverKey));
-            //  check args>
+            return ConnectAsync(hostname, port, serverKey, null);
+        }
 
+        /// <summary>
+        /// Connects the TCP Client asynchronously.
+        /// </summary>
+        /// <param name="hostname">IP address or hostname.</param>
+        /// <param name="port">TCP port to connect.</param>
+        /// <param name="serverKey">Public RSA key of the server.</param>
+        /// <param name="progress">Reports the progress of connection build up.</param>
+        /// <returns></returns>
+        public async Task ConnectAsync(string hostname, int port, string serverKey, IProgress<ConnectionState> progress)
+        {
+            progress?.Report(ConnectionState.Stalled);
+            
+            // check args
+            if (string.IsNullOrEmpty(hostname)) throw new ArgumentNullException(nameof(hostname));
+            if (port < 0 || port > 65535)
+                throw new ArgumentOutOfRangeException(nameof(port), port, "You must provide a valid port number");
+            if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException(nameof(serverKey));
+
+            progress?.Report(ConnectionState.DnsLookup);
             IPAddress[] ipaddr = await Dns.GetHostAddressesAsync(hostname);
             TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
             tcp.Client.DualMode = true;
+            progress?.Report(ConnectionState.TcpConnect);
             await tcp.ConnectAsync(ipaddr, port);
             channel = new NetworkChannel(this, tcp.Client);
 
-            // <initialize component
+            // initialize component
             manager = new NetworkManager(this, serverKey);
             handler = new PacketHandlerClient(this);
             base.handler = handler;
             StartInternal();
             channel.StartThreads();
-            //  initialize component>
 
-            // <key exchange
+            // key exchange
+            progress?.Report(ConnectionState.Handshake);
             Task s = Task.Run(() => manager.SendPacket(CryptoAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey)));
             manager.GenerateKeys();
             await s;
             await Task.Run(() => manager.SendPacket(CryptoAlgorithm.RSA_2048_OAEP, new P01KeyExchange(manager.AesKey, manager.SendIV,
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, latestProduct, oldestProduct)));
-            //  key exchange>
+
+            // wait for response
+            progress?.Report(ConnectionState.KeyExchange);
+            tcs = new TaskCompletionSource<int>();
+            await tcs.Task;
+            tcs = null;
+
+            progress?.Report(ConnectionState.Finished);
         }
-        //  functions>
+
+        internal override void OnConnectionEstablished()
+        {
+            base.OnConnectionEstablished();
+            tcs?.SetResult(0);
+        }
+
+        /// <summary>
+        /// Defines a set of connection states.
+        /// </summary>
+        public enum ConnectionState
+        {
+            /// <summary>
+            /// A connection build up was requested.
+            /// </summary>
+            Stalled,
+            /// <summary>
+            /// The DNS lookup is running.
+            /// </summary>
+            DnsLookup,
+            /// <summary>
+            /// The TCP connection build up is running.
+            /// </summary>
+            TcpConnect,
+            /// <summary>
+            /// The handshake is being sent to the server.
+            /// </summary>
+            Handshake,
+            /// <summary>
+            /// Waiting for a key exchange response.
+            /// </summary>
+            KeyExchange,
+            /// <summary>
+            /// The connection build up was finished.
+            /// </summary>
+            Finished,
+        }
     }
 }

@@ -122,7 +122,7 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
                     $"Could not resume related packet with id {p.RelatedPacket}.\r\n" +
-                    $"\tat PacketHandler.HandleP06Accepted(P06Accepted)");
+                    "\tat PacketHandler.HandleP06Accepted(P06Accepted)");
                 return false;
             }
         }

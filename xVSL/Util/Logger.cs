@@ -27,7 +27,7 @@ namespace VSL
         /// Gets or sets a value indicating whether the LoggedMessage event is raised for debug messages.
         /// </summary>
         public bool InvokeDebugMessages { get; set; } = true;
-        internal bool InitD { get { return PrintDebugMessages || InvokeDebugMessages; } }
+        internal bool InitD => PrintDebugMessages || InvokeDebugMessages;
         #endregion
         #region exception
         /// <summary>
@@ -38,7 +38,7 @@ namespace VSL
         /// Gets or sets a value indicating whether the LoggedMessage event is raised for exception messages.
         /// </summary>
         public bool InvokeExceptionMessages { get; set; } = true;
-        internal bool InitE { get { return PrintExceptionMessages || InvokeExceptionMessages; } }
+        internal bool InitE => PrintExceptionMessages || InvokeExceptionMessages;
         #endregion
         #region info
         /// <summary>
@@ -49,7 +49,7 @@ namespace VSL
         /// Gets or sets a value indicating whether the LoggedMessage event is raised for info messages.
         /// </summary>
         public bool InvokeInfoMessages { get; set; } = true;
-        internal bool InitI { get { return PrintInfoMessages || InvokeInfoMessages; } }
+        internal bool InitI => PrintInfoMessages || InvokeInfoMessages;
         #endregion
         /// <summary>
         /// Gets or sets a value indicating whether uncaught exceptions are printed in the console.
