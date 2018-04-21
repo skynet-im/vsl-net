@@ -209,7 +209,7 @@ namespace VSL
                 {
                     parent.ExceptionHandler.CloseConnection("Timeout",
                         $"Waiting for {count} bytes took over {cycles * wait} ms.\r\n" +
-                        $"\tat NetworkChannel.TryRead(out byte[], int)");
+                        "\tat NetworkChannel.TryRead(out byte[], int)");
                     buf = null;
                     return false;
                 }
@@ -224,7 +224,7 @@ namespace VSL
             {
                 parent.ExceptionHandler.CloseConnection("DequeuingError",
                     $"Could not dequeue {count} bytes.\r\n" +
-                    $"\tat NetworkChannel.TryRead(out byte[], int)");
+                    "\tat NetworkChannel.TryRead(out byte[], int)");
                 return false;
             }
             return true;

@@ -73,10 +73,14 @@ namespace VSL
                     parent.OnConnectionEstablished();
                     return true;
                 case ConnectionState.Redirect:
-                    parent.ExceptionHandler.CloseConnection("NotSupported", "This VSL version does not support redirects.");
+                    parent.ExceptionHandler.CloseConnection("NotSupported",
+                        "This VSL version does not support redirects.\r\n" +
+                        "\tat PacketHandlerClient.HandleP03FinishHandshake(P03FinishHandshake)");
                     return false;
                 case ConnectionState.NotCompatible:
-                    parent.ExceptionHandler.CloseConnection("ConnectionDenied", "The specified server denied the connection to this VSL/application version client.");
+                    parent.ExceptionHandler.CloseConnection("ConnectionDenied",
+                        "The specified server denied the connection to this VSL/application version client.\r\n" +
+                        "\tat PacketHandlerClient.HandleP03FinishHandshake(P03FinishHandshake)");
                     return false;
                 case ConnectionState.Compatible:
                     parent.ConnectionVersion = p.VSLVersion;

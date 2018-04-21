@@ -55,6 +55,7 @@ namespace VSLTest
         {
             if (!clientConnected)
             {
+                btnConnect.Enabled = false;
                 vslClient = new VSLClient(0, 0);
                 vslClient.Logger.PrintDebugMessages = true;
                 vslClient.Logger.PrintExceptionMessages = true;
@@ -64,8 +65,8 @@ namespace VSLTest
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
                 vslClient.PacketReceived += VslClient_Received;
-                await vslClient.ConnectAsync("localhost", Program.Port, Program.PublicKey);
-                btnConnect.Enabled = false;
+                var progress = new Progress<VSLClient.ConnectionState>((state) => Console.WriteLine(state));
+                await vslClient.ConnectAsync("localhost", Program.Port, Program.PublicKey, progress);
             }
             else
                 vslClient.CloseConnection("The user requested to disconnect");
