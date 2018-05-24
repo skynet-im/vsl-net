@@ -35,49 +35,36 @@ namespace VSL
         //  properties>
 
         // <functions
-        internal bool TryGetPacket(byte id, out IPacket packet)
-        {
-            if (id >= RegisteredPackets.Length)
-            {
-                packet = null;
-                return false;
-            }
-            packet = RegisteredPackets[id].Packet;
-            return packet != null;
-        }
+        internal bool IsInternalPacket(byte id) => id < RegisteredPackets.Length;
 
         /// <summary>
-        /// Handles an internal VSL packet.
+        /// Validates an internal packet and returns the matching <see cref="PacketRule"/>.
         /// </summary>
-        /// <param name="id">Packet ID.</param>
-        /// <param name="content">Packet data.</param>
-        /// <param name="alg">Algorithm that was detected for this packet.</param>
-        /// <exception cref="ArgumentOutOfRangeException"/>
-        /// <returns></returns>
-        internal bool HandleInternalPacket(byte id, byte[] content, CryptoAlgorithm alg)
+        internal bool ValidatePacket(byte id, CryptoAlgorithm alg, out PacketRule rule)
         {
-            if (id >= RegisteredPackets.Length)
-            {
-                parent.ExceptionHandler.CloseConnection("UnknownPacket",
-                    $"Packet id {id} is not an internal packet and cannot be handled\r\n" +
-                    "\tat PacketHandler.HandleInternalPacket(Byte, Byte[], CryptoAlgorithm)");
-                return false;
-            }
-            PacketRule rule = RegisteredPackets[id];
+            rule = RegisteredPackets[id];
             if (!rule.Available)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    $"Packet id {id} is no valid internal packet for this instance and cannot be handled\r\n" +
-                    "\tat PacketHandler.HandleInternalPacket(Byte, Byte[], CryptoAlgorithm)");
+                    $"Packet id {id} is no valid internal packet for this instance.\r\n" +
+                    "\tat PacketHandler.ValidatePacket(Byte, CryptoAlgorithm, PacketRule)");
                 return false;
             }
             if (!rule.VerifyAlgorithm(alg))
             {
                 parent.ExceptionHandler.CloseConnection("WrongAlgorithm",
-                    $"Received {rule.Packet.ToString()} with {alg.ToString()} which is not allowed.\r\n" +
-                    "\tat PacketHandler.HandleInternalPacket(Byte, Byte[], CryptoAlgorithm)");
+                    $"{rule.Packet} with {alg} is not allowed.\r\n" +
+                    "\tat PacketHandler.ValidatePacket(Byte, CryptoAlgorithm, PacketRule)");
                 return false;
             }
+            return true;
+        }
+
+        /// <summary>
+        /// Handles an internal VSL packet. Ensure using the correct <see cref="CryptoAlgorithm"/>.
+        /// </summary>
+        internal bool HandleInternalPacket(PacketRule rule, byte[] content)
+        {
             IPacket packet = rule.Packet.New();
             try
             {

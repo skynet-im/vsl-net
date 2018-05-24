@@ -162,6 +162,7 @@ namespace VSLTest
                 btnPenetrationTest.Text = "Stoppen";
                 await t;
                 pentest.Stop();
+                btnPenetrationTest.Text = "Stresstest";
                 MessageBox.Show(string.Format("{0} attacks in {1}ms", pentest.Done, pentest.ElapsedTime));
             }
         }
@@ -173,6 +174,7 @@ namespace VSLTest
             Program.Clients.Cleanup();
             stopwatch.Stop();
             MessageBox.Show($"Cleanup successful after {stopwatch.ElapsedMilliseconds} ms.");
+            GC.Collect();
         }
 
         private void VslClient_FTProgress(object sender, FTProgressEventArgs e)

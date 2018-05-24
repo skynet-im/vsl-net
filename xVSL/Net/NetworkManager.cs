@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using VSL.BinaryTools;
@@ -16,7 +17,7 @@ namespace VSL
         // <fields
         private VSLSocket parent;
         internal bool Ready4Aes = false;
-        private string rsaKey;
+        private readonly string rsaKey;
         private HMACSHA256 hmacProvider;
         //  fields>
         // <constructor
@@ -103,45 +104,37 @@ namespace VSL
         }
         private bool ReceivePacket_Plaintext()
         {
+            CryptoAlgorithm alg = CryptoAlgorithm.None;
             byte id; // read packet id
             if (!parent.channel.TryRead(out byte[] buf, 1))
                 return false;
             id = buf[0];
 
-            bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
-            if (!success)
-            {
-                parent.ExceptionHandler.CloseConnection("UnknownPacket",
-                    $"Received unknown internal plaintext packet with id {id}\r\n" +
-                    "\tat NetworkManager.ReceivePacket_Plaintext()");
+            if (!AssertInternal(id, alg, nameof(ReceivePacket_Plaintext)) ||
+                !parent.handler.ValidatePacket(id, alg, out PacketRule rule))
                 return false;
-            }
 
             uint length; // read packet length
-            if (packet.ConstantLength.HasValue)
-                length = packet.ConstantLength.Value;
+            if (rule.Packet.ConstantLength.HasValue)
+                length = rule.Packet.ConstantLength.Value;
             else
             {
                 if (!parent.channel.TryRead(out buf, 4))
                     return false;
                 length = BitConverter.ToUInt32(buf, 0);
-                if (length > Constants.MaxPacketSize)
-                {
-                    parent.ExceptionHandler.CloseConnection("TooBigPacket",
-                        $"Tried to receive a packet of {length} bytes. Maximum admissible are {Constants.MaxPacketSize} bytes.\r\n" +
-                        "\tat NetworkManager.ReceivePacket_Plaintext()");
+                if (!AssertSize(Constants.MaxPacketSize, length, nameof(ReceivePacket_Plaintext)))
                     return false;
-                }
             }
 
-            if (!parent.channel.TryRead(out buf, Convert.ToInt32(length))) // read packet content
+            if (!parent.channel.TryRead(out buf, (int)length)) // read packet content
                 return false;
             if (parent.Logger.InitD)
                 parent.Logger.D($"Received internal plaintext packet: ID={id} Length={length}");
-            return parent.handler.HandleInternalPacket(id, buf, CryptoAlgorithm.None);
+            return parent.handler.HandleInternalPacket(rule, buf);
         }
         private bool ReceivePacket_RSA_2048_OAEP()
         {
+            CryptoAlgorithm alg = CryptoAlgorithm.RSA_2048_OAEP;
             try
             {
                 int index = 1;
@@ -149,35 +142,23 @@ namespace VSL
                     return false;
                 byte[] plaintext = RsaStatic.DecryptBlock(ciphertext, rsaKey);
                 byte id = plaintext[0]; // index = 1
-                bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
-                if (success)
-                {
-                    uint length = 0;
-                    if (packet.ConstantLength.HasValue)
-                        length = packet.ConstantLength.Value;
-                    else
-                    {
-                        length = BitConverter.ToUInt32(plaintext, index);
-                        index += 4;
-                        if (length > 209) // 214 - 1 (id) - 4 (uint) => 209
-                        {
-                            parent.ExceptionHandler.CloseConnection("TooBigPacket",
-                                $"Tried to receive a packet of {length} bytes. Maximum admissible are 209 bytes.\r\n" +
-                                "\tat NetworkManager.ReceivePacket_RSA_2048()");
-                            return false;
-                        }
-                    }
-                    if (parent.Logger.InitD)
-                        parent.Logger.D($"Received internal RSA packet: ID={id} Length={length}");
-                    return parent.handler.HandleInternalPacket(id, plaintext.TakeAt(index, (int)length), CryptoAlgorithm.RSA_2048_OAEP);
-                }
+                if (!AssertInternal(id, alg, nameof(ReceivePacket_RSA_2048_OAEP)) ||
+                    !parent.handler.ValidatePacket(id, alg, out PacketRule rule))
+                    return false;
+
+                uint length = 0;
+                if (rule.Packet.ConstantLength.HasValue)
+                    length = rule.Packet.ConstantLength.Value;
                 else
                 {
-                    parent.ExceptionHandler.CloseConnection("UnknownPacket",
-                        $"Received unknown internal RSA packet with id {id}\r\n" +
-                        "\tat NetworkManager.ReceivePacket_RSA_2048()");
-                    return false;
+                    length = BitConverter.ToUInt32(plaintext, index);
+                    index += 4;
+                    if (!AssertSize(209, length, nameof(ReceivePacket_RSA_2048_OAEP)))
+                        return false; // 214 - 1 (id) - 4 (uint) => 209
                 }
+                if (parent.Logger.InitD)
+                    parent.Logger.D($"Received internal RSA packet: ID={id} Length={length}");
+                return parent.handler.HandleInternalPacket(rule, plaintext.TakeAt(index, (int)length));
             }
             catch (CryptographicException ex) // RSA.DecryptBlock()
             {
@@ -187,6 +168,7 @@ namespace VSL
         }
         private bool ReceivePacket_AES_256_CBC_SP()
         {
+            CryptoAlgorithm alg = CryptoAlgorithm.AES_256_CBC_SP;
             try
             {
                 int index = 1;
@@ -194,21 +176,21 @@ namespace VSL
                     return false;
                 byte[] plaintext = AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV); //CryptographicException
                 byte id = plaintext[0]; // index = 1
-                bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
+
+                bool isInternal = parent.handler.IsInternalPacket(id);
+                PacketRule rule = default(PacketRule);
+                if (isInternal && !parent.handler.ValidatePacket(id, alg, out rule))
+                    return false;
+
                 uint length = 0;
-                if (success && packet.ConstantLength.HasValue)
-                    length = packet.ConstantLength.Value;
+                if (isInternal && rule.Packet.ConstantLength.HasValue)
+                    length = rule.Packet.ConstantLength.Value;
                 else
                 {
                     length = BitConverter.ToUInt32(plaintext, index);
                     index += 4;
-                    if (length > Constants.MaxPacketSize)
-                    {
-                        parent.ExceptionHandler.CloseConnection("TooBigPacket",
-                            $"Tried to receive a packet of {length} bytes. Maximum admissible are {Constants.MaxPacketSize} bytes.\r\n" +
-                            "\tat NetworkManager.ReceivePacket_Plaintext()");
+                    if (!AssertSize(Constants.MaxPacketSize, length, nameof(ReceivePacket_AES_256_CBC_SP)))
                         return false;
-                    }
                 }
                 plaintext = plaintext.Skip(index);
                 if (length > plaintext.Length - 2) // 2 random bytes
@@ -221,11 +203,11 @@ namespace VSL
                 }
                 int startIndex = Convert.ToInt32(plaintext.Length - length);
                 byte[] content = plaintext.Skip(startIndex); // remove random bytes
-                if (success)
+                if (isInternal)
                 {
                     if (parent.Logger.InitD)
                         parent.Logger.D($"Received internal insecure AES packet: ID={id} Length={content.Length}");
-                    return parent.handler.HandleInternalPacket(id, content, CryptoAlgorithm.AES_256_CBC_SP);
+                    return parent.handler.HandleInternalPacket(rule, content);
                 }
                 else
                 {
@@ -243,13 +225,17 @@ namespace VSL
         }
         private bool ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3()
         {
+            CryptoAlgorithm alg = CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3;
             try
             {
                 if (!parent.channel.TryRead(out byte[] buf, 35)) // 3 (length) + 32 (HMAC)
                     return false;
                 int blocks = Convert.ToInt32(UInt24.FromBytes(buf, 0));
                 byte[] hmac = buf.Skip(3);
-                if (!parent.channel.TryRead(out byte[] cipherblock, (blocks + 2) * 16)) // inclusive iv
+                const int defaultOverhead = 16 + 1 + 4; // iv + id + len
+                int pendingLength = (blocks + 2) * 16; // at least one block; inclusive iv
+                if (!AssertSize(Constants.MaxPacketSize + defaultOverhead, (uint)pendingLength, nameof(ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3)) || 
+                    !parent.channel.TryRead(out byte[] cipherblock, pendingLength))
                     return false;
                 if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
                 {
@@ -266,13 +252,11 @@ namespace VSL
                     while (plaintext.Position < plaintext.Length - 1)
                     {
                         byte id = plaintext.ReadByte();
-                        // TODO: [Warning] TryGetPacket returns false also for some internal packets!
-                        bool success = parent.handler.TryGetPacket(id, out Packet.IPacket packet);
-                        uint length;
-                        if (success && packet.ConstantLength.HasValue)
-                            length = packet.ConstantLength.Value;
-                        else
-                            length = plaintext.ReadUInt();
+                        bool isInternal = parent.handler.IsInternalPacket(id);
+                        PacketRule rule = default(PacketRule);
+                        if (isInternal && !parent.handler.ValidatePacket(id, alg, out rule))
+                            return false;
+                        uint length = rule.Packet?.ConstantLength ?? plaintext.ReadUInt();
                         if (length > plaintext.Pending)
                         {
                             parent.ExceptionHandler.CloseConnection("TooBigPacket",
@@ -281,11 +265,11 @@ namespace VSL
                             return false;
                         }
                         byte[] content = plaintext.ReadByteArray((int)length);
-                        if (success)
+                        if (isInternal)
                         {
                             if (parent.Logger.InitD)
                                 parent.Logger.D($"Received internal AES packet: ID={id} Length={content.Length}");
-                            if (!parent.handler.HandleInternalPacket(id, content, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3))
+                            if (!parent.handler.HandleInternalPacket(rule, content))
                                 return false;
                         }
                         else
@@ -488,6 +472,25 @@ namespace VSL
         }
         internal byte[] ReceiveIV { get; set; }
         internal byte[] SendIV { get; set; }
+        #endregion
+        #region exception
+        private bool AssertInternal(byte id, CryptoAlgorithm alg, string member)
+        {
+            bool isInternal = parent.handler.IsInternalPacket(id);
+            if (!isInternal) parent.ExceptionHandler.CloseConnection("InvalidPacket",
+                $"Only internal packets are allowed to use {alg}.\r\n" +
+                $"\tat NetworkManager.{member}()");
+            return isInternal;
+        }
+
+        private bool AssertSize(uint maximum, uint actual, string member)
+        {
+            bool valid = actual <= maximum;
+            if (!valid) parent.ExceptionHandler.CloseConnection("TooBigPacket",
+                $"Tried to receive a packet of {actual} bytes. Maximum admissible are {maximum} bytes.\r\n" +
+                $"\tat NetworkManager.{member}()");
+            return valid;
+        }
         #endregion
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

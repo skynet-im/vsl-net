@@ -18,7 +18,7 @@ namespace VSL.Net.Channel
 
         private ConcurrentQueue<ReceiveSendItem> realtimeQueue;
         private ConcurrentQueue<ReceiveSendItem> backgroundQueue;
-        private object sendLock;
+        private readonly object sendLock;
         private bool sending = false;
 
         public NetworkChannel(Socket socket)

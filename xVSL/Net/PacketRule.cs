@@ -9,7 +9,7 @@ namespace VSL.Net
     {
         internal bool Available { get; }
         internal IPacket Packet { get; }
-        private bool[] algorithms;
+        private readonly bool[] algorithms;
 
         internal PacketRule(IPacket packet, params CryptoAlgorithm[] algs)
         {
@@ -20,6 +20,11 @@ namespace VSL.Net
             Available = true;
         }
 
+        /// <summary>
+        /// Verifies that a provided algorithm is supported by the packet.
+        /// </summary>
+        /// <param name="algorithm"></param>
+        /// <returns></returns>
         internal bool VerifyAlgorithm(CryptoAlgorithm algorithm)
         {
             return algorithms[(byte)algorithm];
