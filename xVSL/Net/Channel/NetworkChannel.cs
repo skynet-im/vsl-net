@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace VSL.Net.Channel
 {
-    internal class NetworkChannel
+    internal class NetworkChannel : IDisposable
     {
         private Socket socket;
 
@@ -20,6 +20,9 @@ namespace VSL.Net.Channel
         private ConcurrentQueue<ReceiveSendItem> backgroundQueue;
         private readonly object sendLock;
         private bool sending = false;
+
+        private bool shutdown = false;
+        private bool disposed = false;
 
         public NetworkChannel(Socket socket)
         {
@@ -36,6 +39,11 @@ namespace VSL.Net.Channel
 
         public Task<bool> ReceiveAsync(byte[] buffer, int offset, int count)
         {
+            if (disposed)
+                throw new ObjectDisposedException(nameof(NetworkChannel));
+            if (shutdown)
+                return Task.FromResult(false);
+
             if (receiveCount > 0)
             {
                 int cplen = Math.Min(receiveCount, count);
@@ -59,6 +67,11 @@ namespace VSL.Net.Channel
 
         public Task<bool> SendAsync(byte[] buffer, int offset, int count)
         {
+            if (disposed)
+                throw new ObjectDisposedException(nameof(NetworkChannel));
+            if (shutdown)
+                return Task.FromResult(false);
+
             ReceiveSendItem item = new ReceiveSendItem(buffer, offset, count);
             realtimeQueue.Enqueue(item);
             EnsureSend();
@@ -67,10 +80,39 @@ namespace VSL.Net.Channel
 
         public Task<bool> SendAsyncBackground(byte[] buffer, int offset, int count)
         {
+            if (disposed)
+                throw new ObjectDisposedException(nameof(NetworkChannel));
+            if (shutdown)
+                return Task.FromResult(false);
+
             ReceiveSendItem item = new ReceiveSendItem(buffer, offset, count);
             backgroundQueue.Enqueue(item);
             EnsureSend();
             return item.Task;
+        }
+
+        public void Shutdown()
+        {
+            if (disposed)
+                throw new ObjectDisposedException(nameof(NetworkChannel));
+
+            if (!shutdown)
+            {
+                socket.Shutdown(SocketShutdown.Both);
+                // TODO: Handle shutdown by exiting loops
+                // TODO: Set all pending items to false
+                shutdown = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!disposed)
+            {
+                socket.Dispose();
+
+                disposed = true;
+            }
         }
 
         private void ReceiveItem(ReceiveSendItem item)
@@ -79,6 +121,7 @@ namespace VSL.Net.Channel
             // TODO: Set buffer
             args.Completed += Send_Completed;
             args.UserToken = item;
+            // TODO: Will this crash when the socket was shut down or can we obtain the error code
             if (!socket.SendAsync(args))
                 Send_Completed(socket, args);
         }
@@ -124,7 +167,7 @@ namespace VSL.Net.Channel
             else
             {
                 sending = true;
-                StartSend();
+                StartSend(locked: true);
             }
         }
 
@@ -137,9 +180,10 @@ namespace VSL.Net.Channel
             return false;
         }
 
-        private void StartSend()
+        private void StartSend(bool locked)
         {
-            Monitor.Enter(sendLock);
+            if (!locked)
+                Monitor.Enter(sendLock);
             if (!TryDeqeue(out ReceiveSendItem item))
             {
                 Monitor.Exit(sendLock);
@@ -182,7 +226,7 @@ namespace VSL.Net.Channel
             else
             {
                 item.Tcs.SetResult(true);
-                StartSend();
+                StartSend(locked: false);
             }
         }
     }
