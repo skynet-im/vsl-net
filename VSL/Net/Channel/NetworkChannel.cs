@@ -129,7 +129,12 @@ namespace VSL.Net.Channel
         private void Receive_Completed(object sender, SocketAsyncEventArgs e)
         {
             ReceiveSendItem item = (ReceiveSendItem)e.UserToken;
-            if (e.SocketError != SocketError.Success)
+            if (e.SocketError == SocketError.Shutdown)
+            {
+                item.Tcs.SetResult(false);
+                return;
+            }
+            else if (e.SocketError != SocketError.Success)
             {
                 // TODO: Handle bad socket
             }
@@ -209,7 +214,12 @@ namespace VSL.Net.Channel
         private void Send_Completed(object sender, SocketAsyncEventArgs e)
         {
             ReceiveSendItem item = (ReceiveSendItem)e.UserToken;
-            if (e.SocketError != SocketError.Success)
+            if (e.SocketError == SocketError.Shutdown)
+            {
+                item.Tcs.SetResult(false);
+                return;
+            }
+            else if (e.SocketError != SocketError.Success)
             {
                 // TODO: Handle bad socket
             }
