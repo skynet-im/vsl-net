@@ -63,10 +63,6 @@
       <Project>{f1d1356a-9e8b-4e82-b155-0400d1d30b0b}</Project>
       <Name>VSLTest</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VSL\VSL.csproj">
-      <Project>{f072876c-a3f7-4131-9035-2ec420eb463e}</Project>
-      <Name>VSL</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

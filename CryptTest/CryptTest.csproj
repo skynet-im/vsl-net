@@ -127,11 +127,5 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\VSL\VSL.csproj">
-      <Project>{f072876c-a3f7-4131-9035-2ec420eb463e}</Project>
-      <Name>VSL</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
