@@ -61,6 +61,7 @@
     <Compile Include="E2EFileControl.Designer.cs">
       <DependentUpon>E2EFileControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="ECDH.cs" />
     <Compile Include="EcdhControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -126,6 +127,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VSL\VSL.csproj">
+      <Project>{6211932d-eb6d-4a3e-b85e-b0d4d70621f3}</Project>
+      <Name>VSL</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

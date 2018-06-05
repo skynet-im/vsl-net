@@ -37,7 +37,7 @@ namespace VSLTest
             {
                 btnStartServer.Enabled = false;
                 CbLocalhost.Enabled = false;
-                server.Start(CbLocalhost.Checked, true);
+                server.Start(CbLocalhost.Checked);
                 btnStartServer.Text = "Server stoppen";
                 btnStartServer.Enabled = true;
             }

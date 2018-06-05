@@ -200,27 +200,27 @@ namespace VSL.FileTransfer
         internal void OnFileMetaTransfered()
         {
             if (Mode == StreamMode.GetHeader || Mode == StreamMode.GetFile)
-                parent.ThreadManager.QueueWorkItem((ct) => FileMetaReceived?.Invoke(this, null));
+                parent.ThreadManager.Post(() => FileMetaReceived?.Invoke(this, null));
             var args = new FTProgressEventArgs(0, FileMeta.Length);
-            parent.ThreadManager.QueueWorkItem((ct) => Progress?.Invoke(this, args));
+            parent.ThreadManager.Post(() => Progress?.Invoke(this, args));
         }
 
         internal void OnProgress()
         {
             var args = new FTProgressEventArgs(Stream.Position, FileMeta.Length);
-            parent.ThreadManager.QueueWorkItem((ct) => Progress?.Invoke(this, args));
+            parent.ThreadManager.Post(() => Progress?.Invoke(this, args));
         }
 
         internal void OnFinished()
         {
-            parent.ThreadManager.QueueWorkItem((ct) => Finished?.Invoke(this, null));
+            parent.ThreadManager.Post(() => Finished?.Invoke(this, null));
             if (parent.Logger.InitD) parent.Logger.D($"Successfully transfered file with id {Identifier} and {Mode}\r\n" +
                 $"to \"{Path}\" using ContentAlgorithm.{FileMeta.Algorithm}");
         }
 
         internal void OnCanceled()
         {
-            parent.ThreadManager.QueueWorkItem((ct) => Canceled?.Invoke(this, null));
+            parent.ThreadManager.Post(() => Canceled?.Invoke(this, null));
         }
     }
 }

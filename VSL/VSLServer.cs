@@ -24,26 +24,15 @@ namespace VSL
 
         // <constructor
         /// <summary>
-        /// Creates a VSL server for the specified client using <see cref="Threading.AsyncMode.ThreadPool"/>. To start working, call <see cref="Start"/>.
-        /// </summary>
-        /// <param name="socket">Connected <see cref="Socket"/>.</param>
-        /// <param name="latestProduct">The application version.</param>
-        /// <param name="oldestProduct">The oldest supported version.</param>
-        /// <param name="keypair">The RSA-keypair of the server application.</param>
-        public VSLServer(Socket socket, ushort latestProduct, ushort oldestProduct, string keypair)
-            : this(socket, latestProduct, oldestProduct, keypair, ThreadManager.CreateThreadPool()) { }
-
-        /// <summary>
         /// Creates a VSL server for the specified client. To start working, call <see cref="Start"/>.
         /// </summary>
         /// <param name="socket">Connected <see cref="Socket"/>.</param>
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
         /// <param name="keypair">The RSA-keypair of the server application.</param>
-        /// <param name="threadManager">Used to invoke events.</param>
-        public VSLServer(Socket socket, ushort latestProduct, ushort oldestProduct, string keypair, ThreadManager threadManager)
+        public VSLServer(Socket socket, ushort latestProduct, ushort oldestProduct, string keypair)
         {
-            InitializeComponent(threadManager);
+            InitializeComponent();
 
             LatestProduct = latestProduct;
             OldestProduct = oldestProduct;
@@ -61,7 +50,6 @@ namespace VSL
         /// </summary>
         public void Start()
         {
-            StartInternal();
             channel.StartThreads();
         }
         //  functions>

@@ -213,7 +213,7 @@ namespace VSL.FileTransfer
             {
                 FTEventArgs e = new FTEventArgs(packet.Identifier, packet.StreamMode);
                 currentItem = e;
-                parent.ThreadManager.QueueWorkItem((ct) => Request?.Invoke(this, e));
+                parent.ThreadManager.Post(() => Request?.Invoke(this, e));
                 if (parent.Logger.InitD) parent.Logger.D($"FileTransfer with {e.Mode} and Identifier {e.Identifier} requested");
                 return true;
             }

@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Threading;
 using VSL;
 using VSL.BinaryTools;
 using VSL.FileTransfer;
@@ -19,18 +17,13 @@ namespace VSLTest
         private VSLServer Vsl;
         private FileMeta lastMeta;
         /// <summary>
-        /// Creates a VSLServer with <see cref="VSL.Threading.AsyncMode.ManagedThread"/>. If no <see cref="Dispatcher"/> is provided <see cref="VSL.Threading.AsyncMode.ThreadPool"/> is used.
+        /// Creates a VSLServer.
         /// </summary>
         /// <param name="native"></param>
         /// <param name="dispatcher"></param>
-        public Client(Socket native, Dispatcher dispatcher)
+        public Client(Socket native)
         {
-            ThreadManager thrmgr;
-            if (dispatcher == null)
-                thrmgr = ThreadManager.CreateThreadPool();
-            else
-                thrmgr = ThreadManager.CreateManagedThread(dispatcher);
-            Vsl = new VSLServer(native, 0, 0, Program.Keypair, thrmgr);
+            Vsl = new VSLServer(native, 0, 0, Program.Keypair);
             Vsl.PacketReceived += Vsl_PacketReceived;
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
             Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
