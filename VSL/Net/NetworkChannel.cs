@@ -165,6 +165,10 @@ namespace VSL
                     if (socket != null && !socket.ReceiveAsync(e))
                         threadsRunning = false;
                 }
+                else
+                {
+                    e.Dispose();
+                }
             }
 #if DEBUG
             catch (Exception ex) when (!System.Diagnostics.Debugger.IsAttached)

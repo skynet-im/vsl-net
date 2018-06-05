@@ -132,7 +132,7 @@ namespace VSLUnitTest
         public void TestScrypt()
         {
             byte[] scryptUtf8Empty = Util.GetBytes(ScryptUtf8Empty);
-            byte[] hash = Hash.Scrypt(new byte[] { }, new byte[] { }, 16384, 8, 1, 64);
+            byte[] hash = Hash.Scrypt(new byte[0], new byte[0], 16384, 8, 1, 64);
             CollectionAssert.AreEqual(scryptUtf8Empty, hash);
         }
     }
