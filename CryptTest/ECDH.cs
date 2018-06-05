@@ -1,10 +1,9 @@
-﻿#if !WINDOWS_UWP && !__IOS__
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using System.Security.Cryptography;
 
 namespace VSL.Crypt
 {
@@ -40,19 +39,16 @@ namespace VSL.Crypt
         {
             byte[] final;
             using (CngKey key = CngKey.Import(privateKey, CngKeyBlobFormat.EccPrivateBlob))
+            using (ECDiffieHellmanCng ecdh = new ECDiffieHellmanCng(key))
             {
-                using (ECDiffieHellmanCng ecdh = new ECDiffieHellmanCng(key))
+                ecdh.KeyDerivationFunction = ECDiffieHellmanKeyDerivationFunction.Hash;
+                ecdh.HashAlgorithm = CngAlgorithm.Sha256;
+                using (ECDiffieHellmanPublicKey pub = ECDiffieHellmanCngPublicKey.FromByteArray(publicKey, CngKeyBlobFormat.EccPublicBlob))
                 {
-                    ecdh.KeyDerivationFunction = ECDiffieHellmanKeyDerivationFunction.Hash;
-                    ecdh.HashAlgorithm = CngAlgorithm.Sha256;
-                    using (ECDiffieHellmanPublicKey pub = ECDiffieHellmanCngPublicKey.FromByteArray(publicKey, CngKeyBlobFormat.EccPublicBlob))
-                    {
-                        final = ecdh.DeriveKeyMaterial(pub);
-                    }
+                    final = ecdh.DeriveKeyMaterial(pub);
                 }
             }
             return final;
         }
     }
 }
-#endif

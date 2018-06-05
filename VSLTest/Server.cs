@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using VSL;
 
 namespace VSLTest
 {
@@ -25,9 +23,8 @@ namespace VSLTest
 
         public bool Running { get; private set; }
 
-        public void Start(bool localhost, bool useDispatcher)
+        public void Start(bool localhost)
         {
-            var dispatcher = useDispatcher ? System.Windows.Threading.Dispatcher.CurrentDispatcher : null;
             listener4 = new TcpListener(localhost ? IPAddress.Loopback : IPAddress.Any, port);
             listener6 = new TcpListener(localhost ? IPAddress.IPv6Loopback : IPAddress.IPv6Any, port);
             listener4.Start();
@@ -41,7 +38,7 @@ namespace VSLTest
                     try
                     {
                         Socket native = listener.AcceptSocket();
-                        Client c = new Client(native, dispatcher);
+                        Client c = new Client(native);
                         Interlocked.Increment(ref Program.Connects);
                     }
                     catch (SocketException) { return; }

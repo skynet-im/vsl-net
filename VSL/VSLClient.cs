@@ -16,30 +16,19 @@ namespace VSL
     public sealed class VSLClient : VSLSocket
     {
         new internal PacketHandlerClient handler;
-        private ushort latestProduct;
-        private ushort oldestProduct;
+        private readonly ushort latestProduct;
+        private readonly ushort oldestProduct;
         private int _networkBufferSize = Constants.ReceiveBufferSize;
         private TaskCompletionSource<int> tcs;
-
-#if !__IOS__
-        /// <summary>
-        /// Creates a VSL Client using <see cref="Threading.AsyncMode.ManagedThread"/> that has to be connected.
-        /// </summary>
-        /// <param name="latestProduct">The application version.</param>
-        /// <param name="oldestProduct">The oldest supported version.</param>
-        public VSLClient(ushort latestProduct, ushort oldestProduct)
-            : this(latestProduct, oldestProduct, ThreadManager.CreateManagedThread()) { }
-#endif
 
         /// <summary>
         /// Creates a VSL Client that has to be connected.
         /// </summary>
         /// <param name="latestProduct">The application version.</param>
         /// <param name="oldestProduct">The oldest supported version.</param>
-        /// <param name="threadManager">Used to raise events and execute work items.</param>
-        public VSLClient(ushort latestProduct, ushort oldestProduct, ThreadManager threadManager)
+        public VSLClient(ushort latestProduct, ushort oldestProduct)
         {
-            InitializeComponent(threadManager);
+            InitializeComponent();
 
             this.latestProduct = latestProduct;
             this.oldestProduct = oldestProduct;
@@ -107,7 +96,6 @@ namespace VSL
             manager = new NetworkManager(this, serverKey);
             handler = new PacketHandlerClient(this);
             base.handler = handler;
-            StartInternal();
             channel.StartThreads();
 
             // key exchange
