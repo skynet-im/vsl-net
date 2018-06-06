@@ -8,9 +8,10 @@ using System.Threading.Tasks;
 
 namespace VSL.Net.Channel
 {
-    internal class NetworkChannel : IDisposable
+    internal sealed class NetworkChannel : IDisposable
     {
         private Socket socket;
+        private ExceptionHandler exception;
 
         private byte[] receiveBuffer;
         private int receiveOffset;
@@ -24,9 +25,10 @@ namespace VSL.Net.Channel
         private bool shutdown = false;
         private bool disposed = false;
 
-        public NetworkChannel(Socket socket)
+        public NetworkChannel(Socket socket, ExceptionHandler exception)
         {
             this.socket = socket ?? throw new ArgumentNullException(nameof(socket));
+            this.exception = exception ?? throw new ArgumentNullException(nameof(exception));
 
             receiveBuffer = new byte[0];
             receiveOffset = 0;
@@ -99,8 +101,10 @@ namespace VSL.Net.Channel
             if (!shutdown)
             {
                 socket.Shutdown(SocketShutdown.Both);
-                // TODO: Handle shutdown by exiting loops
-                // TODO: Set all pending items to false
+                while (realtimeQueue.TryDequeue(out ReceiveSendItem item))
+                    item.Tcs.SetResult(false);
+                while (backgroundQueue.TryDequeue(out ReceiveSendItem item))
+                    item.Tcs.SetResult(false);
                 shutdown = true;
             }
         }
@@ -118,12 +122,16 @@ namespace VSL.Net.Channel
         private void ReceiveItem(ReceiveSendItem item)
         {
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            // TODO: Set buffer
-            args.Completed += Send_Completed;
+            args.SetBuffer(new byte[socket.ReceiveBufferSize], 0, socket.ReceiveBufferSize);
+            args.Completed += Receive_Completed;
+            ReceiveItem(item, args);
+        }
+
+        private void ReceiveItem(ReceiveSendItem item, SocketAsyncEventArgs args)
+        {
             args.UserToken = item;
-            // TODO: Will this crash when the socket was shut down or can we obtain the error code
-            if (!socket.SendAsync(args))
-                Send_Completed(socket, args);
+            if (!socket.ReceiveAsync(args))
+                Receive_Completed(socket, args);
         }
 
         private void Receive_Completed(object sender, SocketAsyncEventArgs e)
@@ -132,15 +140,22 @@ namespace VSL.Net.Channel
             if (e.SocketError == SocketError.Shutdown)
             {
                 item.Tcs.SetResult(false);
+                e.Dispose();
                 return;
             }
             else if (e.SocketError != SocketError.Success)
             {
-                // TODO: Handle bad socket
+                item.Tcs.SetResult(false);
+                e.Dispose();
+                exception.CloseConnection(e.SocketError, e.LastOperation);
+                return;
             }
             if (e.BytesTransferred == 0)
             {
-                // TODO: Handle disconnect
+                item.Tcs.SetResult(false);
+                e.Dispose();
+                exception.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
+                return;
             }
             int cplen = Math.Min(e.BytesTransferred, item.Count);
             Array.Copy(e.Buffer, e.Offset, item.Buffer, item.Offset, cplen);
@@ -148,7 +163,7 @@ namespace VSL.Net.Channel
             item.Count -= cplen;
             if (item.Count > 0)
             {
-                ReceiveItem(item);
+                ReceiveItem(item, e);
             }
             else
             {
@@ -156,6 +171,7 @@ namespace VSL.Net.Channel
                 receiveOffset = e.Offset + cplen;
                 receiveCount = e.BytesTransferred - cplen;
                 item.Tcs.SetResult(true);
+                e.Dispose();
             }
         }
 
@@ -171,7 +187,6 @@ namespace VSL.Net.Channel
             }
             else
             {
-                sending = true;
                 StartSend(locked: true);
             }
         }
@@ -191,6 +206,7 @@ namespace VSL.Net.Channel
                 Monitor.Enter(sendLock);
             if (!TryDeqeue(out ReceiveSendItem item))
             {
+                sending = true;
                 Monitor.Exit(sendLock);
                 SendItem(item);
             }
@@ -204,8 +220,13 @@ namespace VSL.Net.Channel
         private void SendItem(ReceiveSendItem item)
         {
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            // TODO: Set buffer
+            args.SetBuffer(new byte[socket.SendBufferSize], 0, socket.SendBufferSize);
             args.Completed += Send_Completed;
+            SendItem(item, args);
+        }
+
+        private void SendItem(ReceiveSendItem item, SocketAsyncEventArgs args)
+        {
             args.UserToken = item;
             if (!socket.SendAsync(args))
                 Send_Completed(socket, args);
@@ -217,27 +238,53 @@ namespace VSL.Net.Channel
             if (e.SocketError == SocketError.Shutdown)
             {
                 item.Tcs.SetResult(false);
+                e.Dispose();
                 return;
             }
             else if (e.SocketError != SocketError.Success)
             {
-                // TODO: Handle bad socket
+                item.Tcs.SetResult(false);
+                exception.CloseConnection(e.SocketError, e.LastOperation);
+                e.Dispose();
+                return;
             }
             if (e.BytesTransferred == 0)
             {
-                // TODO: Handle disconnect
+                item.Tcs.SetResult(false);
+                exception.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
+                e.Dispose();
+                return;
             }
             item.Offset += e.BytesTransferred;
             item.Count -= e.BytesTransferred;
             if (item.Count > 0)
             {
-                SendItem(item);
+                SendItem(item, e);
             }
             else
             {
                 item.Tcs.SetResult(true);
+                e.Dispose();
                 StartSend(locked: false);
             }
         }
+    }
+
+    internal struct ReceiveSendItem
+    {
+        internal ReceiveSendItem(byte[] buffer, int offset, int count)
+        {
+            Tcs = new TaskCompletionSource<bool>();
+            Task = Tcs.Task;
+            Buffer = buffer;
+            Offset = offset;
+            Count = count;
+        }
+
+        internal TaskCompletionSource<bool> Tcs { get; }
+        internal Task<bool> Task { get; }
+        internal byte[] Buffer { get; }
+        internal int Offset { get; set; }
+        internal int Count { get; set; }
     }
 }
