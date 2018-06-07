@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Net;
 using System.Net.Sockets;
-using VSL.FileTransfer;
+using System.Text;
+using System.Threading.Tasks;
+using VSL.Network;
 
 namespace VSL
 {
@@ -37,7 +34,7 @@ namespace VSL
             LatestProduct = latestProduct;
             OldestProduct = oldestProduct;
             Keypair = keypair;
-            channel = new NetworkChannel(this, socket);
+            channel = new NetworkChannel(socket, ExceptionHandler);
             manager = new NetworkManager(this, keypair);
             handler = new PacketHandlerServer(this);
             base.handler = handler;

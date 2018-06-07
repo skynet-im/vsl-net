@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Net;
-using System.Net.Sockets;
 using VSL.FileTransfer;
+using VSL.Network;
 
 namespace VSL
 {
@@ -15,7 +12,6 @@ namespace VSL
     /// </summary>
     public abstract class VSLSocket : IDisposable
     {
-        // <fields
         private object connectionLostLock;
         private bool connectionLost = false;
         private DateTime connectionLostTime = DateTime.MinValue;
@@ -35,7 +31,7 @@ namespace VSL
         /// <summary>
         /// Configure necessary console output.
         /// </summary>
-        public Logger Logger { get; internal set; }
+        public Logger Logger { get; protected set; }
         //  fields>
         // <constructor
         /// <summary>
@@ -84,18 +80,18 @@ namespace VSL
         /// Gets or sets the minimal network bandwith (B/s) VSL will respect for receive operations before closing the connection because of a timeout.
         /// </summary>
         public int NetworkMinBandwith { get; set; } = Constants.ReceiveBandwith;
-        /// <summary>
-        /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
-        /// </summary>
-        public virtual int ReceiveBufferSize
-        {
-            get => channel.ReceiveBufferSize;
-            set
-            {
-                if (!disposedValue)
-                    channel.ReceiveBufferSize = value;
-            }
-        }
+        ///// <summary>
+        ///// Gets or sets a value that specifies the size of the receive buffer of the Socket.
+        ///// </summary>
+        //public virtual int ReceiveBufferSize
+        //{
+        //    get => channel.ReceiveBufferSize;
+        //    set
+        //    {
+        //        if (!disposedValue)
+        //            channel.ReceiveBufferSize = value;
+        //    }
+        //}
         /// <summary>
         /// Gets or sets the sleep time background threads while waiting for work.
         /// </summary>
@@ -184,7 +180,7 @@ namespace VSL
                     throw new InvalidOperationException($"VSL has lost its connection {spanText} ago. Build up a new connection before sending a packet.");
                 }
             }
-            return manager.SendPacket(Convert.ToByte(255 - id), content);
+            return manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
         /// <summary>
         /// Sends a packet to the remotehost asynchronously.
@@ -218,7 +214,7 @@ namespace VSL
                     throw new InvalidOperationException(string.Format("VSL has lost its connection {0} ago. Build up a new connection before sending a packet.", spanText));
                 }
             }
-            return await Task.Run(() => manager.SendPacket(Convert.ToByte(255 - id), content));
+            return await Task.Run(() => manager.SendPacketAsync(Convert.ToByte(255 - id), content));
         }
         #endregion
         #region Close
@@ -237,7 +233,7 @@ namespace VSL
                     ConnectionClosedEventArgs e = PrepareOnConnectionClosed(reason);
                     if (Logger.InitI)
                         Logger.I("Connection was forcibly closed: " + reason);
-                    channel.CloseConnection();
+                    channel.Shutdown();
                     OnConnectionClosed(e);
                     Dispose();
                 }
@@ -253,7 +249,7 @@ namespace VSL
                 if (!connectionLost) // To detect redundant calls
                 {
                     ConnectionClosedEventArgs e = PrepareOnConnectionClosed(exception);
-                    channel.CloseConnection();
+                    channel.Shutdown();
                     OnConnectionClosed(e);
                 }
         }

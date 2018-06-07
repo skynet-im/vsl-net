@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VSL.Network;
 
 namespace VSL.Packet
 {
@@ -22,7 +22,6 @@ namespace VSL.Packet
         /// <summary>
         /// Creates a new packet of the specified instance.
         /// </summary>
-        /// <returns></returns>
         IPacket New();
         /// <summary>
         /// Forwards the packet to the handler.
@@ -31,7 +30,6 @@ namespace VSL.Packet
         /// <exception cref="InvalidOperationException"/>
         /// <exception cref="NotImplementedException"/>
         /// <exception cref="NotSupportedException"/>
-        /// <returns>If packet handling succeeded.</returns>
         bool HandlePacket(PacketHandler handler);
         /// <summary>
         /// Reads the data from a PacketBuffer.

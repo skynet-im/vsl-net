@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using VSL.Packet;
 
-namespace VSL.Net
+namespace VSL.Network
 {
     internal struct PacketRule
     {

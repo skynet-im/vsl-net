@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VSL.FileTransfer;
-using VSL.Net;
 using VSL.Packet;
 
-namespace VSL
+namespace VSL.Network
 {
     /// <summary>
     /// Handles internal VSL packets
@@ -21,7 +18,7 @@ namespace VSL
         // <constructor (helper)
         protected static PacketRule[] InitRules(params PacketRule[] rules)
         {
-            PacketRule[] final = new PacketRule[10];
+            PacketRule[] final = new PacketRule[Constants.InternalPacketCount];
             foreach (PacketRule rule in rules)
             {
                 final[rule.Packet.PacketId] = rule;
@@ -35,7 +32,7 @@ namespace VSL
         //  properties>
 
         // <functions
-        internal bool IsInternalPacket(byte id) => id < RegisteredPackets.Length;
+        internal bool IsInternalPacket(byte id) => id < Constants.InternalPacketCount;
 
         /// <summary>
         /// Validates an internal packet and returns the matching <see cref="PacketRule"/>.
@@ -94,7 +91,7 @@ namespace VSL
                 return false;
             }
             if (p.Role == KeepAliveRole.Request)
-                return parent.manager.SendPacket(new P05KeepAlive(KeepAliveRole.Response));
+                return parent.manager.SendPacketAsync(new P05KeepAlive(KeepAliveRole.Response));
             else
                 return true;
             // TODO: [VSL 1.2.3] API and timeout for keep-alives

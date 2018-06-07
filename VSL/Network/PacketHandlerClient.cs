@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VSL.Net;
 using VSL.Packet;
 
-namespace VSL
+namespace VSL.Network
 {
     internal class PacketHandlerClient : PacketHandler
     {
