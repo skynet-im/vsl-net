@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace VSL.Net.Channel
+namespace VSL.Network
 {
     internal sealed class NetworkChannel : IDisposable
     {
@@ -38,6 +38,9 @@ namespace VSL.Net.Channel
             backgroundQueue = new ConcurrentQueue<ReceiveSendItem>();
             sendLock = new object();
         }
+
+        public long ReceivedBytes { get; private set; }
+        public long SentBytes { get; private set; }
 
         public Task<bool> ReceiveAsync(byte[] buffer, int offset, int count)
         {
@@ -157,6 +160,7 @@ namespace VSL.Net.Channel
                 exception.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
                 return;
             }
+            ReceivedBytes += e.BytesTransferred;
             int cplen = Math.Min(e.BytesTransferred, item.Count);
             Array.Copy(e.Buffer, e.Offset, item.Buffer, item.Offset, cplen);
             item.Offset += cplen;
@@ -255,6 +259,7 @@ namespace VSL.Net.Channel
                 e.Dispose();
                 return;
             }
+            SentBytes += e.BytesTransferred;
             item.Offset += e.BytesTransferred;
             item.Count -= e.BytesTransferred;
             if (item.Count > 0)

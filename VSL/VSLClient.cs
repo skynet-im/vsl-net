@@ -1,24 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
-using VSL.Net;
+using System.Text;
+using System.Threading.Tasks;
+using VSL.Network;
 using VSL.Packet;
 
 namespace VSL
 {
     /// <summary>
-    /// The client implementation of a VSL socket
+    /// The client implementation of a VSL socket.
     /// </summary>
     public sealed class VSLClient : VSLSocket
     {
         new internal PacketHandlerClient handler;
         private readonly ushort latestProduct;
         private readonly ushort oldestProduct;
-        private int _networkBufferSize = Constants.ReceiveBufferSize;
+        //private int _networkBufferSize = Constants.ReceiveBufferSize;
         private TaskCompletionSource<int> tcs;
 
         /// <summary>
@@ -34,25 +33,25 @@ namespace VSL
             this.oldestProduct = oldestProduct;
         }
 
-        /// <summary>
-        /// Gets or sets a value that specifies the size of the receive buffer of the Socket.
-        /// </summary>
-        public override int ReceiveBufferSize
-        {
-            get
-            {
-                if (channel != null)
-                    return base.ReceiveBufferSize;
-                else
-                    return _networkBufferSize;
-            }
-            set
-            {
-                _networkBufferSize = value;
-                if (channel != null)
-                    base.ReceiveBufferSize = value;
-            }
-        }
+        ///// <summary>
+        ///// Gets or sets a value that specifies the size of the receive buffer of the Socket.
+        ///// </summary>
+        //public override int ReceiveBufferSize
+        //{
+        //    get
+        //    {
+        //        if (channel != null)
+        //            return base.ReceiveBufferSize;
+        //        else
+        //            return _networkBufferSize;
+        //    }
+        //    set
+        //    {
+        //        _networkBufferSize = value;
+        //        if (channel != null)
+        //            base.ReceiveBufferSize = value;
+        //    }
+        //}
 
         /// <summary>
         /// Connects the TCP Client asynchronously.
@@ -90,7 +89,7 @@ namespace VSL
             tcp.Client.DualMode = true;
             progress?.Report(ConnectionState.TcpConnect);
             await tcp.ConnectAsync(ipaddr, port);
-            channel = new NetworkChannel(this, tcp.Client);
+            channel = new NetworkChannel(tcp.Client, ExceptionHandler);
 
             // initialize component
             manager = new NetworkManager(this, serverKey);
@@ -100,10 +99,10 @@ namespace VSL
 
             // key exchange
             progress?.Report(ConnectionState.Handshake);
-            Task s = Task.Run(() => manager.SendPacket(CryptoAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey)));
+            Task s = Task.Run(() => manager.SendPacketAsync(CryptoAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey)));
             manager.GenerateKeys();
             await s;
-            await Task.Run(() => manager.SendPacket(CryptoAlgorithm.RSA_2048_OAEP, new P01KeyExchange(manager.AesKey, manager.SendIV,
+            await Task.Run(() => manager.SendPacketAsync(CryptoAlgorithm.RSA_2048_OAEP, new P01KeyExchange(manager.AesKey, manager.SendIV,
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, latestProduct, oldestProduct)));
 
             // wait for response

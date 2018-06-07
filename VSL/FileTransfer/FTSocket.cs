@@ -45,12 +45,12 @@ namespace VSL.FileTransfer
             e.FileMeta = meta;
             currentItem = e;
 
-            parent.manager.SendPacket(new P06Accepted(true, 7, ProblemCategory.None)); // accept the transfer
+            parent.manager.SendPacketAsync(new P06Accepted(true, 7, ProblemCategory.None)); // accept the transfer
             if (currentItem.Mode == StreamMode.PushHeader || currentItem.Mode == StreamMode.PushFile) // start by sending the FileMeta
             {
                 if (currentItem.FileMeta == null)
                     currentItem.FileMeta = new FileMeta(path, ContentAlgorithm.None);
-                parent.manager.SendPacket(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value)));
+                parent.manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value)));
             }
             else if (meta != null)
             {
@@ -65,7 +65,7 @@ namespace VSL.FileTransfer
         /// <param name="e"></param>
         public void Cancel(FTEventArgs e)
         {
-            parent.manager.SendPacket(new P06Accepted(false, 7, ProblemCategory.None)); // This packet cancels any request or running transfer.
+            parent.manager.SendPacketAsync(new P06Accepted(false, 7, ProblemCategory.None)); // This packet cancels any request or running transfer.
             e.Assign(parent, this); // This assignment is necessary for FTEventArgs to print exceptions and raise events.
             e.CloseStream(false);
             currentItem = null;
@@ -80,7 +80,7 @@ namespace VSL.FileTransfer
             e.Assign(parent, this);
             e.Mode = StreamMode.GetHeader;
             currentItem = e;
-            parent.manager.SendPacket(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace VSL.FileTransfer
             e.Assign(parent, this);
             e.Mode = StreamMode.GetFile;
             currentItem = e;
-            parent.manager.SendPacket(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace VSL.FileTransfer
             e.Assign(parent, this);
             e.Mode = StreamMode.PushFile;
             currentItem = e;
-            parent.manager.SendPacket(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace VSL.FileTransfer
             else
             {
                 if (!currentItem.OpenStream()) return false;
-                return parent.manager.SendPacket(new P06Accepted(true, 8, ProblemCategory.None));
+                return parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
             }
         }
 
@@ -146,7 +146,7 @@ namespace VSL.FileTransfer
             else if (packet.Accepted && packet.RelatedPacket == 7)
             {
                 if (currentItem.Mode == StreamMode.PushHeader || currentItem.Mode == StreamMode.PushFile)
-                    parent.manager.SendPacket(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value)));
+                    parent.manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value)));
                 // counterpart accepted file transfer -> we have to sent the FileMeta first
 
                 // No exceptions here because every request type get's an accepted packet 
@@ -200,7 +200,7 @@ namespace VSL.FileTransfer
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
-            if (!parent.manager.SendPacket(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
+            if (!parent.manager.SendPacketAsync(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
             currentItem.OnProgress();
             if (count < buffer.Length)
                 return currentItem.CloseStream(true);
@@ -255,7 +255,7 @@ namespace VSL.FileTransfer
             if (currentItem.Mode == StreamMode.GetHeader)
             {
                 currentItem.OnFinished();
-                return parent.manager.SendPacket(new P06Accepted(true, 8, ProblemCategory.None));
+                return parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
             }
             // We do not answer for StreamMode.GetFile here, because this is done by FTSocket.Continue(FTEventArgs)
             // in order to give the opportunity to set keys.
@@ -301,7 +301,7 @@ namespace VSL.FileTransfer
                 if (!currentItem.CloseStream(true)) return false;
                 currentItem = null;
             }
-            return parent.manager.SendPacket(new P06Accepted(true, 9, ProblemCategory.None));
+            return parent.manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
         }
     }
 }

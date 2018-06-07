@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VSL.FileTransfer;
+using VSL.Network;
 
 namespace VSL.Packet
 {

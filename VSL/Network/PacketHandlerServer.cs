@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VSL.BinaryTools;
-using VSL.Net;
 using VSL.Packet;
 
-namespace VSL
+namespace VSL.Network
 {
     internal class PacketHandlerServer : PacketHandler
     {
@@ -51,7 +49,7 @@ namespace VSL
                 case RequestType.DirectPublicKey:
                     return true;
                 default:
-                    parent.manager.SendPacket(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
+                    parent.manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
                     return true;
             }
         }
@@ -61,7 +59,7 @@ namespace VSL
             ushort? productVersion = VersionManager.GetSharedProductVersion(parent.LatestProduct, parent.OldestProduct, p.LatestProduct, p.OldestProduct);
 
             if (!vslVersion.HasValue || !productVersion.HasValue)
-                return parent.manager.SendPacket(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
+                return parent.manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
 
             parent.manager.AesKey = p.AesKey;
             parent.ConnectionVersion = vslVersion.Value;
@@ -72,7 +70,7 @@ namespace VSL
                 parent.manager.ReceiveIV = p.ClientIV;
                 parent.manager.Ready4Aes = true;
 
-                if (!parent.manager.SendPacket(CryptoAlgorithm.AES_256_CBC_SP, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
+                if (!parent.manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_SP, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
                     return false;
                 parent.OnConnectionEstablished();
             }
@@ -82,7 +80,7 @@ namespace VSL
                 parent.manager.HmacKey = Util.ConcatBytes(p.ClientIV, p.ServerIV);
                 parent.manager.Ready4Aes = true;
 
-                if (!parent.manager.SendPacket(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
+                if (!parent.manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
                     return false;
                 parent.OnConnectionEstablished();
             }

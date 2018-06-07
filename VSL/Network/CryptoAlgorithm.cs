@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VSL.Net
+namespace VSL.Network
 {
     /// <summary>
     /// Provides a set of cryptographic algorithms for network encryption.

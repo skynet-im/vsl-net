@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using VSL.BinaryTools;
 using VSL.Crypt;
-using VSL.Net;
 
-namespace VSL
+namespace VSL.Network
 {
     /// <summary>
     /// Responsible for cryptography management
@@ -29,19 +27,20 @@ namespace VSL
         //  constructor>
         // <functions
         #region receive
-        internal bool OnDataReceive()
+        internal async Task<bool> ReceivePacketAsync()
         {
             try
             {
-                if (!parent.channel.TryRead(out byte[] buf, 1))
+                byte[] buffer = new byte[1];
+                if (!await parent.channel.ReceiveAsync(buffer, 0, 1))
                     return false;
-                CryptoAlgorithm algorithm = (CryptoAlgorithm)buf[0];
+                CryptoAlgorithm algorithm = (CryptoAlgorithm)buffer[0];
                 switch (algorithm)
                 {
                     case CryptoAlgorithm.None:
-                        return ReceivePacket_Plaintext();
+                        return await ReceivePacketAsync_Plaintext();
                     case CryptoAlgorithm.RSA_2048_OAEP:
-                        return ReceivePacket_RSA_2048_OAEP();
+                        return await ReceivePacketAsync_RSA_2048_OAEP();
                     case CryptoAlgorithm.AES_256_CBC_SP:
                         if (!Ready4Aes)
                         {
@@ -57,7 +56,7 @@ namespace VSL
                                 "\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
-                        return ReceivePacket_AES_256_CBC_SP();
+                        return await ReceivePacketAsync_AES_256_CBC_SP();
 
                     case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
                         if (!Ready4Aes)
@@ -74,7 +73,7 @@ namespace VSL
                                 "\tat NetworkManager.OnDataReceive()");
                             return false;
                         }
-                        return ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3();
+                        return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3();
 
                     default:
                         parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
@@ -102,15 +101,16 @@ namespace VSL
                 return false;
             }
         }
-        private bool ReceivePacket_Plaintext()
+        private async Task<bool> ReceivePacketAsync_Plaintext()
         {
             CryptoAlgorithm alg = CryptoAlgorithm.None;
             byte id; // read packet id
-            if (!parent.channel.TryRead(out byte[] buf, 1))
+            byte[] buffer = new byte[1];
+            if (!await parent.channel.ReceiveAsync(buffer, 0, 1))
                 return false;
-            id = buf[0];
+            id = buffer[0];
 
-            if (!AssertInternal(id, alg, nameof(ReceivePacket_Plaintext)) ||
+            if (!AssertInternal(id, alg, nameof(ReceivePacketAsync_Plaintext)) ||
                 !parent.handler.ValidatePacket(id, alg, out PacketRule rule))
                 return false;
 
@@ -119,30 +119,33 @@ namespace VSL
                 length = rule.Packet.ConstantLength.Value;
             else
             {
-                if (!parent.channel.TryRead(out buf, 4))
+                buffer = new byte[4];
+                if (!await parent.channel.ReceiveAsync(buffer, 0, 4))
                     return false;
-                length = BitConverter.ToUInt32(buf, 0);
-                if (!AssertSize(Constants.MaxPacketSize, length, nameof(ReceivePacket_Plaintext)))
+                length = BitConverter.ToUInt32(buffer, 0);
+                if (!AssertSize(Constants.MaxPacketSize, length, nameof(ReceivePacketAsync_Plaintext)))
                     return false;
             }
 
-            if (!parent.channel.TryRead(out buf, (int)length)) // read packet content
+            buffer = new byte[length];
+            if (!await parent.channel.ReceiveAsync(buffer, 0, (int)length)) // read packet content
                 return false;
             if (parent.Logger.InitD)
                 parent.Logger.D($"Received internal plaintext packet: ID={id} Length={length}");
-            return parent.handler.HandleInternalPacket(rule, buf);
+            return parent.handler.HandleInternalPacket(rule, buffer);
         }
-        private bool ReceivePacket_RSA_2048_OAEP()
+        private async Task<bool> ReceivePacketAsync_RSA_2048_OAEP()
         {
             CryptoAlgorithm alg = CryptoAlgorithm.RSA_2048_OAEP;
             try
             {
                 int index = 1;
-                if (!parent.channel.TryRead(out byte[] ciphertext, 256))
+                byte[] ciphertext = new byte[256];
+                if (!await parent.channel.ReceiveAsync(ciphertext, 0, 256))
                     return false;
                 byte[] plaintext = RsaStatic.DecryptBlock(ciphertext, rsaKey);
                 byte id = plaintext[0]; // index = 1
-                if (!AssertInternal(id, alg, nameof(ReceivePacket_RSA_2048_OAEP)) ||
+                if (!AssertInternal(id, alg, nameof(ReceivePacketAsync_RSA_2048_OAEP)) ||
                     !parent.handler.ValidatePacket(id, alg, out PacketRule rule))
                     return false;
 
@@ -153,7 +156,7 @@ namespace VSL
                 {
                     length = BitConverter.ToUInt32(plaintext, index);
                     index += 4;
-                    if (!AssertSize(209, length, nameof(ReceivePacket_RSA_2048_OAEP)))
+                    if (!AssertSize(209, length, nameof(ReceivePacketAsync_RSA_2048_OAEP)))
                         return false; // 214 - 1 (id) - 4 (uint) => 209
                 }
                 if (parent.Logger.InitD)
@@ -166,13 +169,14 @@ namespace VSL
             }
             return false;
         }
-        private bool ReceivePacket_AES_256_CBC_SP()
+        private async Task<bool> ReceivePacketAsync_AES_256_CBC_SP()
         {
             CryptoAlgorithm alg = CryptoAlgorithm.AES_256_CBC_SP;
             try
             {
                 int index = 1;
-                if (!parent.channel.TryRead(out byte[] ciphertext, 16))
+                byte[] ciphertext = new byte[16];
+                if (!await parent.channel.ReceiveAsync(ciphertext, 0, 16))
                     return false;
                 byte[] plaintext = AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV); //CryptographicException
                 byte id = plaintext[0]; // index = 1
@@ -189,7 +193,7 @@ namespace VSL
                 {
                     length = BitConverter.ToUInt32(plaintext, index);
                     index += 4;
-                    if (!AssertSize(Constants.MaxPacketSize, length, nameof(ReceivePacket_AES_256_CBC_SP)))
+                    if (!AssertSize(Constants.MaxPacketSize, length, nameof(ReceivePacketAsync_AES_256_CBC_SP)))
                         return false;
                 }
                 plaintext = plaintext.Skip(index);
@@ -197,7 +201,8 @@ namespace VSL
                 {
                     int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
                     int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
-                    if (!parent.channel.TryRead(out ciphertext, pendingBlocks * 16))
+                    ciphertext = new byte[pendingBlocks * 16];
+                    if (!await parent.channel.ReceiveAsync(ciphertext, 0, pendingBlocks * 16))
                         return false;
                     plaintext = Util.ConcatBytes(plaintext, AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV));
                 }
@@ -223,19 +228,22 @@ namespace VSL
             }
             return false;
         }
-        private bool ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3()
+        private async Task<bool> ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3()
         {
             CryptoAlgorithm alg = CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3;
             try
             {
-                if (!parent.channel.TryRead(out byte[] buf, 35)) // 3 (length) + 32 (HMAC)
+                byte[] buffer = new byte[35];
+                if (!await parent.channel.ReceiveAsync(buffer, 0, 35)) // 3 (length) + 32 (HMAC)
                     return false;
-                int blocks = Convert.ToInt32(UInt24.FromBytes(buf, 0));
-                byte[] hmac = buf.Skip(3);
+                int blocks = Convert.ToInt32(UInt24.FromBytes(buffer, 0));
+                byte[] hmac = buffer.Skip(3);
                 const int defaultOverhead = 16 + 1 + 4; // iv + id + len
                 int pendingLength = (blocks + 2) * 16; // at least one block; inclusive iv
-                if (!AssertSize(Constants.MaxPacketSize + defaultOverhead, (uint)pendingLength, nameof(ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3)) || 
-                    !parent.channel.TryRead(out byte[] cipherblock, pendingLength))
+                if (!AssertSize(Constants.MaxPacketSize + defaultOverhead, (uint)pendingLength, nameof(ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3)))
+                    return false;
+                byte[] cipherblock = new byte[pendingLength];
+                if (!await parent.channel.ReceiveAsync(cipherblock, 0, pendingLength))
                     return false;
                 if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
                 {
@@ -289,10 +297,17 @@ namespace VSL
         }
         #endregion receive
         #region send
-        internal bool SendPacket(byte id, byte[] content) => SendPacket(VersionManager.GetNetworkAlgorithm(parent.ConnectionVersion), id, content);
-        internal bool SendPacket(CryptoAlgorithm alg, byte id, byte[] content) => SendPacket(alg, id, true, content);
-        internal bool SendPacket(Packet.IPacket packet) => SendPacket(VersionManager.GetNetworkAlgorithm(parent.ConnectionVersion), packet);
-        internal bool SendPacket(CryptoAlgorithm alg, Packet.IPacket packet)
+        internal Task<bool> SendPacketAsync(byte id, byte[] content)
+        {
+            CryptoAlgorithm alg = VersionManager.GetNetworkAlgorithm(parent.ConnectionVersion);
+            return SendPacketAsync(alg, id, true, content);
+        }
+        internal Task<bool> SendPacketAsync(Packet.IPacket packet)
+        {
+            CryptoAlgorithm alg = VersionManager.GetNetworkAlgorithm(parent.ConnectionVersion);
+            return SendPacketAsync(alg, packet);
+        }
+        internal Task<bool> SendPacketAsync(CryptoAlgorithm alg, Packet.IPacket packet)
         {
             byte[] content;
             using (PacketBuffer buf = PacketBuffer.CreateDynamic())
@@ -300,25 +315,38 @@ namespace VSL
                 packet.WritePacket(buf);
                 content = buf.ToArray();
             }
-            return SendPacket(alg, packet.PacketId, !packet.ConstantLength.HasValue, content);
+            return SendPacketAsync(alg, packet.PacketId, !packet.ConstantLength.HasValue, content);
         }
-        private bool SendPacket(CryptoAlgorithm alg, byte realId, bool size, byte[] content)
+        private async Task<bool> SendPacketAsync(CryptoAlgorithm alg, byte realId, bool size, byte[] content)
         {
+            bool success;
             switch (alg)
             {
                 case CryptoAlgorithm.None:
-                    return SendPacket_Plaintext(realId, size, content);
+                    success = await SendPacketAsync_Plaintext(realId, size, content);
+                    break;
                 case CryptoAlgorithm.RSA_2048_OAEP:
-                    return SendPacket_RSA_2048_OAEP(realId, size, content);
+                    success = await SendPacketAsync_RSA_2048_OAEP(realId, size, content);
+                    break;
                 case CryptoAlgorithm.AES_256_CBC_SP:
-                    return SendPacket_AES_256_CBC_SP(realId, size, content);
+                    success = await SendPacketAsync_AES_256_CBC_SP(realId, size, content);
+                    break;
                 case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
-                    return SendPacket_AES_256_CBC_HMAC_SHA256_MP3(realId, size, content);
+                    success = await SendPacketAsync_AES_256_CBC_HMAC_SHA256_MP3(realId, size, content);
+                    break;
                 default:
-                    throw new InvalidOperationException();
+                    throw new ArgumentException("Unknown CryptoAlgorithm", nameof(alg));
             }
+            if (parent.Logger.InitD)
+            {
+                string @namespace = realId < Constants.InternalPacketCount ? "internal" : "external";
+                string prefix = success ? "Sent" : "Failed to send";
+                byte displayId = realId < Constants.InternalPacketCount ? realId : (byte)(255 - realId);
+                parent.Logger.D($"{prefix} {@namespace} packet: ID={displayId} Length={content.Length} Algorithm={alg}");
+            }
+            return success;
         }
-        private bool SendPacket_Plaintext(byte realId, bool size, byte[] content)
+        private Task<bool> SendPacketAsync_Plaintext(byte realId, bool size, byte[] content)
         {
             int length = 2 + (size ? 4 : 0) + content.Length;
             byte[] buf;
@@ -330,9 +358,9 @@ namespace VSL
                 pbuf.WriteByteArray(content, false);
                 buf = pbuf.ToArray();
             }
-            return buf.Length == parent.channel.Send(buf);
+            return parent.channel.SendAsync(buf, 0, buf.Length);
         }
-        private bool SendPacket_RSA_2048_OAEP(byte realId, bool size, byte[] content)
+        private Task<bool> SendPacketAsync_RSA_2048_OAEP(byte realId, bool size, byte[] content)
         {
             try
             {
@@ -349,20 +377,20 @@ namespace VSL
                 byte[] buf = new byte[1 + ciphertext.Length];
                 buf[0] = (byte)CryptoAlgorithm.RSA_2048_OAEP;
                 Array.Copy(ciphertext, 0, buf, 1, ciphertext.Length);
-                return buf.Length == parent.channel.Send(buf);
+                return parent.channel.SendAsync(buf, 0, buf.Length);
             }
             catch (CryptographicException ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
-                return false;
+                return Task.FromResult(false);
             }
-            catch (NotImplementedException ex)
+            catch (NotImplementedException ex) // TODO: Why catch this exception?
             {
                 parent.ExceptionHandler.CloseConnection(ex);
-                return false;
+                return Task.FromResult(false);
             }
         }
-        private bool SendPacket_AES_256_CBC_SP(byte realId, bool size, byte[] content)
+        private Task<bool> SendPacketAsync_AES_256_CBC_SP(byte realId, bool size, byte[] content)
         {
             try
             {
@@ -403,20 +431,15 @@ namespace VSL
                     pbuf.WriteByteArray(tailBlock, false);
                     buf = pbuf.ToArray();
                 }
-                bool success = buf.Length == parent.channel.Send(buf);
-                if (realId <= 9 && parent.Logger.InitD)
-                    parent.Logger.D(string.Format("Sent internal AES packet: ID={0} Length={1} {2}b", realId, buf.Length, blocks));
-                else if (parent.Logger.InitD)
-                    parent.Logger.D(string.Format("Sent external AES packet: ID={0} Length={1} {2}b", 255 - realId, buf.Length, blocks));
-                return success;
+                return parent.channel.SendAsync(buf, 0, buf.Length);
             }
             catch (CryptographicException ex) //Invalid key/iv
             {
                 parent.ExceptionHandler.CloseConnection(ex);
-                return false;
+                return Task.FromResult(false);
             }
         }
-        private bool SendPacket_AES_256_CBC_HMAC_SHA256_MP3(byte realId, bool size, byte[] content)
+        private Task<bool> SendPacketAsync_AES_256_CBC_HMAC_SHA256_MP3(byte realId, bool size, byte[] content)
         {
             int headLength = 1 + (size ? 4 : 0) + content.Length;
             byte[] plaintext;
@@ -441,7 +464,7 @@ namespace VSL
                 pbuf.WriteByteArray(cipherblock, false);
                 buf = pbuf.ToArray();
             }
-            return buf.Length == parent.channel.Send(buf);
+            return parent.channel.SendAsync(buf, 0, buf.Length);
         }
         #endregion send
         #region keys
@@ -474,6 +497,9 @@ namespace VSL
         internal byte[] SendIV { get; set; }
         #endregion
         #region exception
+        /// <summary>
+        /// Ensures that a packet id is only used for internal purposes.
+        /// </summary>
         private bool AssertInternal(byte id, CryptoAlgorithm alg, string member)
         {
             bool isInternal = parent.handler.IsInternalPacket(id);
@@ -483,6 +509,9 @@ namespace VSL
             return isInternal;
         }
 
+        /// <summary>
+        /// Ensures that a packet size inside the maximum bounds.
+        /// </summary>
         private bool AssertSize(uint maximum, uint actual, string member)
         {
             bool valid = actual <= maximum;
