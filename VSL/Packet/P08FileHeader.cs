@@ -21,12 +21,9 @@ namespace VSL.Packet
 
         public uint? ConstantLength => null;
 
-        public IPacket New()
-        {
-            return new P08FileHeader();
-        }
+        public IPacket New() => new P08FileHeader();
 
-        public bool HandlePacket(PacketHandler handler)
+        public Task<bool> HandlePacketAsync(PacketHandler handler)
         {
             return handler.HandleP08FileHeader(this);
         }

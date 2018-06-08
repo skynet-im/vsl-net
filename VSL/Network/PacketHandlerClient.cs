@@ -10,7 +10,7 @@ namespace VSL.Network
     {
         // <fields
         new internal VSLClient parent;
-        private static PacketRule[] rules;
+        private static readonly PacketRule[] rules;
         //  fields>
 
         // <constructor
@@ -41,68 +41,68 @@ namespace VSL.Network
         //  properties>
 
         // <functions
-        internal override bool HandleP00Handshake(P00Handshake p)
+        internal override Task<bool> HandleP00Handshake(P00Handshake p)
         {
             parent.ExceptionHandler.CloseConnection("InvalidPacket",
                 "VSL clients cannot handle P00Handshake.\r\n" +
                 "\tat PacketHandlerClient.HandleP00Handshake(P00Handshake)");
-            return false;
+            return Task.FromResult(false);
         }
-        internal override bool HandleP01KeyExchange(P01KeyExchange p)
+        internal override Task<bool> HandleP01KeyExchange(P01KeyExchange p)
         {
             parent.ExceptionHandler.CloseConnection("InvalidPacket",
                 "VSL clients cannot handle P01KeyExchange.\r\n" +
                 "\tat PacketHandlerClient.HandleP01KeyExchange(P01KeyExchange)");
-            return false;
+            return Task.FromResult(false);
         }
-        internal override bool HandleP02Certificate(P02Certificate p)
+        internal override Task<bool> HandleP02Certificate(P02Certificate p)
         {
             parent.ExceptionHandler.CloseConnection("NotSupported",
                 "VSL 1.2 does not support key exchange validated by certificates.\r\n" +
                 "\tat PacketHandlerClient.HandleP02Certificate(P02Certificate)");
-            return false;
+            return Task.FromResult(false);
         }
-        internal override bool HandleP03FinishHandshake(P03FinishHandshake p)
+        internal override Task<bool> HandleP03FinishHandshake(P03FinishHandshake p)
         {
             switch (p.ConnectionState)
             {
                 case ConnectionState.CompatibilityMode:
                     parent.ConnectionVersion = 1; // A VSL 1.1 Server sends this response.
                     parent.OnConnectionEstablished();
-                    return true;
+                    return Task.FromResult(true);
                 case ConnectionState.Redirect:
                     parent.ExceptionHandler.CloseConnection("NotSupported",
                         "This VSL version does not support redirects.\r\n" +
                         "\tat PacketHandlerClient.HandleP03FinishHandshake(P03FinishHandshake)");
-                    return false;
+                    return Task.FromResult(false);
                 case ConnectionState.NotCompatible:
                     parent.ExceptionHandler.CloseConnection("ConnectionDenied",
                         "The specified server denied the connection to this VSL/application version client.\r\n" +
                         "\tat PacketHandlerClient.HandleP03FinishHandshake(P03FinishHandshake)");
-                    return false;
+                    return Task.FromResult(false);
                 case ConnectionState.Compatible:
                     parent.ConnectionVersion = p.VSLVersion;
                     parent.OnConnectionEstablished();
-                    return true;
+                    return Task.FromResult(true);
                 default:
-                    return false;
+                    return Task.FromResult(false);
             }
         }
-        internal override bool HandleP04ChangeIV(P04ChangeIV p)
+        internal override Task<bool> HandleP04ChangeIV(P04ChangeIV p)
         {
             parent.ExceptionHandler.CloseConnection("InvalidPacket",
                 "VSL clients can not handle P04ChangeIV.\r\n" +
                 "\tat PacketHandlerClient.HandleP04ChangeIV(P04ChangeIV)");
-            return false;
+            return Task.FromResult(false);
         }
         // overriding HandleP05KeepAlive is not neccessary.
         // overriding HandleP06Accepted is not neccessary.
-        internal override bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
+        internal override Task<bool> HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
             if (parent.ConnectionVersion.Value < 2) // before VSL 1.2
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P07OpenFileTransfer.");
-                return false;
+                return Task.FromResult(false);
             }
             else
                 return base.HandleP07OpenFileTransfer(p);

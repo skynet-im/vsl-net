@@ -75,16 +75,16 @@ namespace VSLTest
                             "Metadaten wiederverwenden?", MessageBoxButtons.YesNo) == DialogResult.No)
                             lastMeta = null;
 
-                        Vsl.FileTransfer.Accept(e, fd.FileName, lastMeta);
+                        Vsl.FileTransfer.AcceptAsync(e, fd.FileName, lastMeta);
                     }
                     else
-                        Vsl.FileTransfer.Cancel(e);
+                        Vsl.FileTransfer.CancelAsync(e);
                 }
             }
             else
             {
                 e.FileMetaReceived += Vsl_FTFileMetaReceived;
-                Vsl.FileTransfer.Accept(e, Path.Combine(Program.TempPath, Path.GetRandomFileName()));
+                Vsl.FileTransfer.AcceptAsync(e, Path.Combine(Program.TempPath, Path.GetRandomFileName()));
             }
         }
 

@@ -112,7 +112,7 @@ namespace VSLTest
             args.Progress += VslClient_FTProgress;
             args.Finished += VslClient_FTFinished;
             args.FileMetaReceived += VslClient_FTFileMetaReceived;
-            vslClient.FileTransfer.Download(args);
+            vslClient.FileTransfer.StartDownloadAsync(args);
             btnReceiveFile.Enabled = false;
             btnSendFile.Enabled = false;
         }
@@ -141,7 +141,7 @@ namespace VSLTest
             FTEventArgs args = new FTEventArgs(new Identifier(0), new FileMeta(path, algorithm, hmacKey, aesKey, null), path);
             args.Progress += VslClient_FTProgress;
             args.Finished += VslClient_FTFinished;
-            vslClient.FileTransfer.Upload(args);
+            vslClient.FileTransfer.StartUploadAsync(args);
             btnReceiveFile.Enabled = false;
             btnSendFile.Enabled = false;
         }

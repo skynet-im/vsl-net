@@ -9,12 +9,11 @@ namespace VSL.Packet
 {
     internal class P04ChangeIV : IPacket
     {
-        internal byte[] ClientIV;
-        internal byte[] ServerIV;
+        internal byte[] ClientIV { get; private set; }
+        internal byte[] ServerIV { get; private set; }
 
         internal P04ChangeIV()
         {
-
         }
 
         internal P04ChangeIV(byte[] clientIV, byte[] serverIV)
@@ -27,12 +26,9 @@ namespace VSL.Packet
 
         public uint? ConstantLength => 32;
 
-        public IPacket New()
-        {
-            return new P04ChangeIV();
-        }
+        public IPacket New() => new P04ChangeIV();
 
-        public bool HandlePacket(PacketHandler handler)
+        public Task<bool> HandlePacketAsync(PacketHandler handler)
         {
             return handler.HandleP04ChangeIV(this);
         }

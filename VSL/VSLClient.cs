@@ -99,10 +99,10 @@ namespace VSL
 
             // key exchange
             progress?.Report(ConnectionState.Handshake);
-            Task s = Task.Run(() => manager.SendPacketAsync(CryptoAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey)));
+            Task s = manager.SendPacketAsync(CryptoAlgorithm.None, new P00Handshake(RequestType.DirectPublicKey)));
             manager.GenerateKeys();
             await s;
-            await Task.Run(() => manager.SendPacketAsync(CryptoAlgorithm.RSA_2048_OAEP, new P01KeyExchange(manager.AesKey, manager.SendIV,
+            await manager.SendPacketAsync(CryptoAlgorithm.RSA_2048_OAEP, new P01KeyExchange(manager.AesKey, manager.SendIV,
                 manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, latestProduct, oldestProduct)));
 
             // wait for response
