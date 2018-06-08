@@ -9,17 +9,16 @@ namespace VSL.Packet
 {
     internal class P01KeyExchange : IPacket
     {
-        internal byte[] AesKey;
-        internal byte[] ClientIV;
-        internal byte[] ServerIV;
-        internal ushort LatestVSL;
-        internal ushort OldestVSL;
-        internal ushort LatestProduct;
-        internal ushort OldestProduct;
+        internal byte[] AesKey { get; private set; }
+        internal byte[] ClientIV { get; private set; }
+        internal byte[] ServerIV { get; private set; }
+        internal ushort LatestVSL { get; private set; }
+        internal ushort OldestVSL { get; private set; }
+        internal ushort LatestProduct { get; private set; }
+        internal ushort OldestProduct { get; private set; }
 
         internal P01KeyExchange()
         {
-
         }
 
         internal P01KeyExchange(byte[] aesKey, byte[] clientIV, byte[] serverIV, ushort latestVSL, ushort oldestVSL, ushort latestProduct, ushort oldestProduct)
@@ -37,12 +36,9 @@ namespace VSL.Packet
 
         public uint? ConstantLength => 72;
 
-        public IPacket New()
-        {
-            return new P01KeyExchange();
-        }
+        public IPacket New() => new P01KeyExchange();
 
-        public bool HandlePacket(PacketHandler handler)
+        public Task<bool> HandlePacketAsync(PacketHandler handler)
         {
             return handler.HandleP01KeyExchange(this);
         }

@@ -11,7 +11,7 @@ namespace VSL.Network
     {
         // <fields
         new internal VSLServer parent;
-        private static PacketRule[] rules;
+        private static readonly PacketRule[] rules;
         //  fields>
 
         // <constructor
@@ -42,24 +42,23 @@ namespace VSL.Network
         //  properties>
 
         // <functions
-        internal override bool HandleP00Handshake(P00Handshake p)
+        internal override Task<bool> HandleP00Handshake(P00Handshake p)
         {
             switch (p.RequestType)
             {
                 case RequestType.DirectPublicKey:
-                    return true;
+                    return Task.FromResult(true);
                 default:
-                    parent.manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
-                    return true;
+                    return parent.manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
             }
         }
-        internal override bool HandleP01KeyExchange(P01KeyExchange p)
+        internal override async Task<bool> HandleP01KeyExchange(P01KeyExchange p)
         {
             ushort? vslVersion = VersionManager.GetSharedVSLVersion(p.LatestVSL, p.OldestVSL);
             ushort? productVersion = VersionManager.GetSharedProductVersion(parent.LatestProduct, parent.OldestProduct, p.LatestProduct, p.OldestProduct);
 
             if (!vslVersion.HasValue || !productVersion.HasValue)
-                return parent.manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
+                return await parent.manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
 
             parent.manager.AesKey = p.AesKey;
             parent.ConnectionVersion = vslVersion.Value;
@@ -70,7 +69,7 @@ namespace VSL.Network
                 parent.manager.ReceiveIV = p.ClientIV;
                 parent.manager.Ready4Aes = true;
 
-                if (!parent.manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_SP, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
+                if (!await parent.manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_SP, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
                     return false;
                 parent.OnConnectionEstablished();
             }
@@ -80,36 +79,36 @@ namespace VSL.Network
                 parent.manager.HmacKey = Util.ConcatBytes(p.ClientIV, p.ServerIV);
                 parent.manager.Ready4Aes = true;
 
-                if (!parent.manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
+                if (!await parent.manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
                     return false;
                 parent.OnConnectionEstablished();
             }
             return true;
         }
-        internal override bool HandleP02Certificate(P02Certificate p)
+        internal override Task<bool> HandleP02Certificate(P02Certificate p)
         {
             parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL servers can not handle P02Certificate.");
-            return false;
+            return Task.FromResult(false);
         }
-        internal override bool HandleP03FinishHandshake(P03FinishHandshake p)
+        internal override Task<bool> HandleP03FinishHandshake(P03FinishHandshake p)
         {
             parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL servers can not handle P03FinishHandshake.");
-            return false;
+            return Task.FromResult(false);
         }
-        internal override bool HandleP04ChangeIV(P04ChangeIV p)
+        internal override Task<bool> HandleP04ChangeIV(P04ChangeIV p)
         {
             if (parent.ConnectionVersion.Value > 1)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
                     "P04ChangeIV is not supported in VSL 1.2 because ivs are generated for each packet.\r\n" +
                     "\tat PacketHandlerServer.HandleP04ChangeIV(P04ChangeIV)");
-                return false;
+                return Task.FromResult(false);
             }
             else
             {
                 parent.manager.SendIV = p.ServerIV;
                 parent.manager.ReceiveIV = p.ClientIV;
-                return true;
+                return Task.FromResult(true);
             }
         }
         // overriding HandleP05KeepAlive is not neccessary.

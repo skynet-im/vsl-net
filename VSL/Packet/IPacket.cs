@@ -30,7 +30,7 @@ namespace VSL.Packet
         /// <exception cref="InvalidOperationException"/>
         /// <exception cref="NotImplementedException"/>
         /// <exception cref="NotSupportedException"/>
-        bool HandlePacket(PacketHandler handler);
+        Task<bool> HandlePacketAsync(PacketHandler handler);
         /// <summary>
         /// Reads the data from a PacketBuffer.
         /// </summary>

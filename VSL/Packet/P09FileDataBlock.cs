@@ -9,12 +9,11 @@ namespace VSL.Packet
 {
     internal class P09FileDataBlock : IPacket
     {
-        internal ulong StartPosition;
-        internal byte[] DataBlock;
+        internal ulong StartPosition { get; private set; }
+        internal byte[] DataBlock { get; private set; }
 
         internal P09FileDataBlock()
         {
-
         }
 
         internal P09FileDataBlock(ulong startPosition, byte[] dataBlock)
@@ -27,12 +26,9 @@ namespace VSL.Packet
 
         public uint? ConstantLength => null;
 
-        public IPacket New()
-        {
-            return new P09FileDataBlock();
-        }
+        public IPacket New() => new P09FileDataBlock();
 
-        public bool HandlePacket(PacketHandler handler)
+        public Task<bool> HandlePacketAsync(PacketHandler handler)
         {
             return handler.HandleP09FileDataBlock(this);
         }

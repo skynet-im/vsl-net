@@ -9,11 +9,10 @@ namespace VSL.Packet
 {
     internal class P00Handshake : IPacket
     {
-        internal RequestType RequestType;
+        internal RequestType RequestType { get; private set; }
 
         internal P00Handshake()
         {
-
         }
 
         internal P00Handshake(RequestType requestType)
@@ -25,12 +24,9 @@ namespace VSL.Packet
 
         public uint? ConstantLength => 1;
 
-        public IPacket New()
-        {
-            return new P00Handshake();
-        }
+        public IPacket New() => new P00Handshake();
 
-        public bool HandlePacket(PacketHandler handler)
+        public Task<bool> HandlePacketAsync(PacketHandler handler)
         {
             return handler.HandleP00Handshake(this);
         }

@@ -11,31 +11,25 @@ namespace VSL.Packet
     {
         internal P02Certificate()
         {
-
         }
 
         public byte PacketId { get; } = 2;
 
         public uint? ConstantLength => null;
 
-        public IPacket New()
-        {
-            return new P02Certificate();
-        }
+        public IPacket New() => new P02Certificate();
 
-        public bool HandlePacket(PacketHandler handler)
+        public Task<bool> HandlePacketAsync(PacketHandler handler)
         {
             return handler.HandleP02Certificate(this);
         }
 
         public void ReadPacket(PacketBuffer buf)
         {
-            
         }
 
         public void WritePacket(PacketBuffer buf)
         {
-            
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using VSL.BinaryTools;
 using VSL.Crypt;
 using VSL.Packet;
@@ -30,7 +31,7 @@ namespace VSL.FileTransfer
         /// </summary>
         /// <param name="e">The related request with many important information.</param>
         /// <param name="path">Local path where the file currently exists or will be stored.</param>
-        public void Accept(FTEventArgs e, string path) => Accept(e, path, null);
+        public Task<bool> AcceptAsync(FTEventArgs e, string path) => AcceptAsync(e, path, null);
 
         /// <summary>
         /// Accepts a DownloadHeader or DownloadFile request with custom metadata.
@@ -38,73 +39,77 @@ namespace VSL.FileTransfer
         /// <param name="e">The related request with many important information.</param>
         /// <param name="path">Local path where the file currently exists or will be stored.</param>
         /// <param name="meta">Only for file sending! The metadata to send especially for E2E server applications.</param>
-        public void Accept(FTEventArgs e, string path, FileMeta meta)
+        public async Task<bool> AcceptAsync(FTEventArgs e, string path, FileMeta meta)
         {
             e.Path = path;
             e.Assign(parent, this);
             e.FileMeta = meta;
             currentItem = e;
 
-            parent.manager.SendPacketAsync(new P06Accepted(true, 7, ProblemCategory.None)); // accept the transfer
+            if (!await parent.manager.SendPacketAsync(new P06Accepted(true, 7, ProblemCategory.None))) // accept the transfer
+                return false;
             if (currentItem.Mode == StreamMode.PushHeader || currentItem.Mode == StreamMode.PushFile) // start by sending the FileMeta
             {
                 if (currentItem.FileMeta == null)
                     currentItem.FileMeta = new FileMeta(path, ContentAlgorithm.None);
-                parent.manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value)));
+                if (!await parent.manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value))))
+                    return false;
             }
             else if (meta != null)
             {
                 parent.Logger.I("You have supplied a FileMeta for a receive operation. This FileMeta will be ignored.\r\n" +
                     "\tat FTSocket.Accept(FTEventArgs, String, FileMeta)");
             }
+            return true;
         }
 
         /// <summary>
         /// Cancels a pending request or a running file transfer.
         /// </summary>
         /// <param name="e"></param>
-        public void Cancel(FTEventArgs e)
+        public Task<bool> CancelAsync(FTEventArgs e)
         {
-            parent.manager.SendPacketAsync(new P06Accepted(false, 7, ProblemCategory.None)); // This packet cancels any request or running transfer.
+            Task<bool> t = parent.manager.SendPacketAsync(new P06Accepted(false, 7, ProblemCategory.None)); // This packet cancels any request or running transfer.
             e.Assign(parent, this); // This assignment is necessary for FTEventArgs to print exceptions and raise events.
             e.CloseStream(false);
             currentItem = null;
+            return t;
         }
 
         /// <summary>
         /// Requests the header of a remote file. All further information is specfied in the <see cref="FTEventArgs"/>.
         /// </summary>
         /// <param name="e">Specifies an identifier for the remote file, a local path and many more information of the file header to download.</param>
-        public void DownloadHeader(FTEventArgs e)
+        public Task<bool> StartDownloadHeaderAsync(FTEventArgs e)
         {
             e.Assign(parent, this);
             e.Mode = StreamMode.GetHeader;
             currentItem = e;
-            parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            return parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         /// <summary>
-        /// Requests a remote file with its header. All further information is specfied in the <see cref="FTEventArgs"/>. After a <see cref="FileMeta"/> was received you can start the actual download with <see cref="Continue(FTEventArgs)"/>.
+        /// Requests a remote file with its header. All further information is specfied in the <see cref="FTEventArgs"/>. After a <see cref="FileMeta"/> was received you can start the actual download with <see cref="ContinueAsync(FTEventArgs)"/>.
         /// </summary>
         /// <param name="e">Specifies an identifier for the remote file, a local path and many more information of the file to download.</param>
-        public void Download(FTEventArgs e)
+        public Task<bool> StartDownloadAsync(FTEventArgs e)
         {
             e.Assign(parent, this);
             e.Mode = StreamMode.GetFile;
             currentItem = e;
-            parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            return parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         /// <summary>
         /// Requests the permission to upload a file with its header. All further information is specfied in the <see cref="FTEventArgs"/>.
         /// </summary>
         /// <param name="e">Specifies an remote identifier for the file, a local path and many more information of the file to upload.</param>
-        public void Upload(FTEventArgs e)
+        public Task<bool> StartUploadAsync(FTEventArgs e)
         {
             e.Assign(parent, this);
             e.Mode = StreamMode.PushFile;
             currentItem = e;
-            parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            return parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         /// <summary>
@@ -112,7 +117,7 @@ namespace VSL.FileTransfer
         /// </summary>
         /// <param name="e">The associated file transfer operation to continue.</param>
         /// <returns></returns>
-        public bool Continue(FTEventArgs e)
+        public async Task<bool> ContinueAsync(FTEventArgs e)
         {
             if (e.Mode != StreamMode.GetFile)
             {
@@ -125,11 +130,11 @@ namespace VSL.FileTransfer
             else
             {
                 if (!currentItem.OpenStream()) return false;
-                return parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
+                return await parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
             }
         }
 
-        internal bool OnPacketReceived(P06Accepted packet)
+        internal async Task<bool> OnPacketReceivedAsync(P06Accepted packet)
         {
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
@@ -145,8 +150,9 @@ namespace VSL.FileTransfer
             }
             else if (packet.Accepted && packet.RelatedPacket == 7)
             {
-                if (currentItem.Mode == StreamMode.PushHeader || currentItem.Mode == StreamMode.PushFile)
-                    parent.manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value)));
+                if ((currentItem.Mode == StreamMode.PushHeader || currentItem.Mode == StreamMode.PushFile) &&
+                    !await parent.manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value))))
+                    return false;
                 // counterpart accepted file transfer -> we have to sent the FileMeta first
 
                 // No exceptions here because every request type get's an accepted packet 
@@ -157,7 +163,7 @@ namespace VSL.FileTransfer
                 if (currentItem.Mode == StreamMode.PushFile) // only StreamMode.PushFile wants to receive the file data
                 {
                     if (!currentItem.OpenStream()) return false;
-                    return SendBlock();
+                    return await SendBlockAsync();
                 }
                 else if (currentItem.Mode != StreamMode.PushHeader)
                 {
@@ -179,14 +185,14 @@ namespace VSL.FileTransfer
                     return false;
                 }
                 else if (currentItem.Stream != null)
-                    return SendBlock();
+                    return await SendBlockAsync();
                 else
                     currentItem = null;
             }
             return true;
         }
 
-        private bool SendBlock()
+        private async Task<bool> SendBlockAsync()
         {
             byte[] buffer = new byte[262144];
             ulong pos = Convert.ToUInt64(currentItem.Stream.Position);
@@ -200,14 +206,14 @@ namespace VSL.FileTransfer
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
-            if (!parent.manager.SendPacketAsync(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
+            if (!await parent.manager.SendPacketAsync(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
             currentItem.OnProgress();
             if (count < buffer.Length)
                 return currentItem.CloseStream(true);
             return true;
         }
 
-        internal bool OnPacketReceived(P07OpenFileTransfer packet)
+        internal Task<bool> OnPacketReceivedAsync(P07OpenFileTransfer packet)
         {
             if (currentItem == null)
             {
@@ -215,18 +221,18 @@ namespace VSL.FileTransfer
                 currentItem = e;
                 parent.ThreadManager.Post(() => Request?.Invoke(this, e));
                 if (parent.Logger.InitD) parent.Logger.D($"FileTransfer with {e.Mode} and Identifier {e.Identifier} requested");
-                return true;
+                return Task.FromResult(true);
             }
             else // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
                 parent.ExceptionHandler.CloseConnection("InvalidRequest",
                     "A new file transfer was requested before the last one was finished or aborted.\r\n" +
                     "\tat FTSocket.OnPacketReceived(P07OpenFileTransfer)");
-                return false;
+                return Task.FromResult(false);
             }
         }
 
-        internal bool OnPacketReceived(P08FileHeader packet)
+        internal async Task<bool> OnPacketReceived(P08FileHeader packet)
         {
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
@@ -255,14 +261,14 @@ namespace VSL.FileTransfer
             if (currentItem.Mode == StreamMode.GetHeader)
             {
                 currentItem.OnFinished();
-                return parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
+                return await parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
             }
             // We do not answer for StreamMode.GetFile here, because this is done by FTSocket.Continue(FTEventArgs)
             // in order to give the opportunity to set keys.
             return true;
         }
 
-        internal bool OnPacketReceived(P09FileDataBlock packet)
+        internal async Task<bool> OnPacketReceivedAsync(P09FileDataBlock packet)
         {
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
@@ -288,7 +294,7 @@ namespace VSL.FileTransfer
             }
             try
             {
-                currentItem.Stream.Write(packet.DataBlock, 0, packet.DataBlock.Length);
+                await currentItem.Stream.WriteAsync(packet.DataBlock, 0, packet.DataBlock.Length);
             }
             catch (Exception ex)
             {
@@ -301,7 +307,7 @@ namespace VSL.FileTransfer
                 if (!currentItem.CloseStream(true)) return false;
                 currentItem = null;
             }
-            return parent.manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
+            return await parent.manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
         }
     }
 }

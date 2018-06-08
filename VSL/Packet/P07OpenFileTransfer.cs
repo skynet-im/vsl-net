@@ -15,7 +15,6 @@ namespace VSL.Packet
 
         internal P07OpenFileTransfer()
         {
-
         }
 
         internal P07OpenFileTransfer(Identifier identifier, StreamMode streamMode)
@@ -30,7 +29,7 @@ namespace VSL.Packet
 
         public IPacket New() => new P07OpenFileTransfer();
 
-        public bool HandlePacket(PacketHandler handler)
+        public Task<bool> HandlePacketAsync(PacketHandler handler)
         {
             return handler.HandleP07OpenFileTransfer(this);
         }

@@ -13,7 +13,6 @@ namespace VSL.Packet
 
         internal P05KeepAlive()
         {
-
         }
 
         public P05KeepAlive(KeepAliveRole role)
@@ -25,12 +24,9 @@ namespace VSL.Packet
 
         public uint? ConstantLength => 0;
 
-        public IPacket New()
-        {
-            return new P05KeepAlive();
-        }
+        public IPacket New() => new P05KeepAlive();
 
-        public bool HandlePacket(PacketHandler handler)
+        public Task<bool> HandlePacketAsync(PacketHandler handler)
         {
             return handler.HandleP05KeepAlive(this);
         }

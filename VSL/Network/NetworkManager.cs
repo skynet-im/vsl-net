@@ -132,7 +132,7 @@ namespace VSL.Network
                 return false;
             if (parent.Logger.InitD)
                 parent.Logger.D($"Received internal plaintext packet: ID={id} Length={length}");
-            return parent.handler.HandleInternalPacket(rule, buffer);
+            return await parent.handler.HandleInternalPacketAsync(rule, buffer);
         }
         private async Task<bool> ReceivePacketAsync_RSA_2048_OAEP()
         {
@@ -161,7 +161,7 @@ namespace VSL.Network
                 }
                 if (parent.Logger.InitD)
                     parent.Logger.D($"Received internal RSA packet: ID={id} Length={length}");
-                return parent.handler.HandleInternalPacket(rule, plaintext.TakeAt(index, (int)length));
+                return await parent.handler.HandleInternalPacketAsync(rule, plaintext.TakeAt(index, (int)length));
             }
             catch (CryptographicException ex) // RSA.DecryptBlock()
             {
@@ -212,7 +212,7 @@ namespace VSL.Network
                 {
                     if (parent.Logger.InitD)
                         parent.Logger.D($"Received internal insecure AES packet: ID={id} Length={content.Length}");
-                    return parent.handler.HandleInternalPacket(rule, content);
+                    return await parent.handler.HandleInternalPacketAsync(rule, content);
                 }
                 else
                 {
@@ -277,7 +277,7 @@ namespace VSL.Network
                         {
                             if (parent.Logger.InitD)
                                 parent.Logger.D($"Received internal AES packet: ID={id} Length={content.Length}");
-                            if (!parent.handler.HandleInternalPacket(rule, content))
+                            if (!await parent.handler.HandleInternalPacketAsync(rule, content))
                                 return false;
                         }
                         else

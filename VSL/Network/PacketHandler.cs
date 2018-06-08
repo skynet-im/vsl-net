@@ -60,28 +60,28 @@ namespace VSL.Network
         /// <summary>
         /// Handles an internal VSL packet. Ensure using the correct <see cref="CryptoAlgorithm"/>.
         /// </summary>
-        internal bool HandleInternalPacket(PacketRule rule, byte[] content)
+        internal Task<bool> HandleInternalPacketAsync(PacketRule rule, byte[] content)
         {
             IPacket packet = rule.Packet.New();
             try
             {
                 using (PacketBuffer buf = PacketBuffer.CreateStatic(content))
                     packet.ReadPacket(buf);
+                return packet.HandlePacketAsync(this);
             }
             catch (ArgumentOutOfRangeException ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
-                return false;
+                return Task.FromResult(false);
             }
-            return packet.HandlePacket(this);
         }
 
-        internal abstract bool HandleP00Handshake(P00Handshake p);
-        internal abstract bool HandleP01KeyExchange(P01KeyExchange p);
-        internal abstract bool HandleP02Certificate(P02Certificate p);
-        internal abstract bool HandleP03FinishHandshake(P03FinishHandshake p);
-        internal abstract bool HandleP04ChangeIV(P04ChangeIV p);
-        internal virtual bool HandleP05KeepAlive(P05KeepAlive p)
+        internal abstract Task<bool> HandleP00Handshake(P00Handshake p);
+        internal abstract Task<bool> HandleP01KeyExchange(P01KeyExchange p);
+        internal abstract Task<bool> HandleP02Certificate(P02Certificate p);
+        internal abstract Task<bool> HandleP03FinishHandshake(P03FinishHandshake p);
+        internal abstract Task<bool> HandleP04ChangeIV(P04ChangeIV p);
+        internal virtual async Task<bool> HandleP05KeepAlive(P05KeepAlive p)
         {
             if (parent.ConnectionVersion.Value < 2)
             {
@@ -91,16 +91,16 @@ namespace VSL.Network
                 return false;
             }
             if (p.Role == KeepAliveRole.Request)
-                return parent.manager.SendPacketAsync(new P05KeepAlive(KeepAliveRole.Response));
+                return await parent.manager.SendPacketAsync(new P05KeepAlive(KeepAliveRole.Response));
             else
                 return true;
             // TODO: [VSL 1.2.3] API and timeout for keep-alives
         }
-        internal bool HandleP06Accepted(P06Accepted p)
+        internal async Task<bool> HandleP06Accepted(P06Accepted p)
         {
             if (p.RelatedPacket > 5 && p.RelatedPacket < 10)
             {
-                return parent.FileTransfer.OnPacketReceived(p);
+                return await parent.FileTransfer.OnPacketReceivedAsync(p);
             }
             else
             {
@@ -110,18 +110,18 @@ namespace VSL.Network
                 return false;
             }
         }
-        internal virtual bool HandleP07OpenFileTransfer(P07OpenFileTransfer p)
+        internal virtual Task<bool> HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
             p.ReverseStreamMode(parent.ConnectionVersion.Value);
-            return parent.FileTransfer.OnPacketReceived(p);
+            return parent.FileTransfer.OnPacketReceivedAsync(p);
         }
-        internal bool HandleP08FileHeader(P08FileHeader p)
+        internal Task<bool> HandleP08FileHeader(P08FileHeader p)
         {
             return parent.FileTransfer.OnPacketReceived(p);
         }
-        internal bool HandleP09FileDataBlock(P09FileDataBlock p)
+        internal Task<bool> HandleP09FileDataBlock(P09FileDataBlock p)
         {
-            return parent.FileTransfer.OnPacketReceived(p);
+            return parent.FileTransfer.OnPacketReceivedAsync(p);
         }
         //  functions>
     }

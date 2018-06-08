@@ -23,7 +23,6 @@ namespace VSL.Packet
 
         internal P03FinishHandshake()
         {
-
         }
 
         /// <summary>
@@ -67,12 +66,9 @@ namespace VSL.Packet
 
         public uint? ConstantLength => null;
 
-        public IPacket New()
-        {
-            return new P03FinishHandshake();
-        }
+        public IPacket New() => new P03FinishHandshake();
 
-        public bool HandlePacket(PacketHandler handler)
+        public Task<bool> HandlePacketAsync(PacketHandler handler)
         {
             return handler.HandleP03FinishHandshake(this);
         }
