@@ -94,7 +94,7 @@ namespace VSLTest
             byte[] b = new byte[65536];
             rnd.NextBytes(b);
             if ((Button)sender == btnClientSendPacket)
-                vslClient.SendPacket(1, b);
+                vslClient.SendPacketAsync(1, b);
             else if ((Button)sender == btnServerSendPacket)
                 Program.Clients.ParallelForEach((c) => c.SendPacket(1, b));
         }
@@ -117,7 +117,7 @@ namespace VSLTest
             btnSendFile.Enabled = false;
         }
 
-        private void BtnSendFile_Click(object sender, EventArgs e)
+        private async void BtnSendFile_Click(object sender, EventArgs e)
         {
             string path;
             using (OpenFileDialog fd = new OpenFileDialog())
@@ -138,10 +138,10 @@ namespace VSLTest
                 hmacKey = keys.Take(32);
                 aesKey = keys.Skip(32);
             }
-            FTEventArgs args = new FTEventArgs(new Identifier(0), new FileMeta(path, algorithm, hmacKey, aesKey, null), path);
+            FTEventArgs args = new FTEventArgs(new Identifier(0), await FileMeta.FromFileAsync(path, algorithm, hmacKey, aesKey, null), path);
             args.Progress += VslClient_FTProgress;
             args.Finished += VslClient_FTFinished;
-            vslClient.FileTransfer.StartUploadAsync(args);
+            if (!await vslClient.FileTransfer.StartUploadAsync(args)) return;
             btnReceiveFile.Enabled = false;
             btnSendFile.Enabled = false;
         }
@@ -192,7 +192,7 @@ namespace VSLTest
             btnSendFile.Enabled = true;
         }
 
-        private void VslClient_FTFileMetaReceived(object sender, EventArgs e)
+        private async void VslClient_FTFileMetaReceived(object sender, EventArgs e)
         {
             FTEventArgs args = (FTEventArgs)sender;
             if (args.FileMeta.Algorithm == ContentAlgorithm.Aes256CbcHmacSha256 && !string.IsNullOrWhiteSpace(TbFileKey.Text))
@@ -200,7 +200,7 @@ namespace VSLTest
                 byte[] keys = Util.GetBytes(TbFileKey.Text);
                 args.FileMeta.Decrypt(keys.Take(32), keys.Skip(32));
             }
-            vslClient.FileTransfer.Continue(args);
+            await vslClient.FileTransfer.ContinueAsync(args);
         }
 
         private void FrmMain_FormClosing(object sender, FormClosingEventArgs e)
@@ -209,7 +209,7 @@ namespace VSLTest
             {
                 vslClient.ConnectionClosed -= VSL_Close;
                 if (clientConnected)
-                    vslClient.CloseConnection("");
+                    vslClient.CloseConnection("Closing VSLTest");
                 else
                     vslClient.Dispose();
             }

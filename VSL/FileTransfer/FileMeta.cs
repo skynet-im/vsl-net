@@ -215,7 +215,10 @@ namespace VSL.FileTransfer
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="FileNotFoundException"/>
         /// <exception cref="NotSupportedException"/>
-        public FileMeta(string path, ContentAlgorithm algorithm) : this(path, algorithm, null, null, null) { }
+        public static Task<FileMeta> FromFileAsync(string path, ContentAlgorithm algorithm)
+        {
+            return FromFileAsync(path, algorithm, null, null, null);
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FileMeta"/> class and generates missing keys.
@@ -229,13 +232,21 @@ namespace VSL.FileTransfer
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <exception cref="FileNotFoundException"/>
-        public FileMeta(string path, ContentAlgorithm algorithm, byte[] hmacKey, byte[] aesKey, byte[] fileKey)
+        public static async Task<FileMeta> FromFileAsync(string path, ContentAlgorithm algorithm, byte[] hmacKey, byte[] aesKey, byte[] fileKey)
         {
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException(nameof(path));
             if (algorithm != ContentAlgorithm.None && algorithm != ContentAlgorithm.Aes256CbcHmacSha256)
                 throw new ArgumentException("This content algorithm is not supported.", nameof(algorithm));
 
+            FileMeta instance = new FileMeta(algorithm, hmacKey, aesKey, fileKey);
+            await instance.LoadFromFileAsync(path);
+            instance.Available = true;
+            return instance;
+        }
+
+        private FileMeta(ContentAlgorithm algorithm, byte[] hmacKey, byte[] aesKey, byte[] fileKey)
+        {
             Algorithm = algorithm;
             AesKey = aesKey;
             HmacKey = hmacKey;
@@ -260,9 +271,6 @@ namespace VSL.FileTransfer
 
                 FileEncryption = ContentAlgorithm.Aes256Cbc; // The file needs no HMAC as we have an SHA256
             }
-
-            LoadFromFile(path);
-            Available = true;
         }
 
         /// <summary>
@@ -321,12 +329,11 @@ namespace VSL.FileTransfer
             }
         }
 
-        private void LoadFromFile(string path)
+        private async Task LoadFromFileAsync(string path)
         {
             FileInfo fi = new FileInfo(path);
             if (!fi.Exists) throw new FileNotFoundException("File to load data could not be found.", path);
-            byte[] hash = null;
-            Task hashT = Task.Run(() => hash = Hash.SHA256File(path));
+            Task<byte[]> hash = Hash.SHA256FileAsync(path);
             Name = fi.Name;
             if (FileEncryption == ContentAlgorithm.None)
                 Length = fi.Length;
@@ -337,8 +344,7 @@ namespace VSL.FileTransfer
             LastAccessTime = fi.LastAccessTime;
             LastWriteTime = fi.LastWriteTime;
             Thumbnail = new byte[0]; // Thumbnails aren't supported yet
-            hashT.Wait();
-            SHA256 = hash;
+            SHA256 = await hash;
         }
 
         private void Write_v1_1(PacketBuffer buf)

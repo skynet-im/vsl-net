@@ -13,10 +13,7 @@ namespace VSL
     public sealed class VSLServer : VSLSocket
     {
         // <fields
-        new internal PacketHandlerServer handler;
         internal string Keypair;
-        internal ushort LatestProduct;
-        internal ushort OldestProduct;
         //  fields>
 
         // <constructor
@@ -31,13 +28,10 @@ namespace VSL
         {
             InitializeComponent();
 
-            LatestProduct = latestProduct;
-            OldestProduct = oldestProduct;
             Keypair = keypair;
-            channel = new NetworkChannel(socket, ExceptionHandler);
-            manager = new NetworkManager(this, keypair);
-            handler = new PacketHandlerServer(this);
-            base.handler = handler;
+            Channel = new NetworkChannel(socket, ExceptionHandler);
+            Manager = new NetworkManager(this, keypair);
+            Handler = new PacketHandlerServer(this, latestProduct, oldestProduct);
         }
         //  constructor>
 
@@ -47,7 +41,7 @@ namespace VSL
         /// </summary>
         public void Start()
         {
-            channel.StartThreads();
+            StartReceiveLoop();
         }
         //  functions>
     }

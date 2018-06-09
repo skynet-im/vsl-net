@@ -46,13 +46,13 @@ namespace VSL.FileTransfer
             e.FileMeta = meta;
             currentItem = e;
 
-            if (!await parent.manager.SendPacketAsync(new P06Accepted(true, 7, ProblemCategory.None))) // accept the transfer
+            if (!await parent.Manager.SendPacketAsync(new P06Accepted(true, 7, ProblemCategory.None))) // accept the transfer
                 return false;
             if (currentItem.Mode == StreamMode.PushHeader || currentItem.Mode == StreamMode.PushFile) // start by sending the FileMeta
             {
                 if (currentItem.FileMeta == null)
-                    currentItem.FileMeta = new FileMeta(path, ContentAlgorithm.None);
-                if (!await parent.manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value))))
+                    currentItem.FileMeta = await FileMeta.FromFileAsync(path, ContentAlgorithm.None);
+                if (!await parent.Manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value))))
                     return false;
             }
             else if (meta != null)
@@ -69,7 +69,7 @@ namespace VSL.FileTransfer
         /// <param name="e"></param>
         public Task<bool> CancelAsync(FTEventArgs e)
         {
-            Task<bool> t = parent.manager.SendPacketAsync(new P06Accepted(false, 7, ProblemCategory.None)); // This packet cancels any request or running transfer.
+            Task<bool> t = parent.Manager.SendPacketAsync(new P06Accepted(false, 7, ProblemCategory.None)); // This packet cancels any request or running transfer.
             e.Assign(parent, this); // This assignment is necessary for FTEventArgs to print exceptions and raise events.
             e.CloseStream(false);
             currentItem = null;
@@ -85,7 +85,7 @@ namespace VSL.FileTransfer
             e.Assign(parent, this);
             e.Mode = StreamMode.GetHeader;
             currentItem = e;
-            return parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            return parent.Manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace VSL.FileTransfer
             e.Assign(parent, this);
             e.Mode = StreamMode.GetFile;
             currentItem = e;
-            return parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            return parent.Manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         /// <summary>
@@ -109,28 +109,26 @@ namespace VSL.FileTransfer
             e.Assign(parent, this);
             e.Mode = StreamMode.PushFile;
             currentItem = e;
-            return parent.manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            return parent.Manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
         }
 
         /// <summary>
         /// Continues a file receive operation after a <see cref="FileMeta"/> was received. Cryptographic keys stored in this <see cref="FileMeta"/> will be used if available.
         /// </summary>
         /// <param name="e">The associated file transfer operation to continue.</param>
-        /// <returns></returns>
+        /// <returns>Returns true when the continuation succeeded.</returns>
+        /// <exception cref="InvalidOperationException">When attempting to continue operations other than <see cref="StreamMode.GetFile"/>.</exception>
         public async Task<bool> ContinueAsync(FTEventArgs e)
         {
             if (e.Mode != StreamMode.GetFile)
             {
-                parent.ExceptionHandler.CloseConnection("InvalidOperation",
-                    $"You cannot continue a file transfer operation with {e.Mode}. " +
-                    "Only file transfer with StreamMode.GetFile can be continued.\r\n" +
-                    "\tat FTSocket.Continue(FTEventArgs)");
-                return false;
+                throw new InvalidOperationException($"You cannot continue a file transfer operation with {e.Mode}. " +
+                    "Only file transfer with StreamMode.GetFile can be continued.");
             }
             else
             {
                 if (!currentItem.OpenStream()) return false;
-                return await parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
+                return await parent.Manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
             }
         }
 
@@ -151,7 +149,7 @@ namespace VSL.FileTransfer
             else if (packet.Accepted && packet.RelatedPacket == 7)
             {
                 if ((currentItem.Mode == StreamMode.PushHeader || currentItem.Mode == StreamMode.PushFile) &&
-                    !await parent.manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value))))
+                    !await parent.Manager.SendPacketAsync(new P08FileHeader(currentItem.FileMeta.GetBinaryData(parent.ConnectionVersion.Value))))
                     return false;
                 // counterpart accepted file transfer -> we have to sent the FileMeta first
 
@@ -206,7 +204,7 @@ namespace VSL.FileTransfer
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
-            if (!await parent.manager.SendPacketAsync(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
+            if (!await parent.Manager.SendPacketAsync(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
             currentItem.OnProgress();
             if (count < buffer.Length)
                 return currentItem.CloseStream(true);
@@ -261,7 +259,7 @@ namespace VSL.FileTransfer
             if (currentItem.Mode == StreamMode.GetHeader)
             {
                 currentItem.OnFinished();
-                return await parent.manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
+                return await parent.Manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
             }
             // We do not answer for StreamMode.GetFile here, because this is done by FTSocket.Continue(FTEventArgs)
             // in order to give the opportunity to set keys.
@@ -307,7 +305,7 @@ namespace VSL.FileTransfer
                 if (!currentItem.CloseStream(true)) return false;
                 currentItem = null;
             }
-            return await parent.manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
+            return await parent.Manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
         }
     }
 }

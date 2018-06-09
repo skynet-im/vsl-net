@@ -12,10 +12,15 @@ namespace VSL.Network
     internal abstract class PacketHandler
     {
         // <fields
-        internal VSLSocket parent;
+        protected readonly VSLSocket parent;
         //  fields>
 
-        // <constructor (helper)
+        // <constructor
+        protected PacketHandler(VSLSocket parent)
+        {
+            this.parent = parent;
+        }
+
         protected static PacketRule[] InitRules(params PacketRule[] rules)
         {
             PacketRule[] final = new PacketRule[Constants.InternalPacketCount];
@@ -91,7 +96,7 @@ namespace VSL.Network
                 return false;
             }
             if (p.Role == KeepAliveRole.Request)
-                return await parent.manager.SendPacketAsync(new P05KeepAlive(KeepAliveRole.Response));
+                return await parent.Manager.SendPacketAsync(new P05KeepAlive(KeepAliveRole.Response));
             else
                 return true;
             // TODO: [VSL 1.2.3] API and timeout for keep-alives
