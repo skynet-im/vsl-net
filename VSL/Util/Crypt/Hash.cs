@@ -33,20 +33,9 @@ namespace VSL.Crypt
         /// <returns></returns>
         public static byte[] SHA1(byte[] buffer)
         {
-#if WINDOWS_UWP
-            using (var csp = System.Security.Cryptography.SHA1.Create())
-#else
             using (var csp = new SHA1CryptoServiceProvider())
-#endif
                 return csp.ComputeHash(buffer);
         }
-        /// <summary>
-        /// Computes the SHA1 hash of a file.
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        [Obsolete("VSL.Crypt.Hash.SHA1(String) is deprecated. Please use VSL.Crypt.Hash.SHA1File(String) instead.", false)] // deprecated since VSL 1.3
-        public static byte[] SHA1(string fileName) => SHA1File(fileName);
         /// <summary>
         /// Computes the SHA1 hash of a file.
         /// </summary>
@@ -58,17 +47,22 @@ namespace VSL.Crypt
                 return SHA1(fs);
         }
         /// <summary>
+        /// Computes the SHA1 hash of a file asynchronously.
+        /// </summary>
+        /// <param name="path">The path to open a <see cref="FileStream"/> and compute the hash.</param>
+        /// <returns></returns>
+        public static Task<byte[]> SHA1FileAsync(string path)
+        {
+            return HashFileAsync(path, new SHA1CryptoServiceProvider());
+        }
+        /// <summary>
         /// Computes the SHA1 hash of a stream.
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
         public static byte[] SHA1(Stream stream)
         {
-#if WINDOWS_UWP
-            using (var csp = System.Security.Cryptography.SHA1.Create())
-#else
             using (var csp = new SHA1CryptoServiceProvider())
-#endif
                 return csp.ComputeHash(stream);
         }
         #endregion
@@ -91,20 +85,9 @@ namespace VSL.Crypt
         [SecuritySafeCritical]
         public static byte[] SHA256(byte[] buffer)
         {
-#if WINDOWS_UWP
-            using (var csp = System.Security.Cryptography.SHA256.Create())
-#else
             using (var csp = new SHA256CryptoServiceProvider())
-#endif
                 return csp.ComputeHash(buffer);
         }
-        /// <summary>
-        /// Computes the SHA256 hash of a file.
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        [Obsolete("VSL.Crypt.Hash.SHA256(String) is deprecated. Please use VSL.Crypt.Hash.SHA256File(String) instead.", false)] // deprecated since VSL 1.3
-        public static byte[] SHA256(string fileName) => SHA256File(fileName);
         /// <summary>
         /// Computes the SHA256 hash of a file.
         /// </summary>
@@ -116,6 +99,15 @@ namespace VSL.Crypt
                 return SHA256(fs);
         }
         /// <summary>
+        /// Computes the SHA256 hash of a file.
+        /// </summary>
+        /// <param name="path">The path to open a <see cref="FileStream"/> and compute the hash.</param>
+        /// <returns></returns>
+        public static Task<byte[]> SHA256FileAsync(string path)
+        {
+            return HashFileAsync(path, new SHA256CryptoServiceProvider());
+        }
+        /// <summary>
         /// Computes the SHA256 hash of a stream.
         /// </summary>
         /// <param name="stream"></param>
@@ -123,11 +115,7 @@ namespace VSL.Crypt
         [SecuritySafeCritical]
         public static byte[] SHA256(Stream stream)
         {
-#if WINDOWS_UWP
-            using (var csp = System.Security.Cryptography.SHA256.Create())
-#else
             using (var csp = new SHA256CryptoServiceProvider())
-#endif
                 return csp.ComputeHash(stream);
         }
         #endregion
@@ -160,6 +148,24 @@ namespace VSL.Crypt
         {
             return ScryptCsp.ComputeHash(password, salt, n, r, p, dklen);
         }
-#endregion
+        #endregion
+
+        private static async Task<byte[]> HashFileAsync(string path, HashAlgorithm hash)
+        {
+            using (hash) // Automatically dispose argument after usage
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (CryptoStream cs = new CryptoStream(fs, hash, CryptoStreamMode.Read))
+            {
+                byte[] buffer = new byte[8192];
+                while (true)
+                {
+                    if (await cs.ReadAsync(buffer, 0, buffer.Length) < buffer.Length)
+                    {
+                        if (!cs.HasFlushedFinalBlock) cs.FlushFinalBlock();
+                        return hash.Hash;
+                    }
+                }
+            }
+        }
     }
 }

@@ -26,7 +26,7 @@ namespace VSL.FileTransfer.Streams
         {
             this.key = key ?? throw new ArgumentNullException(nameof(key));
             if (key.Length != 32)
-                throw new ArgumentOutOfRangeException(nameof(key), "The AES key must have a length of 256 bit.");
+                throw new ArgumentOutOfRangeException(nameof(key), key.Length, "The AES key must have a length of 256 bit.");
             if (operation == CryptographicOperation.Encrypt)
                 iv = AesStatic.GenerateIV();
             else if (operation == CryptographicOperation.Decrypt) { }
@@ -66,11 +66,7 @@ namespace VSL.FileTransfer.Streams
                     done += 16; // the method returns the iv so it has to be counted
                     offset += 16;
                     count -= 16;
-#if WINDOWS_UWP
-                    csp = Aes.Create();
-#else
                     csp = new AesCryptoServiceProvider();
-#endif
                     transform = csp.CreateEncryptor(key, iv);
                     shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Read); // compute SHA256 of plain data
                     aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Read); // encrypt after computing hash
@@ -85,11 +81,7 @@ namespace VSL.FileTransfer.Streams
                     iv = new byte[16];
                     if (stream.Read(iv, 0, 16) < 16) return -1; // read iv from stream
                     // The method does not return an iv and its length is ignored.
-#if WINDOWS_UWP
-                    csp = Aes.Create();
-#else
                     csp = new AesCryptoServiceProvider();
-#endif
                     transform = csp.CreateDecryptor(key, iv);
                     aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Read); // first decrypt data
                     shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Read); // then compute hash of the plain data
@@ -124,11 +116,7 @@ namespace VSL.FileTransfer.Streams
                 {
                     stream.Write(iv, 0, 16); // write pre-generated iv on stream
                     // no iv is provided directly -> ignore the count of the iv
-#if WINDOWS_UWP
-                    csp = Aes.Create();
-#else
                     csp = new AesCryptoServiceProvider();
-#endif
                     transform = csp.CreateEncryptor(key, iv);
                     aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Write); // write encrypted data on stream
                     shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Write); // compute hash before encrypting
@@ -146,11 +134,7 @@ namespace VSL.FileTransfer.Streams
                     offset += 16;
                     count -= 16;
                     done += 16; // the iv is directly provided and will be counted
-#if WINDOWS_UWP
-                    csp = Aes.Create();
-#else
                     csp = new AesCryptoServiceProvider();
-#endif
                     transform = csp.CreateDecryptor(key, iv);
                     shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Write); // compute hash of plain data and write on stream
                     aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Write); // decrypt before computing hash

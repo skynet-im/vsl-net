@@ -12,8 +12,8 @@ namespace VSL.BinaryTools
     public static class Util
     {
         // © 2017 - 2018 Daniel Lerch
-        private static unsafe uint* encodeTable;
-        private static byte[] decodeTable;
+        private static readonly unsafe uint* encodeTable;
+        private static readonly byte[] decodeTable;
 
         static unsafe Util()
         {

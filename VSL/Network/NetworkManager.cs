@@ -32,7 +32,7 @@ namespace VSL.Network
             try
             {
                 byte[] buffer = new byte[1];
-                if (!await parent.channel.ReceiveAsync(buffer, 0, 1))
+                if (!await parent.Channel.ReceiveAsync(buffer, 0, 1))
                     return false;
                 CryptoAlgorithm algorithm = (CryptoAlgorithm)buffer[0];
                 switch (algorithm)
@@ -106,12 +106,12 @@ namespace VSL.Network
             CryptoAlgorithm alg = CryptoAlgorithm.None;
             byte id; // read packet id
             byte[] buffer = new byte[1];
-            if (!await parent.channel.ReceiveAsync(buffer, 0, 1))
+            if (!await parent.Channel.ReceiveAsync(buffer, 0, 1))
                 return false;
             id = buffer[0];
 
             if (!AssertInternal(id, alg, nameof(ReceivePacketAsync_Plaintext)) ||
-                !parent.handler.ValidatePacket(id, alg, out PacketRule rule))
+                !parent.Handler.ValidatePacket(id, alg, out PacketRule rule))
                 return false;
 
             uint length; // read packet length
@@ -120,7 +120,7 @@ namespace VSL.Network
             else
             {
                 buffer = new byte[4];
-                if (!await parent.channel.ReceiveAsync(buffer, 0, 4))
+                if (!await parent.Channel.ReceiveAsync(buffer, 0, 4))
                     return false;
                 length = BitConverter.ToUInt32(buffer, 0);
                 if (!AssertSize(Constants.MaxPacketSize, length, nameof(ReceivePacketAsync_Plaintext)))
@@ -128,11 +128,11 @@ namespace VSL.Network
             }
 
             buffer = new byte[length];
-            if (!await parent.channel.ReceiveAsync(buffer, 0, (int)length)) // read packet content
+            if (!await parent.Channel.ReceiveAsync(buffer, 0, (int)length)) // read packet content
                 return false;
             if (parent.Logger.InitD)
                 parent.Logger.D($"Received internal plaintext packet: ID={id} Length={length}");
-            return await parent.handler.HandleInternalPacketAsync(rule, buffer);
+            return await parent.Handler.HandleInternalPacketAsync(rule, buffer);
         }
         private async Task<bool> ReceivePacketAsync_RSA_2048_OAEP()
         {
@@ -141,12 +141,12 @@ namespace VSL.Network
             {
                 int index = 1;
                 byte[] ciphertext = new byte[256];
-                if (!await parent.channel.ReceiveAsync(ciphertext, 0, 256))
+                if (!await parent.Channel.ReceiveAsync(ciphertext, 0, 256))
                     return false;
                 byte[] plaintext = RsaStatic.DecryptBlock(ciphertext, rsaKey);
                 byte id = plaintext[0]; // index = 1
                 if (!AssertInternal(id, alg, nameof(ReceivePacketAsync_RSA_2048_OAEP)) ||
-                    !parent.handler.ValidatePacket(id, alg, out PacketRule rule))
+                    !parent.Handler.ValidatePacket(id, alg, out PacketRule rule))
                     return false;
 
                 uint length = 0;
@@ -161,7 +161,7 @@ namespace VSL.Network
                 }
                 if (parent.Logger.InitD)
                     parent.Logger.D($"Received internal RSA packet: ID={id} Length={length}");
-                return await parent.handler.HandleInternalPacketAsync(rule, plaintext.TakeAt(index, (int)length));
+                return await parent.Handler.HandleInternalPacketAsync(rule, plaintext.TakeAt(index, (int)length));
             }
             catch (CryptographicException ex) // RSA.DecryptBlock()
             {
@@ -176,14 +176,14 @@ namespace VSL.Network
             {
                 int index = 1;
                 byte[] ciphertext = new byte[16];
-                if (!await parent.channel.ReceiveAsync(ciphertext, 0, 16))
+                if (!await parent.Channel.ReceiveAsync(ciphertext, 0, 16))
                     return false;
                 byte[] plaintext = AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV); //CryptographicException
                 byte id = plaintext[0]; // index = 1
 
-                bool isInternal = parent.handler.IsInternalPacket(id);
+                bool isInternal = parent.Handler.IsInternalPacket(id);
                 PacketRule rule = default(PacketRule);
-                if (isInternal && !parent.handler.ValidatePacket(id, alg, out rule))
+                if (isInternal && !parent.Handler.ValidatePacket(id, alg, out rule))
                     return false;
 
                 uint length = 0;
@@ -202,7 +202,7 @@ namespace VSL.Network
                     int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
                     int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
                     ciphertext = new byte[pendingBlocks * 16];
-                    if (!await parent.channel.ReceiveAsync(ciphertext, 0, pendingBlocks * 16))
+                    if (!await parent.Channel.ReceiveAsync(ciphertext, 0, pendingBlocks * 16))
                         return false;
                     plaintext = Util.ConcatBytes(plaintext, AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV));
                 }
@@ -212,7 +212,7 @@ namespace VSL.Network
                 {
                     if (parent.Logger.InitD)
                         parent.Logger.D($"Received internal insecure AES packet: ID={id} Length={content.Length}");
-                    return await parent.handler.HandleInternalPacketAsync(rule, content);
+                    return await parent.Handler.HandleInternalPacketAsync(rule, content);
                 }
                 else
                 {
@@ -234,7 +234,7 @@ namespace VSL.Network
             try
             {
                 byte[] buffer = new byte[35];
-                if (!await parent.channel.ReceiveAsync(buffer, 0, 35)) // 3 (length) + 32 (HMAC)
+                if (!await parent.Channel.ReceiveAsync(buffer, 0, 35)) // 3 (length) + 32 (HMAC)
                     return false;
                 int blocks = Convert.ToInt32(UInt24.FromBytes(buffer, 0));
                 byte[] hmac = buffer.Skip(3);
@@ -243,7 +243,7 @@ namespace VSL.Network
                 if (!AssertSize(Constants.MaxPacketSize + defaultOverhead, (uint)pendingLength, nameof(ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3)))
                     return false;
                 byte[] cipherblock = new byte[pendingLength];
-                if (!await parent.channel.ReceiveAsync(cipherblock, 0, pendingLength))
+                if (!await parent.Channel.ReceiveAsync(cipherblock, 0, pendingLength))
                     return false;
                 if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
                 {
@@ -260,9 +260,9 @@ namespace VSL.Network
                     while (plaintext.Position < plaintext.Length - 1)
                     {
                         byte id = plaintext.ReadByte();
-                        bool isInternal = parent.handler.IsInternalPacket(id);
+                        bool isInternal = parent.Handler.IsInternalPacket(id);
                         PacketRule rule = default(PacketRule);
-                        if (isInternal && !parent.handler.ValidatePacket(id, alg, out rule))
+                        if (isInternal && !parent.Handler.ValidatePacket(id, alg, out rule))
                             return false;
                         uint length = rule.Packet?.ConstantLength ?? plaintext.ReadUInt();
                         if (length > plaintext.Pending)
@@ -277,7 +277,7 @@ namespace VSL.Network
                         {
                             if (parent.Logger.InitD)
                                 parent.Logger.D($"Received internal AES packet: ID={id} Length={content.Length}");
-                            if (!await parent.handler.HandleInternalPacketAsync(rule, content))
+                            if (!await parent.Handler.HandleInternalPacketAsync(rule, content))
                                 return false;
                         }
                         else
@@ -358,7 +358,7 @@ namespace VSL.Network
                 pbuf.WriteByteArray(content, false);
                 buf = pbuf.ToArray();
             }
-            return parent.channel.SendAsync(buf, 0, buf.Length);
+            return parent.Channel.SendAsync(buf, 0, buf.Length);
         }
         private Task<bool> SendPacketAsync_RSA_2048_OAEP(byte realId, bool size, byte[] content)
         {
@@ -377,14 +377,9 @@ namespace VSL.Network
                 byte[] buf = new byte[1 + ciphertext.Length];
                 buf[0] = (byte)CryptoAlgorithm.RSA_2048_OAEP;
                 Array.Copy(ciphertext, 0, buf, 1, ciphertext.Length);
-                return parent.channel.SendAsync(buf, 0, buf.Length);
+                return parent.Channel.SendAsync(buf, 0, buf.Length);
             }
             catch (CryptographicException ex)
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-                return Task.FromResult(false);
-            }
-            catch (NotImplementedException ex) // TODO: Why catch this exception?
             {
                 parent.ExceptionHandler.CloseConnection(ex);
                 return Task.FromResult(false);
@@ -431,7 +426,7 @@ namespace VSL.Network
                     pbuf.WriteByteArray(tailBlock, false);
                     buf = pbuf.ToArray();
                 }
-                return parent.channel.SendAsync(buf, 0, buf.Length);
+                return parent.Channel.SendAsync(buf, 0, buf.Length);
             }
             catch (CryptographicException ex) //Invalid key/iv
             {
@@ -464,7 +459,7 @@ namespace VSL.Network
                 pbuf.WriteByteArray(cipherblock, false);
                 buf = pbuf.ToArray();
             }
-            return parent.channel.SendAsync(buf, 0, buf.Length);
+            return parent.Channel.SendAsync(buf, 0, buf.Length);
         }
         #endregion send
         #region keys
@@ -502,7 +497,7 @@ namespace VSL.Network
         /// </summary>
         private bool AssertInternal(byte id, CryptoAlgorithm alg, string member)
         {
-            bool isInternal = parent.handler.IsInternalPacket(id);
+            bool isInternal = parent.Handler.IsInternalPacket(id);
             if (!isInternal) parent.ExceptionHandler.CloseConnection("InvalidPacket",
                 $"Only internal packets are allowed to use {alg}.\r\n" +
                 $"\tat NetworkManager.{member}()");

@@ -10,8 +10,9 @@ namespace VSL.Network
     internal class PacketHandlerServer : PacketHandler
     {
         // <fields
-        new internal VSLServer parent;
         private static readonly PacketRule[] rules;
+        private readonly ushort latestProduct;
+        private readonly ushort oldestProduct;
         //  fields>
 
         // <constructor
@@ -30,10 +31,10 @@ namespace VSL.Network
                 new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3)
             );
         }
-        internal PacketHandlerServer(VSLServer parent)
+        internal PacketHandlerServer(VSLServer parent, ushort latestProduct, ushort oldestProduct) : base(parent)
         {
-            this.parent = parent;
-            base.parent = parent;
+            this.latestProduct = latestProduct;
+            this.oldestProduct = oldestProduct;
         }
         //  constructor>
 
@@ -49,37 +50,37 @@ namespace VSL.Network
                 case RequestType.DirectPublicKey:
                     return Task.FromResult(true);
                 default:
-                    return parent.manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
+                    return parent.Manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
             }
         }
         internal override async Task<bool> HandleP01KeyExchange(P01KeyExchange p)
         {
             ushort? vslVersion = VersionManager.GetSharedVSLVersion(p.LatestVSL, p.OldestVSL);
-            ushort? productVersion = VersionManager.GetSharedProductVersion(parent.LatestProduct, parent.OldestProduct, p.LatestProduct, p.OldestProduct);
+            ushort? productVersion = VersionManager.GetSharedProductVersion(latestProduct, oldestProduct, p.LatestProduct, p.OldestProduct);
 
             if (!vslVersion.HasValue || !productVersion.HasValue)
-                return await parent.manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
+                return await parent.Manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));
 
-            parent.manager.AesKey = p.AesKey;
+            parent.Manager.AesKey = p.AesKey;
             parent.ConnectionVersion = vslVersion.Value;
 
             if (vslVersion.Value < 2)
             {
-                parent.manager.SendIV = p.ServerIV;
-                parent.manager.ReceiveIV = p.ClientIV;
-                parent.manager.Ready4Aes = true;
+                parent.Manager.SendIV = p.ServerIV;
+                parent.Manager.ReceiveIV = p.ClientIV;
+                parent.Manager.Ready4Aes = true;
 
-                if (!await parent.manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_SP, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
+                if (!await parent.Manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_SP, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
                     return false;
                 parent.OnConnectionEstablished();
             }
 
             if (vslVersion.Value == 2)
             {
-                parent.manager.HmacKey = Util.ConcatBytes(p.ClientIV, p.ServerIV);
-                parent.manager.Ready4Aes = true;
+                parent.Manager.HmacKey = Util.ConcatBytes(p.ClientIV, p.ServerIV);
+                parent.Manager.Ready4Aes = true;
 
-                if (!await parent.manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
+                if (!await parent.Manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
                     return false;
                 parent.OnConnectionEstablished();
             }
@@ -106,8 +107,8 @@ namespace VSL.Network
             }
             else
             {
-                parent.manager.SendIV = p.ServerIV;
-                parent.manager.ReceiveIV = p.ClientIV;
+                parent.Manager.SendIV = p.ServerIV;
+                parent.Manager.ReceiveIV = p.ClientIV;
                 return Task.FromResult(true);
             }
         }

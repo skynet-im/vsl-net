@@ -9,7 +9,6 @@ namespace VSL.Network
     internal class PacketHandlerClient : PacketHandler
     {
         // <fields
-        new internal VSLClient parent;
         private static readonly PacketRule[] rules;
         //  fields>
 
@@ -22,18 +21,14 @@ namespace VSL.Network
                 // P02Certificate   -   Not supported in VSL 1.1/1.2
                 new PacketRule(new P03FinishHandshake(), CryptoAlgorithm.None, CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
                 // P04ChangeIV      -   Server only
-                new PacketRule(new P05KeepAlive(), CryptoAlgorithm.None), // since VSL 1.2.2
+                new PacketRule(new P05KeepAlive(), CryptoAlgorithm.None), // For client since VSL 1.2.2
                 new PacketRule(new P06Accepted(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
-                new PacketRule(new P07OpenFileTransfer(), CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3), // since VSL 1.2
+                new PacketRule(new P07OpenFileTransfer(), CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3), // For client since VSL 1.2
                 new PacketRule(new P08FileHeader(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
                 new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3)
             );
         }
-        internal PacketHandlerClient(VSLClient parent)
-        {
-            this.parent = parent;
-            base.parent = parent;
-        }
+        internal PacketHandlerClient(VSLClient parent) : base(parent) { }
         //  constructor>
 
         // <properties

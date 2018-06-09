@@ -20,7 +20,6 @@ namespace VSLTest
         /// Creates a VSLServer.
         /// </summary>
         /// <param name="native"></param>
-        /// <param name="dispatcher"></param>
         public Client(Socket native)
         {
             Vsl = new VSLServer(native, 0, 0, Program.Keypair);
@@ -38,7 +37,7 @@ namespace VSLTest
 
         public void SendPacket(byte id, byte[] content)
         {
-            Vsl.SendPacket(id, content);
+            Vsl.SendPacketAsync(id, content);
         }
 
         public void CloseConnection(string reason)
@@ -92,7 +91,7 @@ namespace VSLTest
         {
             FTEventArgs args = (FTEventArgs)sender;
             lastMeta = args.FileMeta;
-            Vsl.FileTransfer.Continue(args);
+            Vsl.FileTransfer.ContinueAsync(args);
             args.FileMetaReceived -= Vsl_FTFileMetaReceived;
         }
     }

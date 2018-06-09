@@ -11,7 +11,7 @@ namespace VSL.Network
     internal sealed class NetworkChannel : IDisposable
     {
         private Socket socket;
-        private ExceptionHandler exception;
+        private ExceptionHandler exhandler;
 
         private byte[] receiveBuffer;
         private int receiveOffset;
@@ -28,7 +28,7 @@ namespace VSL.Network
         public NetworkChannel(Socket socket, ExceptionHandler exception)
         {
             this.socket = socket ?? throw new ArgumentNullException(nameof(socket));
-            this.exception = exception ?? throw new ArgumentNullException(nameof(exception));
+            this.exhandler = exception ?? throw new ArgumentNullException(nameof(exception));
 
             receiveBuffer = new byte[0];
             receiveOffset = 0;
@@ -45,7 +45,7 @@ namespace VSL.Network
         public Task<bool> ReceiveAsync(byte[] buffer, int offset, int count)
         {
             if (disposed)
-                throw new ObjectDisposedException(nameof(NetworkChannel));
+                throw new ObjectDisposedException(GetType().FullName);
             if (shutdown)
                 return Task.FromResult(false);
 
@@ -73,7 +73,7 @@ namespace VSL.Network
         public Task<bool> SendAsync(byte[] buffer, int offset, int count)
         {
             if (disposed)
-                throw new ObjectDisposedException(nameof(NetworkChannel));
+                throw new ObjectDisposedException(GetType().FullName);
             if (shutdown)
                 return Task.FromResult(false);
 
@@ -86,7 +86,7 @@ namespace VSL.Network
         public Task<bool> SendAsyncBackground(byte[] buffer, int offset, int count)
         {
             if (disposed)
-                throw new ObjectDisposedException(nameof(NetworkChannel));
+                throw new ObjectDisposedException(GetType().FullName);
             if (shutdown)
                 return Task.FromResult(false);
 
@@ -99,7 +99,7 @@ namespace VSL.Network
         public void Shutdown()
         {
             if (disposed)
-                throw new ObjectDisposedException(nameof(NetworkChannel));
+                throw new ObjectDisposedException(GetType().FullName);
 
             if (!shutdown)
             {
@@ -140,7 +140,7 @@ namespace VSL.Network
         private void Receive_Completed(object sender, SocketAsyncEventArgs e)
         {
             ReceiveSendItem item = (ReceiveSendItem)e.UserToken;
-            if (e.SocketError == SocketError.Shutdown)
+            if (e.SocketError == SocketError.Shutdown || e.SocketError == SocketError.OperationAborted)
             {
                 item.Tcs.SetResult(false);
                 e.Dispose();
@@ -150,14 +150,14 @@ namespace VSL.Network
             {
                 item.Tcs.SetResult(false);
                 e.Dispose();
-                exception.CloseConnection(e.SocketError, e.LastOperation);
+                exhandler.CloseConnection(e.SocketError, e.LastOperation);
                 return;
             }
             if (e.BytesTransferred == 0)
             {
                 item.Tcs.SetResult(false);
                 e.Dispose();
-                exception.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
+                exhandler.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
                 return;
             }
             ReceivedBytes += e.BytesTransferred;
@@ -208,7 +208,7 @@ namespace VSL.Network
         {
             if (!locked)
                 Monitor.Enter(sendLock);
-            if (!TryDeqeue(out ReceiveSendItem item))
+            if (TryDeqeue(out ReceiveSendItem item))
             {
                 sending = true;
                 Monitor.Exit(sendLock);
@@ -232,6 +232,9 @@ namespace VSL.Network
         private void SendItem(ReceiveSendItem item, SocketAsyncEventArgs args)
         {
             args.UserToken = item;
+            int cplen = Math.Min(socket.SendBufferSize, item.Count);
+            Array.Copy(item.Buffer, item.Offset, args.Buffer, 0, cplen);
+            args.SetBuffer(0, cplen);
             if (!socket.SendAsync(args))
                 Send_Completed(socket, args);
         }
@@ -248,14 +251,14 @@ namespace VSL.Network
             else if (e.SocketError != SocketError.Success)
             {
                 item.Tcs.SetResult(false);
-                exception.CloseConnection(e.SocketError, e.LastOperation);
+                exhandler.CloseConnection(e.SocketError, e.LastOperation);
                 e.Dispose();
                 return;
             }
             if (e.BytesTransferred == 0)
             {
                 item.Tcs.SetResult(false);
-                exception.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
+                exhandler.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
                 e.Dispose();
                 return;
             }

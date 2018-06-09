@@ -12,28 +12,28 @@ namespace VSL
     /// </summary>
     public abstract class VSLSocket : IDisposable
     {
+        // fields
         private object connectionLostLock;
-        private bool connectionLost = false;
-        private DateTime connectionLostTime = DateTime.MinValue;
-        private DateTime disposingTime = DateTime.MinValue;
-        internal NetworkChannel channel;
-        internal NetworkManager manager;
-        internal PacketHandler handler;
-        /// <summary>
-        /// Gets the manager for event invocation and load balancing.
-        /// </summary>
-        internal InvokationManager ThreadManager { get; set; }
+        private bool connectionEstablished;
+        private bool connectionLost;
+
+        // components
         /// <summary>
         /// Access file transfer functions.
         /// </summary>
-        public FTSocket FileTransfer { get; internal set; }
-        internal ExceptionHandler ExceptionHandler;
+        public FTSocket FileTransfer { get; private set; }
+
         /// <summary>
         /// Configure necessary console output.
         /// </summary>
-        public Logger Logger { get; protected set; }
-        //  fields>
-        // <constructor
+        public Logger Logger { get; private set; }
+
+        internal NetworkChannel Channel { get; set; }
+        internal NetworkManager Manager { get; set; }
+        internal PacketHandler Handler { get; set; }
+        internal InvokationManager ThreadManager { get; private set; }
+        internal ExceptionHandler ExceptionHandler { get; private set; }
+
         /// <summary>
         /// Initializes all non-child-specific components.
         /// </summary>
@@ -45,7 +45,7 @@ namespace VSL
             Logger = new Logger(this);
             connectionLostLock = new object();
         }
-        //  constructor>
+
         #region properties
         /// <summary>
         /// Gets whether VSL should catch exceptions thrown in an event handler.
@@ -58,52 +58,19 @@ namespace VSL
         /// <summary>
         /// Gets the protocol version that is used for this connection as <see cref="string"/>.
         /// </summary>
-        public string ConnectionVersionString { get; private set; }
-        private ushort? _connectionVersion;
+        public string ConnectionVersionString => VersionManager.GetVersion(ConnectionVersion);
         /// <summary>
         /// Gets the protocol version that is used for this connection.
         /// </summary>
-        public ushort? ConnectionVersion
-        {
-            get => _connectionVersion;
-            internal set
-            {
-                _connectionVersion = value;
-                ConnectionVersionString = VersionManager.GetVersion(value);
-            }
-        }
-        /// <summary>
-        /// Gets or sets the maximum network latency (ms) VSL will allow before closing the connection because of a timeout.
-        /// </summary>
-        public int NetworkMaxLatency { get; set; } = Constants.ReceiveTimeout;
-        /// <summary>
-        /// Gets or sets the minimal network bandwith (B/s) VSL will respect for receive operations before closing the connection because of a timeout.
-        /// </summary>
-        public int NetworkMinBandwith { get; set; } = Constants.ReceiveBandwith;
-        ///// <summary>
-        ///// Gets or sets a value that specifies the size of the receive buffer of the Socket.
-        ///// </summary>
-        //public virtual int ReceiveBufferSize
-        //{
-        //    get => channel.ReceiveBufferSize;
-        //    set
-        //    {
-        //        if (!disposedValue)
-        //            channel.ReceiveBufferSize = value;
-        //    }
-        //}
-        /// <summary>
-        /// Gets or sets the sleep time background threads while waiting for work.
-        /// </summary>
-        public int SleepTime { get; set; } = Constants.SleepTime;
+        public ushort? ConnectionVersion { get; internal set; }
         /// <summary>
         /// Gets the total count of bytes, received in this session until now.
         /// </summary>
-        public long ReceivedBytes => channel.ReceivedBytes;
+        public long ReceivedBytes => Channel.ReceivedBytes;
         /// <summary>
         /// Gets the total count of bytes, sent in this session until now.
         /// </summary>
-        public long SentBytes => channel.SentBytes;
+        public long SentBytes => Channel.SentBytes;
         #endregion
         #region events
         /// <summary>
@@ -115,6 +82,7 @@ namespace VSL
         /// </summary>
         internal virtual void OnConnectionEstablished()
         {
+            connectionEstablished = true;
             ConnectionAvailable = true;
             ThreadManager.Post(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
             if (Logger.InitI)
@@ -148,73 +116,42 @@ namespace VSL
         }
         #endregion
         // <functions
-        #region Send
+        #region Receive
         /// <summary>
-        /// Sends a packet to the remotehost.
+        /// Starts to receive messsages from the connected remote host.
         /// </summary>
-        /// <param name="id">Packet ID</param>
-        /// <param name="content">Packet data</param>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="ArgumentOutOfRangeException"/>
-        /// <exception cref="InvalidOperationException"/>
-        public bool SendPacket(byte id, byte[] content)
+        protected async void StartReceiveLoop()
         {
-            if (content == null) throw new ArgumentNullException(nameof(content));
-            if (id >= 246) throw new ArgumentOutOfRangeException(nameof(id), "must be lower than 246 because of internal VSL packets");
-            if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
-                throw new ObjectDisposedException(nameof(VSLSocket), "This VSLSocket was disposed over 100ms ago.");
-            if (!ConnectionAvailable)
+            while (!connectionLost)
             {
-                if (!connectionLost)
-                    throw new InvalidOperationException("You have to wait until a secure connection is established before you send a packet.");
-                else
-                {
-                    double spanMilliseconds = (DateTime.Now - connectionLostTime).TotalMilliseconds;
-                    string spanText;
-                    if (spanMilliseconds < 100)
-                        return false;
-                    if (spanMilliseconds < 10000)
-                        spanText = Math.Round(spanMilliseconds).ToString() + " ms";
-                    else
-                        spanText = Math.Round(spanMilliseconds, 1).ToString() + " sek";
-                    throw new InvalidOperationException($"VSL has lost its connection {spanText} ago. Build up a new connection before sending a packet.");
-                }
+                if (!await Manager.ReceivePacketAsync())
+                    break;
             }
-            return manager.SendPacketAsync(Convert.ToByte(255 - id), content);
         }
+        #endregion
+        #region Send
         /// <summary>
         /// Sends a packet to the remotehost asynchronously.
         /// </summary>
         /// <param name="id">Packet ID</param>
         /// <param name="content">Packet data</param>
+        /// <returns>Returns true when sending succeeded and false when a network error occured.</returns>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <exception cref="InvalidOperationException"/>
         /// <exception cref="ObjectDisposedException"/>
-        public async Task<bool> SendPacketAsync(byte id, byte[] content)
+        public Task<bool> SendPacketAsync(byte id, byte[] content)
         {
-            if (content == null) throw new ArgumentNullException("content");
-            if (id >= 246) throw new ArgumentOutOfRangeException("id", "must be lower than 246 because of internal VSL packets");
-            if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
-                throw new ObjectDisposedException("VSL.VSLSocket", "This VSLSocket was disposed over 100ms ago.");
-            if (!ConnectionAvailable)
-            {
-                if (!connectionLost)
-                    throw new InvalidOperationException("You have to wait until a secure connection is established before you send a packet.");
-                else
-                {
-                    double spanMilliseconds = (DateTime.Now - connectionLostTime).TotalMilliseconds;
-                    string spanText;
-                    if (spanMilliseconds < 100)
-                        return false;
-                    if (spanMilliseconds < 10000)
-                        spanText = Math.Round(spanMilliseconds).ToString() + " ms";
-                    else
-                        spanText = Math.Round(spanMilliseconds, 1).ToString() + " sek";
-                    throw new InvalidOperationException(string.Format("VSL has lost its connection {0} ago. Build up a new connection before sending a packet.", spanText));
-                }
-            }
-            return await Task.Run(() => manager.SendPacketAsync(Convert.ToByte(255 - id), content));
+            if (id > byte.MaxValue - Constants.InternalPacketCount)
+                throw new ArgumentOutOfRangeException(nameof(id), id, $"ID must be lower or equal than {byte.MaxValue - Constants.InternalPacketCount}.");
+            if (content == null)
+                throw new ArgumentNullException(nameof(content));
+            if (disposedValue)
+                throw new ObjectDisposedException(GetType().FullName);
+            if (!connectionEstablished)
+                throw new InvalidOperationException("You have to wait until a secure connection is established before you send a packet.");
+
+            return Manager.SendPacketAsync((byte)(255 - id), content);
         }
         #endregion
         #region Close
@@ -225,15 +162,16 @@ namespace VSL
         /// <exception cref="ObjectDisposedException"/>
         public void CloseConnection(string reason)
         {
-            if (disposedValue && (DateTime.Now - disposingTime).TotalMilliseconds > 100)
-                throw new ObjectDisposedException(nameof(VSLSocket), "This VSLSocket was disposed over 100ms ago.");
+            if (disposedValue)
+                throw new ObjectDisposedException(GetType().FullName);
+
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {
                     ConnectionClosedEventArgs e = PrepareOnConnectionClosed(reason);
                     if (Logger.InitI)
                         Logger.I("Connection was forcibly closed: " + reason);
-                    channel.Shutdown();
+                    Channel.Shutdown();
                     OnConnectionClosed(e);
                     Dispose();
                 }
@@ -249,7 +187,7 @@ namespace VSL
                 if (!connectionLost) // To detect redundant calls
                 {
                     ConnectionClosedEventArgs e = PrepareOnConnectionClosed(exception);
-                    channel.Shutdown();
+                    Channel.Shutdown();
                     OnConnectionClosed(e);
                 }
         }
@@ -262,8 +200,7 @@ namespace VSL
         {
             ConnectionAvailable = false;
             connectionLost = true;
-            connectionLostTime = DateTime.Now;
-            return new ConnectionClosedEventArgs(reason, channel.ReceivedBytes, channel.SentBytes);
+            return new ConnectionClosedEventArgs(reason, Channel.ReceivedBytes, Channel.SentBytes);
         }
         #endregion
         #region IDisposable Support
@@ -280,14 +217,13 @@ namespace VSL
                 if (disposing)
                 {
                     // -TODO: dispose managed state (managed objects).
-                    channel?.Dispose();
-                    manager?.Dispose();
+                    Channel?.Dispose();
+                    Manager?.Dispose();
                 }
 
                 // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
                 // -TODO: set large fields to null.
 
-                disposingTime = DateTime.Now;
                 disposedValue = true;
             }
         }
