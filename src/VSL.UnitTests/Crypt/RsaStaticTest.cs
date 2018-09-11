@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using VSL.Crypt;
@@ -11,7 +10,7 @@ namespace VSL.UnitTests.Crypt
     public class RsaStaticTest
     {
         [TestMethod]
-        public void TestRsaParamsGeneation()
+        public void TestRsaParamsGeneration()
         {
             RSAParameters @private = RsaStatic.GenerateKeyPairParams();
             RSAParameters @public = RsaStatic.ExtractPublicKey(@private);
@@ -54,7 +53,24 @@ namespace VSL.UnitTests.Crypt
             RSAParameters @public = RsaStatic.ExtractPublicKey(@private);
 
             byte[] plaintext = Encoding.UTF8.GetBytes("Some test for cryptographic operations");
-            byte[] ciphertext = RsaStatic.EncryptBlock(plaintext,)
+            byte[] ciphertext = RsaStatic.EncryptBlock(plaintext, @public);
+            byte[] decrypted = RsaStatic.DecryptBlock(ciphertext, @private);
+
+            CollectionAssert.AreEqual(plaintext, decrypted);
+        }
+
+        [TestMethod]
+        public void TestCryptMore()
+        {
+            RSAParameters @private = RsaStatic.GenerateKeyPairParams();
+            RSAParameters @public = RsaStatic.ExtractPublicKey(@private);
+
+            byte[] plaintext = new byte[734]; // exceed the maximum of 214 bytes
+            new Random().NextBytes(plaintext);
+            byte[] ciphertext = RsaStatic.Encrypt(plaintext, @public);
+            byte[] decrypted = RsaStatic.Decrypt(ciphertext, @private);
+
+            CollectionAssert.AreEqual(plaintext, decrypted);
         }
     }
 }
