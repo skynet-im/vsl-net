@@ -35,6 +35,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -49,23 +52,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AesControl.cs">
+    <Compile Include="Controls\AesControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="AesControl.Designer.cs">
+    <Compile Include="Controls\AesControl.Designer.cs">
       <DependentUpon>AesControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="E2EFileControl.cs">
+    <Compile Include="Controls\E2EFileControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="E2EFileControl.Designer.cs">
+    <Compile Include="Controls\E2EFileControl.Designer.cs">
       <DependentUpon>E2EFileControl.cs</DependentUpon>
     </Compile>
     <Compile Include="ECDH.cs" />
-    <Compile Include="EcdhControl.cs">
+    <Compile Include="Controls\EcdhControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="EcdhControl.Designer.cs">
+    <Compile Include="Controls\EcdhControl.Designer.cs">
       <DependentUpon>EcdhControl.cs</DependentUpon>
     </Compile>
     <Compile Include="MainForm.cs">
@@ -76,25 +79,25 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RsaControl.cs">
+    <Compile Include="Controls\RsaControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="RsaControl.Designer.cs">
+    <Compile Include="Controls\RsaControl.Designer.cs">
       <DependentUpon>RsaControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="ShaControl.cs">
+    <Compile Include="Controls\ShaControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="ShaControl.Designer.cs">
+    <Compile Include="Controls\ShaControl.Designer.cs">
       <DependentUpon>ShaControl.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="AesControl.resx">
+    <EmbeddedResource Include="Controls\AesControl.resx">
       <DependentUpon>AesControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="E2EFileControl.resx">
+    <EmbeddedResource Include="Controls\E2EFileControl.resx">
       <DependentUpon>E2EFileControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="EcdhControl.resx">
+    <EmbeddedResource Include="Controls\EcdhControl.resx">
       <DependentUpon>EcdhControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
@@ -109,12 +112,13 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="RsaControl.resx">
+    <EmbeddedResource Include="Controls\RsaControl.resx">
       <DependentUpon>RsaControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ShaControl.resx">
+    <EmbeddedResource Include="Controls\ShaControl.resx">
       <DependentUpon>ShaControl.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

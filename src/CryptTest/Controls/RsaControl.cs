@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL.BinaryTools;
 using VSL.Crypt;
 
-namespace CryptTest
+namespace CryptTest.Controls
 {
     public partial class RsaControl : UserControl
     {
