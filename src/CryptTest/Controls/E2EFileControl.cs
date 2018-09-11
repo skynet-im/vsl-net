@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL.BinaryTools;
 
-namespace CryptTest
+namespace CryptTest.Controls
 {
     public partial class E2EFileControl : UserControl
     {

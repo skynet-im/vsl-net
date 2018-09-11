@@ -1,4 +1,4 @@
-﻿namespace CryptTest
+﻿namespace CryptTest.Controls
 {
     partial class AesControl
     {
