@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using VSL.BinaryTools;
 using VSL.Crypt;
 using VSL.FileTransfer.Streams;
@@ -81,8 +79,8 @@ namespace VSL.FileTransfer
         {
             if (this.parent == null || this.socket == null)
             {
-                this.parent = parent ?? throw new ArgumentNullException("parent");
-                this.socket = socket ?? throw new ArgumentNullException("socket");
+                this.parent = parent ?? throw new ArgumentNullException(nameof(parent));
+                this.socket = socket ?? throw new ArgumentNullException(nameof(socket));
                 return true;
             }
             else return false;
@@ -135,7 +133,8 @@ namespace VSL.FileTransfer
             else
             {
                 parent.ExceptionHandler.CloseConnection("InvalidFileAlgorithm",
-                    "Cannot run file transfer with " + FileMeta.FileEncryption + ".\r\n\tat FTEventArgs.OpenStream()");
+                    "Cannot run file transfer with " + FileMeta.FileEncryption + ".\r\n" +
+                    "\tat FTEventArgs.OpenStream()");
                 return false;
             }
             return true;
@@ -154,7 +153,7 @@ namespace VSL.FileTransfer
                 {
                     OnCanceled();
                     parent.ExceptionHandler.CloseConnection(ex);
-                    CloseStreamInternal(false, false); // We don't want to close connection twice -> no events.
+                    CloseStreamInternal(events: false, success: false); // We don't want to close connection twice -> no events.
                     return false;
                 }
                 byte[] hash = Stream.Hash;

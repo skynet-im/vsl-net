@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,10 +23,10 @@ namespace VSL.Network
         private bool shutdown = false;
         private bool disposed = false;
 
-        public NetworkChannel(Socket socket, ExceptionHandler exception)
+        public NetworkChannel(Socket socket, ExceptionHandler exhandler)
         {
             this.socket = socket ?? throw new ArgumentNullException(nameof(socket));
-            this.exhandler = exception ?? throw new ArgumentNullException(nameof(exception));
+            this.exhandler = exhandler ?? throw new ArgumentNullException(nameof(exhandler));
 
             receiveBuffer = new byte[0];
             receiveOffset = 0;

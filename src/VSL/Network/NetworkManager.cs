@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using VSL.BinaryTools;
@@ -15,14 +14,14 @@ namespace VSL.Network
         // <fields
         private VSLSocket parent;
         internal bool Ready4Aes = false;
-        private readonly string rsaKey;
+        private readonly RSAParameters rsaKey;
         private HMACSHA256 hmacProvider;
         //  fields>
         // <constructor
         internal NetworkManager(VSLSocket parent, string rsaKey)
         {
             this.parent = parent;
-            this.rsaKey = rsaKey;
+            this.rsaKey = new RSAParameters().ImportXmlKey(rsaKey);
         }
         //  constructor>
         // <functions
