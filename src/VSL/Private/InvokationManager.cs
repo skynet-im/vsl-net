@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace VSL
@@ -32,7 +30,7 @@ namespace VSL
         }
 
         /// <summary>
-        /// Sets the current <see cref="SynchronizationContext"/> of the calling thead.
+        /// Sets the current <see cref="SynchronizationContext"/> of the calling thread.
         /// </summary>
         public void SetContext()
         {

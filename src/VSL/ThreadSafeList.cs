@@ -20,15 +20,15 @@ namespace VSL
         /// <summary>
         /// Locks <see cref="void"/> <see cref="Cleanup"/>.
         /// </summary>
-        private object cleanupLock;
+        private readonly object cleanupLock;
         /// <summary>
         /// Locks <see cref="bool"/> <see cref="cleaning"/> and is locked while finishing cleanup.
         /// </summary>
-        private object changeStateLock;
+        private readonly object changeStateLock;
         /// <summary>
         /// Locks <see cref="bool"/> <see cref="count"/>.
         /// </summary>
-        private object counterLock;
+        private readonly object counterLock;
         /// <summary>
         /// Initializes a new instance of the <see cref="ThreadSafeList{T}"/> class.
         /// </summary>
