@@ -6,7 +6,7 @@ using VSL;
 using VSL.BinaryTools;
 using VSL.Crypt;
 
-namespace VSLUnitTest
+namespace VSL.UnitTests
 {
     [TestClass]
     public class CryptTest

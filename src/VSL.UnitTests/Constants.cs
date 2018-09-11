@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VSLUnitTest
+namespace VSL.UnitTests
 {
     public static class Constants
     {
