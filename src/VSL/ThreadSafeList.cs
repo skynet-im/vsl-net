@@ -60,7 +60,7 @@ namespace VSL
         public void Add(T item)
         {
             if (item == null)
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             lock (changeStateLock)
             {
                 if (cleaning)
@@ -78,7 +78,7 @@ namespace VSL
         public bool Remove(T item)
         {
             if (item == null)
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             bool final = false;
             // -TODO: Do not run loop in lock
             lock (changeStateLock)
