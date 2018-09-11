@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VSL.BinaryTools;
 
-namespace VSLUnitTest
+namespace VSL.UnitTests
 {
     [TestClass]
     public class UtilTest
