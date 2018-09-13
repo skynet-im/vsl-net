@@ -10,8 +10,8 @@ namespace VSLTest
 {
     public class Server
     {
-        private int port;
-        private string keypair;
+        private readonly int port;
+        private readonly string keypair;
         TcpListener listener4;
         TcpListener listener6;
 

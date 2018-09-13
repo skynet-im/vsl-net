@@ -9,10 +9,6 @@ namespace VSL
     /// </summary>
     public sealed class VSLServer : VSLSocket
     {
-        // <fields
-        internal string Keypair;
-        //  fields>
-
         // <constructor
         /// <summary>
         /// Creates a VSL server for the specified client. To start working, call <see cref="Start"/>.
@@ -25,7 +21,6 @@ namespace VSL
         {
             InitializeComponent();
 
-            Keypair = keypair;
             Channel = new NetworkChannel(socket, ExceptionHandler);
             Manager = new NetworkManager(this, keypair);
             Handler = new PacketHandlerServer(this, latestProduct, oldestProduct);

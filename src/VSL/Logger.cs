@@ -8,7 +8,7 @@ namespace VSL
     /// </summary>
     public class Logger
     {
-        private VSLSocket parent;
+        private readonly VSLSocket parent;
         internal Logger(VSLSocket parent)
         {
             this.parent = parent;
