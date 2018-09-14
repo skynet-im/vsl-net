@@ -44,11 +44,11 @@ namespace VSL
         /// <returns></returns>
         internal static ushort? GetSharedVSLVersion(ushort latestVSL, ushort oldestVSL)
         {
-            if (latestVSL == Constants.VersionNumber) // same version
+            if (latestVSL == Constants.ProtocolVersion) // same version
                 return latestVSL;
-            if (latestVSL > Constants.VersionNumber && oldestVSL <= Constants.VersionNumber) // newer client
-                return Constants.VersionNumber;
-            if (latestVSL < Constants.VersionNumber && latestVSL >= Constants.CompatibilityVersion) // newer server
+            if (latestVSL > Constants.ProtocolVersion && oldestVSL <= Constants.ProtocolVersion) // newer client
+                return Constants.ProtocolVersion;
+            if (latestVSL < Constants.ProtocolVersion && latestVSL >= Constants.CompatibilityVersion) // newer server
                 return latestVSL;
             return null;
         }

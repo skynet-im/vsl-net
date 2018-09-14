@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
 using VSL.BinaryTools;
@@ -26,7 +23,7 @@ namespace VSLTest
             Vsl.PacketReceived += Vsl_PacketReceived;
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
             Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
-            Vsl.CatchApplicationExceptions = false;
+            Vsl.Settings = new SocketSettings() { CatchApplicationExceptions = false };
             Vsl.Logger.PrintDebugMessages = true;
             Vsl.Logger.PrintExceptionMessages = true;
             Vsl.Logger.PrintInfoMessages = true;
@@ -61,7 +58,7 @@ namespace VSLTest
             Interlocked.Increment(ref Program.Disconnects);
         }
 
-        private void Vsl_FileTransferRequested(object sender, FTEventArgs e)
+        private async void Vsl_FileTransferRequested(object sender, FTEventArgs e)
         {
             if (e.Mode == StreamMode.PushHeader || e.Mode == StreamMode.PushFile)
             {
@@ -74,24 +71,24 @@ namespace VSLTest
                             "Metadaten wiederverwenden?", MessageBoxButtons.YesNo) == DialogResult.No)
                             lastMeta = null;
 
-                        Vsl.FileTransfer.AcceptAsync(e, fd.FileName, lastMeta);
+                        await Vsl.FileTransfer.AcceptAsync(e, fd.FileName, lastMeta);
                     }
                     else
-                        Vsl.FileTransfer.CancelAsync(e);
+                        await Vsl.FileTransfer.CancelAsync(e);
                 }
             }
             else
             {
                 e.FileMetaReceived += Vsl_FTFileMetaReceived;
-                Vsl.FileTransfer.AcceptAsync(e, Path.Combine(Program.TempPath, Path.GetRandomFileName()));
+                await Vsl.FileTransfer.AcceptAsync(e, Path.Combine(Program.TempPath, Path.GetRandomFileName()));
             }
         }
 
-        private void Vsl_FTFileMetaReceived(object sender, EventArgs e)
+        private async void Vsl_FTFileMetaReceived(object sender, EventArgs e)
         {
             FTEventArgs args = (FTEventArgs)sender;
             lastMeta = args.FileMeta;
-            Vsl.FileTransfer.ContinueAsync(args);
+            await Vsl.FileTransfer.ContinueAsync(args);
             args.FileMetaReceived -= Vsl_FTFileMetaReceived;
         }
     }
