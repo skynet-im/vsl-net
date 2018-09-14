@@ -20,4 +20,8 @@
     <None Remove="VSL.csproj.vspscc" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.Caching" Version="4.5.0" />
+  </ItemGroup>
+
 </Project>
