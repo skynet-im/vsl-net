@@ -44,6 +44,11 @@ namespace VSL
         public const int ReceiveBandwith = 8000;
 
         /// <summary>
+        /// The maximum count of pending client connect requests.
+        /// </summary>
+        public const int ListenerBacklog = 128;
+
+        /// <summary>
         /// The maximum admissible packet size. If a received packet is bigger the receiver closes the connection.
         /// </summary>
         public const int MaxPacketSize = 1048576;
