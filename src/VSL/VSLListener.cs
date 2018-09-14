@@ -20,12 +20,17 @@ namespace VSL
             }
         }
 
+        /// <summary>
+        /// The maximum count of pending client connect requests.
+        /// </summary>
+        public int Backlog { get; set; } = 128;
+
         public void Start()
         {
             foreach (Socket socket in sockets)
             {
-                socket.Listen(Constants.ListenerBacklog);
-                
+                socket.Listen(Backlog);
+
             }
         }
 
@@ -36,7 +41,7 @@ namespace VSL
 
         private void Accept_Completed(object sender, SocketAsyncEventArgs e)
         {
-            
+
         }
     }
 }

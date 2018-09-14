@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -23,7 +24,7 @@ namespace VSLTest
         {
             InitializeComponent();
             ToolTipMain.SetToolTip(LbFileKey, "Zum Generieren eines Schlüssels klicken.");
-            Text = string.Format(Text, Constants.ProductVersion(4));
+            Text = string.Format(Text, Assembly.GetAssembly(typeof(VSLSocket)).GetName().Version);
             server = new Server(Program.Port, Program.Keypair);
             pentest = new PenetrationTest();
         }
@@ -58,7 +59,7 @@ namespace VSLTest
                 vslClient.Logger.PrintExceptionMessages = true;
                 vslClient.Logger.PrintInfoMessages = true;
                 vslClient.Logger.PrintUncaughtExceptions = true;
-                vslClient.CatchApplicationExceptions = false;
+                vslClient.Settings = new SocketSettings() { CatchApplicationExceptions = false };
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
                 vslClient.PacketReceived += VslClient_Received;

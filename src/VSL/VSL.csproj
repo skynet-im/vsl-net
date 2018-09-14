@@ -10,6 +10,12 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageLicenseUrl>https://github.com/skynet-im/vsl-net/blob/dev/LICENSE</PackageLicenseUrl>
+    <Copyright>Copyright © 2018 Daniel Lerch</Copyright>
+    <Authors>Daniel Lerch</Authors>
+    <Company>VectorData</Company>
+    <RepositoryUrl>https://github.com/skynet-im/vsl-net</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/skynet-im/vsl-net</PackageProjectUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

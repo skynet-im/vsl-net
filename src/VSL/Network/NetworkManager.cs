@@ -122,7 +122,7 @@ namespace VSL.Network
                 if (!await parent.Channel.ReceiveAsync(buffer, 0, 4))
                     return false;
                 length = BitConverter.ToUInt32(buffer, 0);
-                if (!AssertSize(Constants.MaxPacketSize, length, nameof(ReceivePacketAsync_Plaintext)))
+                if (!AssertSize(parent.Settings.MaxPacketSize, (int)length, nameof(ReceivePacketAsync_Plaintext)))
                     return false;
             }
 
@@ -155,7 +155,7 @@ namespace VSL.Network
                 {
                     length = BitConverter.ToUInt32(plaintext, index);
                     index += 4;
-                    if (!AssertSize(209, length, nameof(ReceivePacketAsync_RSA_2048_OAEP)))
+                    if (!AssertSize(209, (int)length, nameof(ReceivePacketAsync_RSA_2048_OAEP)))
                         return false; // 214 - 1 (id) - 4 (uint) => 209
                 }
                 if (parent.Logger.InitD)
@@ -192,7 +192,7 @@ namespace VSL.Network
                 {
                     length = BitConverter.ToUInt32(plaintext, index);
                     index += 4;
-                    if (!AssertSize(Constants.MaxPacketSize, length, nameof(ReceivePacketAsync_AES_256_CBC_SP)))
+                    if (!AssertSize(parent.Settings.MaxPacketSize, (int)length, nameof(ReceivePacketAsync_AES_256_CBC_SP)))
                         return false;
                 }
                 plaintext = plaintext.Skip(index);
@@ -239,7 +239,7 @@ namespace VSL.Network
                 byte[] hmac = buffer.Skip(3);
                 const int defaultOverhead = 16 + 1 + 4; // iv + id + len
                 int pendingLength = (blocks + 2) * 16; // at least one block; inclusive iv
-                if (!AssertSize(Constants.MaxPacketSize + defaultOverhead, (uint)pendingLength, nameof(ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3)))
+                if (!AssertSize(parent.Settings.MaxPacketSize + defaultOverhead, pendingLength, nameof(ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3)))
                     return false;
                 byte[] cipherblock = new byte[pendingLength];
                 if (!await parent.Channel.ReceiveAsync(cipherblock, 0, pendingLength))
@@ -506,7 +506,7 @@ namespace VSL.Network
         /// <summary>
         /// Ensures that a packet size inside the maximum bounds.
         /// </summary>
-        private bool AssertSize(uint maximum, uint actual, string member)
+        private bool AssertSize(int maximum, int actual, string member)
         {
             bool valid = actual <= maximum;
             if (!valid) parent.ExceptionHandler.CloseConnection("TooBigPacket",

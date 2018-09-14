@@ -2,7 +2,7 @@
 using System.IO;
 using VSL.BinaryTools;
 using VSL.Crypt;
-using VSL.FileTransfer.Streams;
+using VSL.Crypt.Streams;
 
 namespace VSL.FileTransfer
 {
