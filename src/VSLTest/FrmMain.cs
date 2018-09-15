@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
@@ -54,17 +52,20 @@ namespace VSLTest
             if (!clientConnected)
             {
                 btnConnect.Enabled = false;
-                vslClient = new VSLClient(0, 0);
-                vslClient.Logger.PrintDebugMessages = true;
-                vslClient.Logger.PrintExceptionMessages = true;
-                vslClient.Logger.PrintInfoMessages = true;
-                vslClient.Logger.PrintUncaughtExceptions = true;
-                vslClient.Settings = new SocketSettings() { CatchApplicationExceptions = false };
+                SocketSettings settings = new SocketSettings()
+                {
+                    CatchApplicationExceptions = false,
+                    RsaXmlKey = Program.PublicKey
+                };
+                vslClient = new VSLClient(settings);
                 vslClient.ConnectionEstablished += VSL_Open;
                 vslClient.ConnectionClosed += VSL_Close;
                 vslClient.PacketReceived += VslClient_Received;
+#if DEBUG
+                vslClient.LogHandler = (o, x) => Console.WriteLine("[Client] " + x);
+#endif
                 var progress = new Progress<VSLClient.ConnectionState>((state) => Console.WriteLine(state));
-                await vslClient.ConnectAsync("localhost", Program.Port, Program.PublicKey, progress);
+                await vslClient.ConnectAsync("localhost", Program.Port, progress);
             }
             else
                 vslClient.CloseConnection("The user requested to disconnect", null);
@@ -156,12 +157,12 @@ namespace VSLTest
             }
             else
             {
-                Task t = pentest.RunAsync(5000);
+                Task t = pentest.RunAsync(10000);
                 btnPenetrationTest.Text = "Stoppen";
                 await t;
                 pentest.Stop();
                 btnPenetrationTest.Text = "Stresstest";
-                MessageBox.Show(string.Format("{0} attacks in {1}ms", pentest.Done, pentest.ElapsedTime));
+                MessageBox.Show(string.Format("{0} attacks in {1}ms with {2} errors", pentest.Done, pentest.ElapsedTime, pentest.Errors));
             }
         }
 

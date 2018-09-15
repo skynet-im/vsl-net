@@ -1,16 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
+using System.Security.Cryptography;
+using VSL.Crypt;
 
 namespace VSL
 {
     public class VSLListener
     {
         private readonly Socket[] sockets;
+        private readonly MemoryCache<SocketAsyncEventArgs> cache;
+        private readonly Action<VSLServer> acceptor;
 
-        public VSLListener(IPEndPoint[] addresses)
+        public VSLListener(IPEndPoint[] addresses, SocketSettings settings, Action<VSLServer> acceptor)
         {
             sockets = new Socket[addresses.Length];
             for (int i = 0; i < addresses.Length; i++)
@@ -18,30 +20,70 @@ namespace VSL
                 sockets[i] = new Socket(addresses[i].AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 sockets[i].Bind(addresses[i]);
             }
+            cache = new MemoryCache<SocketAsyncEventArgs>(128, Constructor, x => x.Buffer.Length == Settings.ReceiveSendBufferSize, x => x.Dispose());
+            this.Settings = settings;
+            this.acceptor = acceptor;
         }
 
         /// <summary>
-        /// The maximum count of pending client connect requests.
+        /// Gets or sets the maximum count of pending client connect requests.
         /// </summary>
         public int Backlog { get; set; } = 128;
+
+        /// <summary>
+        /// Gets or sets the maximum count of <see cref="SocketAsyncEventArgs"/> cached for receive and send operations.
+        /// </summary>
+        public int CacheCapacity { get => cache.Capacity; set => cache.Capacity = value; }
+
+        /// <summary>
+        /// Gets or sets 
+        /// </summary>
+        public SocketSettings Settings { get; }
 
         public void Start()
         {
             foreach (Socket socket in sockets)
             {
                 socket.Listen(Backlog);
-
+                var args = new SocketAsyncEventArgs();
+                args.Completed += Accept_Completed;
+                socket.AcceptAsync(args);
             }
         }
 
         public void Stop()
         {
+            foreach (Socket socket in sockets)
+            {
+                socket.Dispose();
+            }
+        }
 
+        private SocketAsyncEventArgs Constructor()
+        {
+            int length = Settings.ReceiveSendBufferSize;
+            SocketAsyncEventArgs e = new SocketAsyncEventArgs();
+            e.SetBuffer(new byte[length], 0, length);
+            return e;
         }
 
         private void Accept_Completed(object sender, SocketAsyncEventArgs e)
         {
+            if (e.SocketError == SocketError.Success)
+            {
+                Socket accepted = e.AcceptSocket;
+                e.AcceptSocket = null;
+                ((Socket)sender).AcceptAsync(e);
 
+                VSLServer server = new VSLServer(accepted, cache, Settings);
+                acceptor(server);
+                server.Start();
+            }
+            else
+            {
+                Console.WriteLine("SocketError." + e.SocketError);
+                e.Dispose();
+            }
         }
     }
 }

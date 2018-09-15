@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Net.Sockets;
 using System.Threading;
 using System.Windows.Forms;
 using VSL;
@@ -17,19 +16,16 @@ namespace VSLTest
         /// Creates a VSLServer.
         /// </summary>
         /// <param name="native"></param>
-        public Client(Socket native)
+        public Client(VSLServer server)
         {
-            Vsl = new VSLServer(native, 0, 0, Program.Keypair);
+            Vsl = server;
             Vsl.PacketReceived += Vsl_PacketReceived;
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
             Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
-            Vsl.Settings = new SocketSettings() { CatchApplicationExceptions = false };
-            Vsl.Logger.PrintDebugMessages = true;
-            Vsl.Logger.PrintExceptionMessages = true;
-            Vsl.Logger.PrintInfoMessages = true;
-            Vsl.Logger.PrintUncaughtExceptions = true;
+#if DEBUG
+            Vsl.LogHandler = (o, x) => Console.WriteLine("[Server] " + x);
+#endif
             Program.Clients.Add(this);
-            Vsl.Start();
         }
 
         public void SendPacket(byte id, byte[] content)
@@ -56,6 +52,9 @@ namespace VSLTest
             if (!Program.Clients.Remove(this))
                 throw new Exception("Second ConnectionClosed event");
             Interlocked.Increment(ref Program.Disconnects);
+#if DEBUG
+            Console.WriteLine(e.Message);
+#endif
         }
 
         private async void Vsl_FileTransferRequested(object sender, FTEventArgs e)

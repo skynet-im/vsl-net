@@ -18,10 +18,10 @@ namespace VSL.Network
         private HMACSHA256 hmacProvider;
         //  fields>
         // <constructor
-        internal NetworkManager(VSLSocket parent, string rsaKey)
+        internal NetworkManager(VSLSocket parent, RSAParameters rsaKey)
         {
             this.parent = parent;
-            this.rsaKey = new RSAParameters().ImportXmlKey(rsaKey);
+            this.rsaKey = rsaKey;
         }
         //  constructor>
         // <functions

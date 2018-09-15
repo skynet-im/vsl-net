@@ -62,6 +62,9 @@ namespace VSL
         public Exception Exception { get; }
     }
 
+    /// <summary>
+    /// Defines reasons to close a VSL connection.
+    /// </summary>
     public enum ConnectionCloseReason
     {
         None,
@@ -69,30 +72,5 @@ namespace VSL
         InternalError,
         UserCodeError,
         UserRequested
-    }
-
-    /// <summary>
-    /// Event data for a VSL log.
-    /// </summary>
-    public class LoggedMessageEventArgs : EventArgs
-    {
-        /// <summary>
-        /// Initializes a new instance of the LoggedMessageEventArgs class.
-        /// </summary>
-        /// <param name="type">Type of the log message.</param>
-        /// <param name="text">Text of the log message.</param>
-        internal LoggedMessageEventArgs(Logger.LogType type, string text)
-        {
-            Type = type;
-            Text = text;
-        }
-        /// <summary>
-        /// Gets the type of the related log message.
-        /// </summary>
-        public Logger.LogType Type { get; }
-        /// <summary>
-        /// Gets the text of the related log message.
-        /// </summary>
-        public string Text { get; }
     }
 }
