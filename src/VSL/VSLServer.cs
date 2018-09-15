@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using VSL.Crypt;
 using VSL.Network;
 
 namespace VSL
@@ -14,16 +16,15 @@ namespace VSL
         /// Creates a VSL server for the specified client. To start working, call <see cref="Start"/>.
         /// </summary>
         /// <param name="socket">Connected <see cref="Socket"/>.</param>
-        /// <param name="latestProduct">The application version.</param>
-        /// <param name="oldestProduct">The oldest supported version.</param>
-        /// <param name="keypair">The RSA-keypair of the server application.</param>
-        public VSLServer(Socket socket, ushort latestProduct, ushort oldestProduct, string keypair)
-        {
-            InitializeComponent();
+        /// <param name="settings">Class containing the RSA key and more settings.</param>
+        public VSLServer(Socket socket, SocketSettings settings)
+            : this(socket, CreateFakeCache(), settings) { }
 
-            Channel = new NetworkChannel(socket, ExceptionHandler);
-            Manager = new NetworkManager(this, keypair);
-            Handler = new PacketHandlerServer(this, latestProduct, oldestProduct);
+        internal VSLServer(Socket socket, MemoryCache<SocketAsyncEventArgs> cache, SocketSettings settings) : base(settings)
+        {
+            Channel = new NetworkChannel(socket, ExceptionHandler, cache);
+            Manager = new NetworkManager(this, Settings.RsaKey);
+            Handler = new PacketHandlerServer(this, Settings.LatestProductVersion, Settings.OldestProductVersion);
         }
         //  constructor>
 

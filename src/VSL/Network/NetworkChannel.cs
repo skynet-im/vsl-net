@@ -8,25 +8,27 @@ namespace VSL.Network
 {
     internal sealed class NetworkChannel : IDisposable
     {
-        private Socket socket;
-        private ExceptionHandler exhandler;
+        private readonly Socket socket;
+        private readonly ExceptionHandler exhandler;
+        private readonly MemoryCache<SocketAsyncEventArgs> cache;
 
         private byte[] receiveBuffer;
         private int receiveOffset;
         private int receiveCount;
 
-        private ConcurrentQueue<ReceiveSendItem> realtimeQueue;
-        private ConcurrentQueue<ReceiveSendItem> backgroundQueue;
+        private readonly ConcurrentQueue<ReceiveSendItem> realtimeQueue;
+        private readonly ConcurrentQueue<ReceiveSendItem> backgroundQueue;
         private readonly object sendLock;
         private bool sending = false;
 
         private bool shutdown = false;
         private bool disposed = false;
 
-        public NetworkChannel(Socket socket, ExceptionHandler exhandler)
+        public NetworkChannel(Socket socket, ExceptionHandler exhandler, MemoryCache<SocketAsyncEventArgs> cache)
         {
             this.socket = socket ?? throw new ArgumentNullException(nameof(socket));
             this.exhandler = exhandler ?? throw new ArgumentNullException(nameof(exhandler));
+            this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
 
             receiveBuffer = new byte[0];
             receiveOffset = 0;
@@ -122,8 +124,7 @@ namespace VSL.Network
 
         private void ReceiveItem(ReceiveSendItem item)
         {
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.SetBuffer(new byte[socket.ReceiveBufferSize], 0, socket.ReceiveBufferSize);
+            SocketAsyncEventArgs args = cache.PopOrCreate();
             args.Completed += Receive_Completed;
             ReceiveItem(item, args);
         }
@@ -141,21 +142,21 @@ namespace VSL.Network
             if (e.SocketError == SocketError.Shutdown || e.SocketError == SocketError.OperationAborted)
             {
                 item.Tcs.SetResult(false);
-                e.Dispose();
+                DestroyReceive(e);
                 return;
             }
             else if (e.SocketError != SocketError.Success)
             {
                 item.Tcs.SetResult(false);
-                e.Dispose();
+                DestroyReceive(e);
                 exhandler.CloseConnection(e.SocketError, e.LastOperation);
                 return;
             }
             if (e.BytesTransferred == 0)
             {
                 item.Tcs.SetResult(false);
-                e.Dispose();
-                exhandler.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
+                DestroyReceive(e);
+                exhandler.CloseConnection(SocketError.Disconnecting, e.LastOperation);
                 return;
             }
             ReceivedBytes += e.BytesTransferred;
@@ -173,8 +174,14 @@ namespace VSL.Network
                 receiveOffset = e.Offset + cplen;
                 receiveCount = e.BytesTransferred - cplen;
                 item.Tcs.SetResult(true);
-                e.Dispose();
+                DestroyReceive(e);
             }
+        }
+
+        private void DestroyReceive(SocketAsyncEventArgs args)
+        {
+            args.Completed -= Receive_Completed;
+            cache.Push(args);
         }
 
         /// <summary>
@@ -221,8 +228,7 @@ namespace VSL.Network
 
         private void SendItem(ReceiveSendItem item)
         {
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.SetBuffer(new byte[socket.SendBufferSize], 0, socket.SendBufferSize);
+            SocketAsyncEventArgs args = cache.PopOrCreate();
             args.Completed += Send_Completed;
             SendItem(item, args);
         }
@@ -230,7 +236,7 @@ namespace VSL.Network
         private void SendItem(ReceiveSendItem item, SocketAsyncEventArgs args)
         {
             args.UserToken = item;
-            int cplen = Math.Min(socket.SendBufferSize, item.Count);
+            int cplen = Math.Min(args.Buffer.Length, item.Count);
             Array.Copy(item.Buffer, item.Offset, args.Buffer, 0, cplen);
             args.SetBuffer(0, cplen);
             if (!socket.SendAsync(args))
@@ -243,21 +249,21 @@ namespace VSL.Network
             if (e.SocketError == SocketError.Shutdown)
             {
                 item.Tcs.SetResult(false);
-                e.Dispose();
+                DestroySend(e);
                 return;
             }
             else if (e.SocketError != SocketError.Success)
             {
                 item.Tcs.SetResult(false);
                 exhandler.CloseConnection(e.SocketError, e.LastOperation);
-                e.Dispose();
+                DestroySend(e);
                 return;
             }
             if (e.BytesTransferred == 0)
             {
                 item.Tcs.SetResult(false);
                 exhandler.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
-                e.Dispose();
+                DestroySend(e);
                 return;
             }
             SentBytes += e.BytesTransferred;
@@ -270,9 +276,16 @@ namespace VSL.Network
             else
             {
                 item.Tcs.SetResult(true);
-                e.Dispose();
+                DestroySend(e);
                 StartSend(locked: false);
             }
+        }
+
+        private void DestroySend(SocketAsyncEventArgs args)
+        {
+            args.SetBuffer(0, args.Buffer.Length);
+            args.Completed -= Send_Completed;
+            cache.Push(args);
         }
     }
 

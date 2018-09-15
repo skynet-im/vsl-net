@@ -46,7 +46,7 @@ namespace VSL.FileTransfer
         /// </summary>
         public event EventHandler<FTProgressEventArgs> Progress;
         /// <summary>
-        /// Occurs when a <see cref="FileTransfer.FileMeta"/> was received. You may have to call <see cref="FTSocket.Continue(FTEventArgs)"/> in order to continue the file transfer.
+        /// Occurs when a <see cref="FileTransfer.FileMeta"/> was received. You may have to call <see cref="FTSocket.ContinueAsync(FTEventArgs)"/> in order to continue the file transfer.
         /// </summary>
         public event EventHandler FileMetaReceived;
 

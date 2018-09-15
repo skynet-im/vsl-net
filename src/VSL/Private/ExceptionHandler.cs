@@ -5,20 +5,13 @@ namespace VSL
 {
     internal class ExceptionHandler
     {
-        // <fields
         private VSLSocket parent;
-        //  fields>
-        // <constructor
+
         internal ExceptionHandler(VSLSocket parent)
         {
             this.parent = parent;
         }
-        //  constructor>
-        // <functions
-        /// <summary>
-        /// Handles an Exception by closing the connection and releasing all associated resources.
-        /// </summary>
-        /// <param name="ex">Exception to print.</param>
+
         internal void CloseConnection(Exception ex)
         {
             string msg = $"A {ex.GetType()} has been thrown in internal code";
@@ -42,6 +35,5 @@ namespace VSL
             string msg = $"A {ex.GetType()} was thrown in user code as has not been handled";
             parent.CloseInternal(ConnectionCloseReason.UserCodeError, msg, ex);
         }
-        //  functions>
     }
 }

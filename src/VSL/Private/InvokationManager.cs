@@ -6,7 +6,7 @@ namespace VSL
     /// <summary>
     /// Provides the ability to invoke delegates on the initial <see cref="SynchronizationContext"/>
     /// </summary>
-    internal class InvokationManager
+    internal sealed class InvokationManager
     {
         private static readonly Lazy<SynchronizationContext> lazyDefaultContext = new Lazy<SynchronizationContext>();
         private SynchronizationContext context;

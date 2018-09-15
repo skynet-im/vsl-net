@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using VSL.FileTransfer;
 using VSL.Network;
@@ -19,17 +20,12 @@ namespace VSL
         /// <summary>
         /// Gets or sets the settings for this socket.
         /// </summary>
-        public SocketSettings Settings { get; set; }
+        public SocketSettings Settings { get; }
 
         /// <summary>
         /// Access file transfer functions.
         /// </summary>
         public FTSocket FileTransfer { get; private set; }
-
-        /// <summary>
-        /// Configure necessary console output.
-        /// </summary>
-        public Logger Logger { get; private set; }
 
         internal NetworkChannel Channel { get; set; }
         internal NetworkManager Manager { get; set; }
@@ -40,13 +36,24 @@ namespace VSL
         /// <summary>
         /// Initializes all non-child-specific components.
         /// </summary>
-        protected void InitializeComponent()
+        protected VSLSocket(SocketSettings settings)
         {
+            Settings = settings;
             ThreadManager = new InvokationManager();
             ExceptionHandler = new ExceptionHandler(this);
             FileTransfer = new FTSocket(this);
-            Logger = new Logger(this);
             connectionLostLock = new object();
+        }
+
+        internal static MemoryCache<SocketAsyncEventArgs> CreateFakeCache()
+        {
+            return new MemoryCache<SocketAsyncEventArgs>(0, () =>
+            {
+                int length = 65536;
+                SocketAsyncEventArgs e = new SocketAsyncEventArgs();
+                e.SetBuffer(new byte[length], 0, length);
+                return e;
+            });
         }
 
         #region properties
