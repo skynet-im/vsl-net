@@ -18,18 +18,19 @@ namespace VSL
         /// <param name="content">Packet content</param>
         internal PacketReceivedEventArgs(byte id, byte[] content)
         {
-            ID = id;
+            Id = id;
             Content = content;
         }
         /// <summary>
         /// Gets the ID of the received packet
         /// </summary>
-        public byte ID { get; }
+        public byte Id { get; }
         /// <summary>
         /// Gets the content of the received packet
         /// </summary>
         public byte[] Content { get; }
     }
+
     /// <summary>
     /// Event data when the VSL connection was closed
     /// </summary>
@@ -39,27 +40,37 @@ namespace VSL
         /// Initializes a new instance of the ConnectionClosedEventArgs class.
         /// </summary>
         /// <param name="reason">Reason for connection interruption.</param>
-        /// <param name="receivedBytes">Count of received bytes of this session.</param>
-        /// <param name="sentBytes">Count of sent bytes of this session.</param>
-        internal ConnectionClosedEventArgs(string reason, long receivedBytes, long sentBytes)
+        /// <param name="message">Exception message.</param>
+        /// <param name="ex">Exception causing connection closure.</param>
+        internal ConnectionClosedEventArgs(ConnectionCloseReason reason, string message, Exception ex)
         {
             Reason = reason;
-            ReceivedBytes = receivedBytes;
-            SentBytes = sentBytes;
+            Message = message;
+            Exception = ex;
         }
+        /// <summary>
+        /// Gets the reason for connection closure.
+        /// </summary>
+        public ConnectionCloseReason Reason { get; }
         /// <summary>
         /// Gets the reason why the connection was interrupted.
         /// </summary>
-        public string Reason { get; }
+        public string Message { get; }
         /// <summary>
-        /// Gets the count of received bytes of this session.
+        /// Gets the exception that caused connection closure.
         /// </summary>
-        public long ReceivedBytes { get; }
-        /// <summary>
-        /// Gets the count of sent bytes of this session.
-        /// </summary>
-        public long SentBytes { get; }
+        public Exception Exception { get; }
     }
+
+    public enum ConnectionCloseReason
+    {
+        None,
+        SocketError,
+        InternalError,
+        UserCodeError,
+        UserRequested
+    }
+
     /// <summary>
     /// Event data for a VSL log.
     /// </summary>

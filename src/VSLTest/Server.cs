@@ -51,7 +51,7 @@ namespace VSLTest
         public void Stop()
         {
             Running = false;
-            Program.Clients.ParallelForEach((c) => c.CloseConnection("Stopping server"));
+            Program.Clients.ParallelForEach((c) => c.CloseConnection("Stopping server", null));
             listener4?.Stop();
             listener6?.Stop();
         }

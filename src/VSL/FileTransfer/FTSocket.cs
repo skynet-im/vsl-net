@@ -55,8 +55,7 @@ namespace VSL.FileTransfer
             }
             else if (meta != null)
             {
-                parent.Logger.I("You have supplied a FileMeta for a receive operation. This FileMeta will be ignored.\r\n" +
-                    "\tat FTSocket.Accept(FTEventArgs, String, FileMeta)");
+                throw new ArgumentException("You must not supply a FileMeta for a receive operation.", nameof(meta));
             }
             return true;
         }
@@ -132,11 +131,13 @@ namespace VSL.FileTransfer
 
         internal async Task<bool> OnPacketReceivedAsync(P06Accepted packet)
         {
+            const string name = nameof(OnPacketReceivedAsync) + "(" + nameof(P06Accepted) + "(";
+
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "Cannot resume file transfer for the received accepted packet.\r\n" +
-                    "\tat FTSocket.OnPacketReceived(P06Accepted)");
+                    "Cannot resume file transfer for the received accepted packet.",
+                    nameof(FTSocket), name);
                 return false;
             }
             if (!packet.Accepted && packet.RelatedPacket == 7) // Cancellation is always made by denying P07OpenFileTransfer
@@ -164,9 +165,8 @@ namespace VSL.FileTransfer
                 else if (currentItem.Mode != StreamMode.PushHeader)
                 {
                     parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                        "The running file transfer is not supposed to receive an accepted packet for a file header.\r\n" +
-                        "\tat FTSocket.OnPacketReceived(P06Accepted)" +
-                        "\tpacket.RelatedPacket=" + packet.RelatedPacket);
+                        "The running file transfer is not supposed to receive an accepted packet for a file header.",
+                        nameof(FTSocket), name);
                     return false;
                 }
             }
@@ -175,9 +175,8 @@ namespace VSL.FileTransfer
                 if (currentItem.Mode != StreamMode.PushFile)
                 {
                     parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                        "The running file transfer is not supposed to receive an accepted packet for a file data block.\r\n" +
-                        "\tat FTSocket.OnPacketReceived(P06Accepted)" +
-                        "\tpacket.RelatedPacket=" + packet.RelatedPacket);
+                        "The running file transfer is not supposed to receive an accepted packet for a file data block.",
+                        nameof(FTSocket), name);
                     return false;
                 }
                 else if (currentItem.Stream != null)
@@ -216,44 +215,50 @@ namespace VSL.FileTransfer
                 FTEventArgs e = new FTEventArgs(packet.Identifier, packet.StreamMode);
                 currentItem = e;
                 parent.ThreadManager.Post(() => Request?.Invoke(this, e));
-                if (parent.Logger.InitD) parent.Logger.D($"FileTransfer with {e.Mode} and Identifier {e.Identifier} requested");
+#if DEBUG
+                parent.Log($"FileTransfer with {e.Mode} and Identifier {e.Identifier} requested");
+#endif
                 return Task.FromResult(true);
             }
             else // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
                 parent.ExceptionHandler.CloseConnection("InvalidRequest",
-                    "A new file transfer was requested before the last one was finished or aborted.\r\n" +
-                    "\tat FTSocket.OnPacketReceived(P07OpenFileTransfer)");
+                    "A new file transfer was requested before the last one was finished or aborted.",
+                    nameof(FTSocket), "OnPacketReceivedAsync(P07OpenFileTransfer)");
                 return Task.FromResult(false);
             }
         }
 
-        internal async Task<bool> OnPacketReceived(P08FileHeader packet)
+        internal async Task<bool> OnPacketReceivedAsync(P08FileHeader packet)
         {
+            const string name = nameof(OnPacketReceivedAsync) + "(" + nameof(P08FileHeader) + "(";
+
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "Cannot resume file transfer for the received file header.\r\n" +
-                    "\tat FTSocket.OnPacketReceived(P08FileHeader)");
+                    "Cannot resume file transfer for the received file header.",
+                    nameof(FTSocket), name);
                 return false;
             }
             if (currentItem.Mode != StreamMode.GetHeader && currentItem.Mode != StreamMode.GetFile)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "The running file transfer is not supposed to receive a file header.\r\n" +
-                    "\tat FTSocket.OnPacketReceived(P08FileHeader)");
+                    "The running file transfer is not supposed to receive a file header.",
+                    nameof(FTSocket), name);
                 return false;
             }
             if (currentItem.FileMeta != null)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "The running file transfer has already received a file header.\r\n" +
-                    "\tat FTSocket.OnPacketReceived(P08FileHeader)");
+                    "The running file transfer has already received a file header.",
+                    nameof(FTSocket), name);
                 return false;
             }
             currentItem.FileMeta = new FileMeta(packet.BinaryData, parent.ConnectionVersion.Value);
             currentItem.OnFileMetaTransfered();
-            if (parent.Logger.InitD) parent.Logger.D("Successfully received file meta.");
+#if DEBUG
+            parent.Log("Successfully received file meta.");
+#endif
             if (currentItem.Mode == StreamMode.GetHeader)
             {
                 currentItem.OnFinished();
@@ -266,26 +271,27 @@ namespace VSL.FileTransfer
 
         internal async Task<bool> OnPacketReceivedAsync(P09FileDataBlock packet)
         {
+            const string name = nameof(OnPacketReceivedAsync) + "(" + nameof(P09FileDataBlock) + ")";
+
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "Cannot resume file transfer for the received file data block.\r\n" +
-                    "\tat FTSocket.OnPacketReceived(P09FileDataBlock)");
+                    "Cannot resume file transfer for the received file data block.",
+                    nameof(FTSocket), name);
                 return false;
             }
             if (currentItem.Mode != StreamMode.GetFile)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "The running file transfer is not supposed to receive a file data block.\r\n" +
-                    "\tat FTSocket.OnPacketReceived(P09FileDataBlock)\r\n" +
-                    $"\tMode={currentItem.Mode}");
+                    $"The running file transfer with mode {currentItem.Mode} is not supposed to receive a file data block.",
+                    nameof(FTSocket), name);
                 return false;
             }
             if (currentItem.Stream == null)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "The request for the first FileDataBlock has not been sent yet.\r\n" +
-                    "\tat FTSocket.OnPacketReceived(P09FileDataBlock)");
+                    "The request for the first FileDataBlock has not been sent yet.",
+                    nameof(FTSocket), name);
                 return false;
             }
             try

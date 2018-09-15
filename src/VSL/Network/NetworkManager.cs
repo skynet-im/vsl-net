@@ -44,15 +44,15 @@ namespace VSL.Network
                         if (!Ready4Aes)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidOperation",
-                                "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n" +
-                                "\tat NetworkManager.OnDataReceive()");
+                                "Not ready to receive an AES packet, because key exchange is not finished yet.",
+                                nameof(NetworkManager), nameof(ReceivePacketAsync));
                             return false;
                         }
                         if (parent.ConnectionVersion.HasValue && parent.ConnectionVersion.Value >= 2)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
-                                "VSL versions 1.2 and later are not allowed to use an old, insecure algorithm.\r\n" +
-                                "\tat NetworkManager.OnDataReceive()");
+                                "VSL versions 1.2 and later are not allowed to use an old, insecure algorithm.",
+                                nameof(NetworkManager), nameof(ReceivePacketAsync));
                             return false;
                         }
                         return await ReceivePacketAsync_AES_256_CBC_SP();
@@ -61,23 +61,23 @@ namespace VSL.Network
                         if (!Ready4Aes)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidOperation",
-                                "Not ready to receive an AES packet, because key exchange is not finished yet.\r\n" +
-                                "\tat NetworkManager.OnDataReceive()");
+                                "Not ready to receive an AES packet, because key exchange is not finished yet.",
+                                nameof(NetworkManager), nameof(ReceivePacketAsync));
                             return false;
                         }
                         if (parent.ConnectionVersion.HasValue && parent.ConnectionVersion.Value < 2)
                         {
                             parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
-                                "VSL versions older than 1.2 should not be able to use CryptographicAlgorithm.AES_256_CBC_MP2.\r\n" +
-                                "\tat NetworkManager.OnDataReceive()");
+                                "VSL versions older than 1.2 should not be able to use CryptographicAlgorithm.AES_256_CBC_MP2.",
+                                nameof(NetworkManager), nameof(ReceivePacketAsync));
                             return false;
                         }
                         return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3();
 
                     default:
                         parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
-                            $"Received packet with unknown algorithm ({algorithm}).\r\n" +
-                            $"\tat NetworkManager.OnDataReceive()");
+                            $"Received packet with unknown algorithm ({algorithm}).",
+                            nameof(NetworkManager), nameof(ReceivePacketAsync));
                         return false;
                 }
             }
@@ -129,8 +129,9 @@ namespace VSL.Network
             buffer = new byte[length];
             if (!await parent.Channel.ReceiveAsync(buffer, 0, (int)length)) // read packet content
                 return false;
-            if (parent.Logger.InitD)
-                parent.Logger.D($"Received internal plaintext packet: ID={id} Length={length}");
+#if DEBUG
+            parent.Log($"Received internal plaintext packet: ID={id} Length={length}");
+#endif
             return await parent.Handler.HandleInternalPacketAsync(rule, buffer);
         }
         private async Task<bool> ReceivePacketAsync_RSA_2048_OAEP()
@@ -158,8 +159,9 @@ namespace VSL.Network
                     if (!AssertSize(209, (int)length, nameof(ReceivePacketAsync_RSA_2048_OAEP)))
                         return false; // 214 - 1 (id) - 4 (uint) => 209
                 }
-                if (parent.Logger.InitD)
-                    parent.Logger.D($"Received internal RSA packet: ID={id} Length={length}");
+#if DEBUG
+                parent.Log($"Received internal RSA packet: ID={id} Length={length}");
+#endif
                 return await parent.Handler.HandleInternalPacketAsync(rule, plaintext.TakeAt(index, (int)length));
             }
             catch (CryptographicException ex) // RSA.DecryptBlock()
@@ -209,14 +211,16 @@ namespace VSL.Network
                 byte[] content = plaintext.Skip(startIndex); // remove random bytes
                 if (isInternal)
                 {
-                    if (parent.Logger.InitD)
-                        parent.Logger.D($"Received internal insecure AES packet: ID={id} Length={content.Length}");
+#if DEBUG
+                    parent.Log($"Received internal insecure AES packet: ID={id} Length={content.Length}");
+#endif
                     return await parent.Handler.HandleInternalPacketAsync(rule, content);
                 }
                 else
                 {
-                    if (parent.Logger.InitD)
-                        parent.Logger.D($"Received external insecure AES packet: ID={255 - id} Length={content.Length}");
+#if DEBUG
+                    parent.Log($"Received external insecure AES packet: ID={255 - id} Length={content.Length}");
+#endif
                     parent.OnPacketReceived(id, content);
                     return true;
                 }
@@ -235,7 +239,7 @@ namespace VSL.Network
                 byte[] buffer = new byte[35];
                 if (!await parent.Channel.ReceiveAsync(buffer, 0, 35)) // 3 (length) + 32 (HMAC)
                     return false;
-                int blocks = Convert.ToInt32(UInt24.FromBytes(buffer, 0));
+                int blocks = (int)UInt24.FromBytes(buffer, 0);
                 byte[] hmac = buffer.Skip(3);
                 const int defaultOverhead = 16 + 1 + 4; // iv + id + len
                 int pendingLength = (blocks + 2) * 16; // at least one block; inclusive iv
@@ -247,9 +251,8 @@ namespace VSL.Network
                 if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
                 {
                     parent.ExceptionHandler.CloseConnection("MessageCorrupted",
-                        "The integrity checking resulted in a corrupted message.\r\n" +
-                        "\tat NetworkManager.ReceivePacket_AES_256_CBC_HMAC_SHA_256_MP3()\r\n" +
-                        "\tblock count: " + blocks);
+                        "The integrity checking resulted in a corrupted message.",
+                        nameof(NetworkManager), nameof(ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3));
                     return false;
                 }
                 byte[] iv = cipherblock.Take(16);
@@ -267,22 +270,24 @@ namespace VSL.Network
                         if (length > plaintext.Pending)
                         {
                             parent.ExceptionHandler.CloseConnection("TooBigPacket",
-                                $"Tried to receive a packet with {length} bytes length although only {plaintext.Pending} bytes are available.\r\n" +
-                                $"\tat NetworkManager.ReceivePacket_AES_256_CBC_MP2()");
+                                $"Tried to receive a packet with {length} bytes length although only {plaintext.Pending} bytes are available.",
+                        nameof(NetworkManager), nameof(ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3));
                             return false;
                         }
                         byte[] content = plaintext.ReadByteArray((int)length);
                         if (isInternal)
                         {
-                            if (parent.Logger.InitD)
-                                parent.Logger.D($"Received internal AES packet: ID={id} Length={content.Length}");
+#if DEBUG
+                            parent.Log($"Received internal AES packet: ID={id} Length={content.Length}");
+#endif
                             if (!await parent.Handler.HandleInternalPacketAsync(rule, content))
                                 return false;
                         }
                         else
                         {
-                            if (parent.Logger.InitD)
-                                parent.Logger.D($"Received external AES packet: ID={255 - id} Length={content.Length}");
+#if DEBUG
+                            parent.Log($"Received external AES packet: ID={255 - id} Length={content.Length}");
+#endif
                             parent.OnPacketReceived(id, content);
                         }
                     }
@@ -336,13 +341,12 @@ namespace VSL.Network
                 default:
                     throw new ArgumentException("Unknown CryptoAlgorithm", nameof(alg));
             }
-            if (parent.Logger.InitD)
-            {
-                string @namespace = realId < Constants.InternalPacketCount ? "internal" : "external";
-                string prefix = success ? "Sent" : "Failed to send";
-                byte displayId = realId < Constants.InternalPacketCount ? realId : (byte)(255 - realId);
-                parent.Logger.D($"{prefix} {@namespace} packet: ID={displayId} Length={content.Length} Algorithm={alg}");
-            }
+#if DEBUG
+            string @namespace = realId < Constants.InternalPacketCount ? "internal" : "external";
+            string prefix = success ? "Sent" : "Failed to send";
+            byte displayId = realId < Constants.InternalPacketCount ? realId : (byte)(255 - realId);
+            parent.Log($"{prefix} {@namespace} packet: ID={displayId} Length={content.Length} Algorithm={alg}");
+#endif
             return success;
         }
         private Task<bool> SendPacketAsync_Plaintext(byte realId, bool size, byte[] content)
@@ -498,8 +502,8 @@ namespace VSL.Network
         {
             bool isInternal = parent.Handler.IsInternalPacket(id);
             if (!isInternal) parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                $"Only internal packets are allowed to use {alg}.\r\n" +
-                $"\tat NetworkManager.{member}()");
+                $"Only internal packets are allowed to use {alg}.",
+                nameof(NetworkManager), member);
             return isInternal;
         }
 
@@ -510,8 +514,8 @@ namespace VSL.Network
         {
             bool valid = actual <= maximum;
             if (!valid) parent.ExceptionHandler.CloseConnection("TooBigPacket",
-                $"Tried to receive a packet of {actual} bytes. Maximum admissible are {maximum} bytes.\r\n" +
-                $"\tat NetworkManager.{member}()");
+                $"Tried to receive a packet of {actual} bytes. Maximum admissible are {maximum} bytes.",
+                nameof(NetworkManager), member);
             return valid;
         }
         #endregion

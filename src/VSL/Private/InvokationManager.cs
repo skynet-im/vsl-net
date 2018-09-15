@@ -19,11 +19,19 @@ namespace VSL
             SetContext();
         }
 
+        /// <summary>
+        /// Dipatches a synchronous message to a synchronization context.
+        /// </summary>
+        /// <param name="callback"></param>
         public void Send(Action callback)
         {
             context.Send(o => callback(), null);
         }
 
+        /// <summary>
+        /// Dispatches an asynchronous message to a synchronization context.
+        /// </summary>
+        /// <param name="callback"></param>
         public void Post(Action callback)
         {
             context.Post(o => callback(), null);
