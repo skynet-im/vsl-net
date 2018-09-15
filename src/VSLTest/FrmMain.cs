@@ -67,7 +67,7 @@ namespace VSLTest
                 await vslClient.ConnectAsync("localhost", Program.Port, Program.PublicKey, progress);
             }
             else
-                vslClient.CloseConnection("The user requested to disconnect");
+                vslClient.CloseConnection("The user requested to disconnect", null);
         }
 
         private void VSL_Open(object sender, EventArgs e)
@@ -102,7 +102,7 @@ namespace VSLTest
 
         private void VslClient_Received(object sender, PacketReceivedEventArgs e)
         {
-            MessageBox.Show(string.Format("Client received: ID={0} Content={1}", e.ID, e.Content.Length));
+            MessageBox.Show(string.Format("Client received: ID={0} Content={1}", e.Id, e.Content.Length));
         }
 
         private void BtnReceiveFile_Click(object sender, EventArgs e)
@@ -210,7 +210,7 @@ namespace VSLTest
             {
                 vslClient.ConnectionClosed -= VSL_Close;
                 if (clientConnected)
-                    vslClient.CloseConnection("Closing VSLTest");
+                    vslClient.CloseConnection("Closing VSLTest", null);
                 else
                     vslClient.Dispose();
             }

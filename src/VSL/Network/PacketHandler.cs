@@ -48,15 +48,15 @@ namespace VSL.Network
             if (!rule.Available)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    $"Packet id {id} is no valid internal packet for this instance.\r\n" +
-                    "\tat PacketHandler.ValidatePacket(Byte, CryptoAlgorithm, PacketRule)");
+                    $"Packet id {id} is no valid internal packet for this instance.",
+                    nameof(PacketHandler), nameof(ValidatePacket));
                 return false;
             }
             if (!rule.VerifyAlgorithm(alg))
             {
                 parent.ExceptionHandler.CloseConnection("WrongAlgorithm",
-                    $"{rule.Packet} with {alg} is not allowed.\r\n" +
-                    "\tat PacketHandler.ValidatePacket(Byte, CryptoAlgorithm, PacketRule)");
+                    $"{rule.Packet} with {alg} is not allowed.",
+                    nameof(PacketHandler), nameof(ValidatePacket));
                 return false;
             }
             return true;
@@ -91,8 +91,8 @@ namespace VSL.Network
             if (parent.ConnectionVersion.Value < 2)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "VSL 1.1 and lower versions do not support keep-alive packets.\r\n" +
-                    "\tat PacketHandler.HandleP05KeepAlive(P05KeepAlive)");
+                    "VSL 1.1 and lower versions do not support keep-alive packets.",
+                    nameof(PacketHandler), nameof(HandleP05KeepAlive));
                 return false;
             }
             if (p.Role == KeepAliveRole.Request)
@@ -110,8 +110,8 @@ namespace VSL.Network
             else
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    $"Could not resume related packet with id {p.RelatedPacket}.\r\n" +
-                    "\tat PacketHandler.HandleP06Accepted(P06Accepted)");
+                    $"Could not resume related packet with id {p.RelatedPacket}.",
+                    nameof(PacketHandler), nameof(HandleP06Accepted));
                 return false;
             }
         }
@@ -122,7 +122,7 @@ namespace VSL.Network
         }
         internal Task<bool> HandleP08FileHeader(P08FileHeader p)
         {
-            return parent.FileTransfer.OnPacketReceived(p);
+            return parent.FileTransfer.OnPacketReceivedAsync(p);
         }
         internal Task<bool> HandleP09FileDataBlock(P09FileDataBlock p)
         {

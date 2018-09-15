@@ -84,8 +84,6 @@ namespace VSL
             connectionEstablished = true;
             ConnectionAvailable = true;
             ThreadManager.Post(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
-            if (Logger.InitI)
-                Logger.I("New connection established using VSL " + ConnectionVersionString);
         }
         /// <summary>
         /// The PacketReceived event occurs when a packet with an external ID was received
@@ -113,6 +111,15 @@ namespace VSL
         {
             ThreadManager.Post(() => ConnectionClosed?.Invoke(this, e));
         }
+        #endregion
+        #region logging
+#if DEBUG
+        public Action<VSLSocket, string> LogHandler { get; set; }
+        internal void Log(string message)
+        {
+            LogHandler?.Invoke(this, message);
+        }
+#endif
         #endregion
         // <functions
         #region Receive
@@ -157,9 +164,9 @@ namespace VSL
         /// <summary>
         /// Closes the TCP Connection, raises the related event and releases all associated resources.
         /// </summary>
-        /// <param name="reason">The reason to print and share in the related event.</param>
+        /// <param name="message">The reason to print and share in the related event.</param>
         /// <exception cref="ObjectDisposedException"/>
-        public void CloseConnection(string reason)
+        public void CloseConnection(string message, Exception ex)
         {
             if (disposedValue)
                 throw new ObjectDisposedException(GetType().FullName);
@@ -167,9 +174,7 @@ namespace VSL
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {
-                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(reason);
-                    if (Logger.InitI)
-                        Logger.I("Connection was forcibly closed: " + reason);
+                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(ConnectionCloseReason.UserRequested, message, ex);
                     Channel.Shutdown();
                     OnConnectionClosed(e);
                     Dispose();
@@ -179,13 +184,13 @@ namespace VSL
         /// <summary>
         /// Closes the TCP Connection and raises the related event.
         /// </summary>
-        /// <param name="exception">The exception text to share in the related event.</param>
-        internal void CloseInternal(string exception)
+        /// <param name="message">The exception text to share in the related event.</param>
+        internal void CloseInternal(ConnectionCloseReason reason, string message, Exception ex)
         {
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {
-                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(exception);
+                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(reason, message, ex);
                     Channel.Shutdown();
                     OnConnectionClosed(e);
                 }
@@ -195,11 +200,11 @@ namespace VSL
         /// Sets all variables to the closed state.
         /// </summary>
         /// <returns>Returns the <see cref="ConnectionClosedEventArgs"/> for the upcoming event.</returns>
-        private ConnectionClosedEventArgs PrepareOnConnectionClosed(string reason)
+        private ConnectionClosedEventArgs PrepareOnConnectionClosed(ConnectionCloseReason reason, string message, Exception ex)
         {
             ConnectionAvailable = false;
             connectionLost = true;
-            return new ConnectionClosedEventArgs(reason, Channel.ReceivedBytes, Channel.SentBytes);
+            return new ConnectionClosedEventArgs(reason, message, ex);
         }
         #endregion
         #region IDisposable Support

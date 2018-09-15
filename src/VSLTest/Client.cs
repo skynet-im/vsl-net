@@ -37,17 +37,17 @@ namespace VSLTest
             Vsl.SendPacketAsync(id, content);
         }
 
-        public void CloseConnection(string reason)
+        public void CloseConnection(string reason, Exception ex)
         {
-            Vsl.CloseConnection(reason);
+            Vsl.CloseConnection(reason, ex);
         }
 
         private void Vsl_PacketReceived(object sender, PacketReceivedEventArgs e)
         {
             if (e.Content.Length > 1024)
-                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, e.Content.Length));
+                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.Id, e.Content.Length));
             else
-                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.ID, Util.ToHexString(e.Content)));
+                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.Id, Util.ToHexString(e.Content)));
         }
 
         private void Vsl_ConnectionClosed(object sender, ConnectionClosedEventArgs e)

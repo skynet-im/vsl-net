@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net.Sockets;
 
 namespace VSL
 {
@@ -24,50 +21,26 @@ namespace VSL
         /// <param name="ex">Exception to print.</param>
         internal void CloseConnection(Exception ex)
         {
-            if (parent.Logger.InitI)
-                parent.Logger.I("Connection was forcibly closed by VSL: " + ex.GetType().Name);
-            PrintException(ex);
-            parent.CloseInternal(ex.ToString());
+            string msg = $"A {ex.GetType()} has been thrown in internal code";
+            parent.CloseInternal(ConnectionCloseReason.InternalError, msg, ex);
         }
 
-        internal void CloseConnection(System.Net.Sockets.SocketError err, System.Net.Sockets.SocketAsyncOperation operation)
+        internal void CloseConnection(SocketError err, SocketAsyncOperation operation)
         {
             string msg = $"A socket error occured while trying to {operation}: {err}";
-            if (parent.Logger.InitE)
-                parent.Logger.E(msg);
-            parent.CloseInternal(msg);
+            parent.CloseInternal(ConnectionCloseReason.SocketError, msg, null);
         }
 
-        internal void CloseConnection(System.Net.Sockets.SocketException ex)
+        internal void CloseConnection(string errorCode, string message, string className, string memberName)
         {
-            if (parent.Logger.InitI)
-                parent.Logger.I("Connection was interrupted");
-            PrintException(ex);
-            parent.CloseInternal(ex.ToString());
-        }
-
-        internal void CloseConnection(string errorcode, string message)
-        {
-            if (parent.Logger.InitI)
-                parent.Logger.I("Connection was forcibly closed by VSL: " + errorcode);
-            if (parent.Logger.InitE)
-                parent.Logger.E($"Internal error ({errorcode}): {message}");
-            parent.CloseInternal(message);
+            string msg = $"An internal error occured - {errorCode}: {message}{Environment.NewLine}\tat {className}.{memberName}";
+            parent.CloseInternal(ConnectionCloseReason.InternalError, msg, null);
         }
 
         internal void CloseUncaught(Exception ex)
         {
-            parent.Logger.Uncaught("A fatal unexpected error occured: " + ex.ToString());
-            parent.CloseInternal(ex.ToString());
-        }
-
-        /// <summary>
-        /// Prints an Exception.
-        /// </summary>
-        private void PrintException(Exception ex)
-        {
-            if (parent.Logger.InitE)
-                parent.Logger.E(ex.ToString());
+            string msg = $"A {ex.GetType()} was thrown in user code as has not been handled";
+            parent.CloseInternal(ConnectionCloseReason.UserCodeError, msg, ex);
         }
         //  functions>
     }
