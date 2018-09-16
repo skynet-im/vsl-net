@@ -18,18 +18,19 @@ namespace VSL
         /// <param name="content">Packet content</param>
         internal PacketReceivedEventArgs(byte id, byte[] content)
         {
-            ID = id;
+            Id = id;
             Content = content;
         }
         /// <summary>
         /// Gets the ID of the received packet
         /// </summary>
-        public byte ID { get; }
+        public byte Id { get; }
         /// <summary>
         /// Gets the content of the received packet
         /// </summary>
         public byte[] Content { get; }
     }
+
     /// <summary>
     /// Event data when the VSL connection was closed
     /// </summary>
@@ -39,49 +40,52 @@ namespace VSL
         /// Initializes a new instance of the ConnectionClosedEventArgs class.
         /// </summary>
         /// <param name="reason">Reason for connection interruption.</param>
-        /// <param name="receivedBytes">Count of received bytes of this session.</param>
-        /// <param name="sentBytes">Count of sent bytes of this session.</param>
-        internal ConnectionClosedEventArgs(string reason, long receivedBytes, long sentBytes)
+        /// <param name="message">Exception message.</param>
+        /// <param name="ex">Exception causing connection closure.</param>
+        internal ConnectionClosedEventArgs(ConnectionCloseReason reason, string message, Exception ex)
         {
             Reason = reason;
-            ReceivedBytes = receivedBytes;
-            SentBytes = sentBytes;
+            Message = message;
+            Exception = ex;
         }
+        /// <summary>
+        /// Gets the reason for connection closure.
+        /// </summary>
+        public ConnectionCloseReason Reason { get; }
         /// <summary>
         /// Gets the reason why the connection was interrupted.
         /// </summary>
-        public string Reason { get; }
+        public string Message { get; }
         /// <summary>
-        /// Gets the count of received bytes of this session.
+        /// Gets the exception that caused connection closure.
         /// </summary>
-        public long ReceivedBytes { get; }
-        /// <summary>
-        /// Gets the count of sent bytes of this session.
-        /// </summary>
-        public long SentBytes { get; }
+        public Exception Exception { get; }
     }
+
     /// <summary>
-    /// Event data for a VSL log.
+    /// Defines reasons to close a VSL connection.
     /// </summary>
-    public class LoggedMessageEventArgs : EventArgs
+    public enum ConnectionCloseReason
     {
         /// <summary>
-        /// Initializes a new instance of the LoggedMessageEventArgs class.
+        /// The connection has not been closed yet.
         /// </summary>
-        /// <param name="type">Type of the log message.</param>
-        /// <param name="text">Text of the log message.</param>
-        internal LoggedMessageEventArgs(Logger.LogType type, string text)
-        {
-            Type = type;
-            Text = text;
-        }
+        None,
         /// <summary>
-        /// Gets the type of the related log message.
+        /// A socket error occured.
         /// </summary>
-        public Logger.LogType Type { get; }
+        SocketError,
         /// <summary>
-        /// Gets the text of the related log message.
+        /// An internal error occured.
         /// </summary>
-        public string Text { get; }
+        InternalError,
+        /// <summary>
+        /// An unhandled exception was thrown in user code.
+        /// </summary>
+        UserCodeError,
+        /// <summary>
+        /// The user requested to disconnect.
+        /// </summary>
+        UserRequested
     }
 }

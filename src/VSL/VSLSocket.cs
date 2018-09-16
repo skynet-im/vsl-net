@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using VSL.FileTransfer;
 using VSL.Network;
@@ -11,20 +12,20 @@ namespace VSL
     public abstract class VSLSocket : IDisposable
     {
         // fields
-        private object connectionLostLock;
+        private readonly object connectionLostLock;
         private bool connectionEstablished;
         private bool connectionLost;
 
         // components
         /// <summary>
+        /// Gets or sets the settings for this socket.
+        /// </summary>
+        public SocketSettings Settings { get; }
+
+        /// <summary>
         /// Access file transfer functions.
         /// </summary>
         public FTSocket FileTransfer { get; private set; }
-
-        /// <summary>
-        /// Configure necessary console output.
-        /// </summary>
-        public Logger Logger { get; private set; }
 
         internal NetworkChannel Channel { get; set; }
         internal NetworkManager Manager { get; set; }
@@ -35,20 +36,27 @@ namespace VSL
         /// <summary>
         /// Initializes all non-child-specific components.
         /// </summary>
-        protected void InitializeComponent()
+        protected VSLSocket(SocketSettings settings)
         {
+            Settings = settings;
             ThreadManager = new InvokationManager();
             ExceptionHandler = new ExceptionHandler(this);
             FileTransfer = new FTSocket(this);
-            Logger = new Logger(this);
             connectionLostLock = new object();
         }
 
+        internal static MemoryCache<SocketAsyncEventArgs> CreateFakeCache()
+        {
+            return new MemoryCache<SocketAsyncEventArgs>(0, () =>
+            {
+                int length = 65536;
+                SocketAsyncEventArgs e = new SocketAsyncEventArgs();
+                e.SetBuffer(new byte[length], 0, length);
+                return e;
+            });
+        }
+
         #region properties
-        /// <summary>
-        /// Gets whether VSL should catch exceptions thrown in an event handler.
-        /// </summary>
-        public bool CatchApplicationExceptions { get; set; } = true;
         /// <summary>
         /// Gets a value indicating whether a working and secure connection is available.
         /// </summary>
@@ -83,8 +91,6 @@ namespace VSL
             connectionEstablished = true;
             ConnectionAvailable = true;
             ThreadManager.Post(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
-            if (Logger.InitI)
-                Logger.I("New connection established using VSL " + ConnectionVersionString);
         }
         /// <summary>
         /// The PacketReceived event occurs when a packet with an external ID was received
@@ -112,6 +118,15 @@ namespace VSL
         {
             ThreadManager.Post(() => ConnectionClosed?.Invoke(this, e));
         }
+        #endregion
+        #region logging
+#if DEBUG
+        public Action<VSLSocket, string> LogHandler { get; set; }
+        internal void Log(string message)
+        {
+            LogHandler?.Invoke(this, message);
+        }
+#endif
         #endregion
         // <functions
         #region Receive
@@ -156,9 +171,10 @@ namespace VSL
         /// <summary>
         /// Closes the TCP Connection, raises the related event and releases all associated resources.
         /// </summary>
-        /// <param name="reason">The reason to print and share in the related event.</param>
+        /// <param name="message">The reason to print and share in the related event.</param>
+        /// <param name="ex">The exception that caused disconnect.</param>
         /// <exception cref="ObjectDisposedException"/>
-        public void CloseConnection(string reason)
+        public void CloseConnection(string message, Exception ex)
         {
             if (disposedValue)
                 throw new ObjectDisposedException(GetType().FullName);
@@ -166,9 +182,7 @@ namespace VSL
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {
-                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(reason);
-                    if (Logger.InitI)
-                        Logger.I("Connection was forcibly closed: " + reason);
+                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(ConnectionCloseReason.UserRequested, message, ex);
                     Channel.Shutdown();
                     OnConnectionClosed(e);
                     Dispose();
@@ -178,13 +192,12 @@ namespace VSL
         /// <summary>
         /// Closes the TCP Connection and raises the related event.
         /// </summary>
-        /// <param name="exception">The exception text to share in the related event.</param>
-        internal void CloseInternal(string exception)
+        internal void CloseInternal(ConnectionCloseReason reason, string message, Exception ex)
         {
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {
-                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(exception);
+                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(reason, message, ex);
                     Channel.Shutdown();
                     OnConnectionClosed(e);
                 }
@@ -194,11 +207,11 @@ namespace VSL
         /// Sets all variables to the closed state.
         /// </summary>
         /// <returns>Returns the <see cref="ConnectionClosedEventArgs"/> for the upcoming event.</returns>
-        private ConnectionClosedEventArgs PrepareOnConnectionClosed(string reason)
+        private ConnectionClosedEventArgs PrepareOnConnectionClosed(ConnectionCloseReason reason, string message, Exception ex)
         {
             ConnectionAvailable = false;
             connectionLost = true;
-            return new ConnectionClosedEventArgs(reason, Channel.ReceivedBytes, Channel.SentBytes);
+            return new ConnectionClosedEventArgs(reason, message, ex);
         }
         #endregion
         #region IDisposable Support

@@ -1,23 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup Label="Globals">
-    <SccProjectName>SAK</SccProjectName>
-    <SccProvider>SAK</SccProvider>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccLocalPath>SAK</SccLocalPath>
-  </PropertyGroup>
-
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageLicenseUrl>https://github.com/skynet-im/vsl-net/blob/dev/LICENSE</PackageLicenseUrl>
+    <Copyright>Copyright © 2018 Daniel Lerch</Copyright>
+    <Authors>Daniel Lerch</Authors>
+    <Company>VectorData</Company>
+    <RepositoryUrl>https://github.com/skynet-im/vsl-net</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/skynet-im/vsl-net</PackageProjectUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <DocumentationFile>bin\Release\netstandard2.0\VSL.xml</DocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="VSL.csproj.vspscc" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
 
 </Project>

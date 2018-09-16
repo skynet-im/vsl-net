@@ -27,20 +27,20 @@ namespace VSL.BinaryTools
                 throw new ArgumentOutOfRangeException(nameof(startIdx), startIdx,
                     "The start index must be small enough to keep three bytes remaining.");
 
-            byte* array = stackalloc byte[4];
+            byte* nn = stackalloc byte[4];
             fixed (byte* buffer = buf)
             {
                 if (BitConverter.IsLittleEndian)
                 {
-                    *(ushort*)array = *(ushort*)(buffer + startIdx);
-                    *(array + 2) = *(buffer + startIdx + 2);
+                    *(ushort*)nn = *(ushort*)(buffer + startIdx);
+                    *(nn + 2) = *(buffer + startIdx + 2);
                 }
                 else
                 {
-                    *(ushort*)(array + 1) = *(ushort*)(buffer + startIdx);
-                    *(array + 3) = *(buffer + startIdx + 2);
+                    *(ushort*)(nn + 1) = *(ushort*)(buffer + startIdx);
+                    *(nn + 3) = *(buffer + startIdx + 2);
                 }
-                return *(uint*)array;
+                return *(uint*)nn;
             }
         }
 
@@ -62,18 +62,21 @@ namespace VSL.BinaryTools
                 throw new ArgumentOutOfRangeException(nameof(startIdx), startIdx,
                     "The start index must be small enough to keep three bytes remaining.");
 
-            uint* nn = &n;
-            fixed (byte* array = buf)
+            byte* nn = (byte*)&n;
+            // This cast is necessary as (*uint)ptr + 1 is equal to &((uint*)ptr[1])
+            // which means we would actually skip sizeof(uint) instead of 1
+
+            fixed (byte* buffer = buf)
             {
                 if (BitConverter.IsLittleEndian)
                 {
-                    *(ushort*)(array + startIdx) = *(ushort*)nn;
-                    *(array + startIdx + 2) = *(byte*)(nn + 2);
+                    *(ushort*)(buffer + startIdx) = *(ushort*)nn;
+                    *(buffer + startIdx + 2) = *(nn + 2);
                 }
                 else
                 {
-                    *(ushort*)(array + startIdx) = *(ushort*)(nn + 1);
-                    *(array + startIdx + 2) = *(byte*)(nn + 3);
+                    *(ushort*)(buffer + startIdx) = *(ushort*)(nn + 1);
+                    *(buffer + startIdx + 2) = *(nn + 3);
                 }
             }
         }

@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 
-namespace VSL.FileTransfer.Streams
+namespace VSL.Crypt.Streams
 {
     /// <summary>
     /// A base class for <see cref="CryptoStream"/> implementations that compute a hash over the complete stream.

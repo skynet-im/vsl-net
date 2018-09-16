@@ -88,12 +88,16 @@ namespace VSL.Network
         }
         internal override Task<bool> HandleP02Certificate(P02Certificate p)
         {
-            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL servers can not handle P02Certificate.");
+            parent.ExceptionHandler.CloseConnection("InvalidPacket",
+                "VSL servers can not handle P02Certificate.",
+                nameof(PacketHandlerServer), nameof(HandleP02Certificate));
             return Task.FromResult(false);
         }
         internal override Task<bool> HandleP03FinishHandshake(P03FinishHandshake p)
         {
-            parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL servers can not handle P03FinishHandshake.");
+            parent.ExceptionHandler.CloseConnection("InvalidPacket",
+                "VSL servers can not handle P03FinishHandshake.",
+                nameof(PacketHandlerServer), nameof(HandleP03FinishHandshake));
             return Task.FromResult(false);
         }
         internal override Task<bool> HandleP04ChangeIV(P04ChangeIV p)
@@ -101,8 +105,8 @@ namespace VSL.Network
             if (parent.ConnectionVersion.Value > 1)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                    "P04ChangeIV is not supported in VSL 1.2 because ivs are generated for each packet.\r\n" +
-                    "\tat PacketHandlerServer.HandleP04ChangeIV(P04ChangeIV)");
+                    "P04ChangeIV is not supported in VSL 1.2 because IVs are generated for each packet.",
+                    nameof(PacketHandlerServer), nameof(HandleP04ChangeIV));
                 return Task.FromResult(false);
             }
             else

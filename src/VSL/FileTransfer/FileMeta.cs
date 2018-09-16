@@ -86,8 +86,8 @@ namespace VSL.FileTransfer
         public FileMeta(byte[] binaryData, ushort connectionVersion)
         {
             if (binaryData == null) throw new ArgumentNullException(nameof(binaryData));
-            if (connectionVersion < Constants.CompatibilityVersion || connectionVersion > Constants.VersionNumber)
-                throw new NotSupportedException($"VSL {Constants.ProductVersion(4)} only support connection versions from {Constants.CompatibilityVersion} to {Constants.VersionNumber} but not {connectionVersion}");
+            if (connectionVersion < Constants.CompatibilityVersion || connectionVersion > Constants.ProtocolVersion)
+                throw new NotSupportedException($"VSL {Constants.AssemblyVersion} only support connection versions from {Constants.CompatibilityVersion} to {Constants.ProtocolVersion} but not {connectionVersion}");
 
             if (connectionVersion == 1)
             {
@@ -203,7 +203,7 @@ namespace VSL.FileTransfer
             if (aesKey == null) throw new ArgumentNullException(nameof(aesKey));
             if (aesKey.Length != 32) throw new ArgumentOutOfRangeException(nameof(aesKey), aesKey.Length, "An AES key must be 32 bytes in length.");
 
-            using (PacketBuffer buf = PacketBuffer.CreateStatic(GetBinaryData(Constants.VersionNumber)))
+            using (PacketBuffer buf = PacketBuffer.CreateStatic(GetBinaryData(Constants.ProtocolVersion)))
                 Read_v1_2(buf, hmacKey, aesKey);
         }
         #region read from file
