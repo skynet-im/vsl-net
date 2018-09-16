@@ -2,7 +2,7 @@
 using System.IO;
 using VSL.BinaryTools;
 using VSL.Crypt;
-using VSL.FileTransfer.Streams;
+using VSL.Crypt.Streams;
 
 namespace VSL.FileTransfer
 {
@@ -46,7 +46,7 @@ namespace VSL.FileTransfer
         /// </summary>
         public event EventHandler<FTProgressEventArgs> Progress;
         /// <summary>
-        /// Occurs when a <see cref="FileTransfer.FileMeta"/> was received. You may have to call <see cref="FTSocket.Continue(FTEventArgs)"/> in order to continue the file transfer.
+        /// Occurs when a <see cref="FileTransfer.FileMeta"/> was received. You may have to call <see cref="FTSocket.ContinueAsync(FTEventArgs)"/> in order to continue the file transfer.
         /// </summary>
         public event EventHandler FileMetaReceived;
 
@@ -73,7 +73,7 @@ namespace VSL.FileTransfer
         /// </summary>
         /// <param name="parent"></param>
         /// <param name="socket"></param>
-        /// <returns></returns>
+        /// <returns>Whether the assignment was successful.</returns>
         /// <exception cref="ArgumentNullException"/>
         internal bool Assign(VSLSocket parent, FTSocket socket)
         {
@@ -91,8 +91,8 @@ namespace VSL.FileTransfer
             if (Mode == StreamMode.GetHeader || Mode == StreamMode.PushHeader)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidOperation",
-                    $"You should not try to open a file stream with {Mode}\r\n" +
-                    "\tat FTEventArgs.OpenStream()");
+                    $"You should not try to open a file stream with {Mode}",
+                    nameof(FTEventArgs), nameof(OpenStream));
                 return false;
             }
             FileStream fileStream;
@@ -133,8 +133,8 @@ namespace VSL.FileTransfer
             else
             {
                 parent.ExceptionHandler.CloseConnection("InvalidFileAlgorithm",
-                    "Cannot run file transfer with " + FileMeta.FileEncryption + ".\r\n" +
-                    "\tat FTEventArgs.OpenStream()");
+                    "Cannot run file transfer with " + FileMeta.FileEncryption,
+                    nameof(FTEventArgs), nameof(OpenStream));
                 return false;
             }
             return true;
@@ -161,11 +161,10 @@ namespace VSL.FileTransfer
                 {
                     // Do not check hash for VSL 1.1 because this version always sends an empty field.
                     parent.ExceptionHandler.CloseConnection("FileCorrupted",
-                        "The integrity checking resulted in a corrupted message.\r\n" +
-                        "\tat FTEventArgs.CloseStream(Boolean)");
-                    if (parent.Logger.InitD)
-                        parent.Logger.D($"Expected hash was {Util.ToHexString(FileMeta.SHA256)} " +
-                            $"but the hash over the transfered data is {Util.ToHexString(hash)}.");
+                        "The integrity checking resulted in a corrupted message. " +
+                        $"Expected hash was {Util.ToHexString(FileMeta.SHA256)} " +
+                        $"but the hash over the transfered data actually is {Util.ToHexString(hash)}",
+                        nameof(FTEventArgs), nameof(CloseStream));
                     CloseStreamInternal(false, false);
                     return false;
                 }
@@ -213,8 +212,10 @@ namespace VSL.FileTransfer
         internal void OnFinished()
         {
             parent.ThreadManager.Post(() => Finished?.Invoke(this, null));
-            if (parent.Logger.InitD) parent.Logger.D($"Successfully transfered file with id {Identifier} and {Mode}\r\n" +
+#if DEBUG
+            parent.Log($"Successfully transfered file with id {Identifier} and {Mode}{Environment.NewLine}" +
                 $"to \"{Path}\" using ContentAlgorithm.{FileMeta.Algorithm}");
+#endif
         }
 
         internal void OnCanceled()

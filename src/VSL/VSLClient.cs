@@ -12,21 +12,14 @@ namespace VSL
     /// </summary>
     public sealed class VSLClient : VSLSocket
     {
-        private readonly ushort latestProduct;
-        private readonly ushort oldestProduct;
-        private TaskCompletionSource<int> tcs;
+        private TaskCompletionSource<bool> tcs;
 
         /// <summary>
         /// Creates a VSL Client that has to be connected.
         /// </summary>
-        /// <param name="latestProduct">The application version.</param>
-        /// <param name="oldestProduct">The oldest supported version.</param>
-        public VSLClient(ushort latestProduct, ushort oldestProduct)
+        /// <param name="settings">Class containing the RSA key and more settings.</param>
+        public VSLClient(SocketSettings settings) : base(settings)
         {
-            InitializeComponent();
-
-            this.latestProduct = latestProduct;
-            this.oldestProduct = oldestProduct;
         }
 
         /// <summary>
@@ -34,11 +27,9 @@ namespace VSL
         /// </summary>
         /// <param name="hostname">IP address or hostname.</param>
         /// <param name="port">TCP port to connect.</param>
-        /// <param name="serverKey">Public RSA key of the server.</param>
-        /// <returns></returns>
-        public Task ConnectAsync(string hostname, int port, string serverKey)
+        public Task<bool> ConnectAsync(string hostname, int port)
         {
-            return ConnectAsync(hostname, port, serverKey, null);
+            return ConnectAsync(hostname, port, null);
         }
 
         /// <summary>
@@ -46,18 +37,17 @@ namespace VSL
         /// </summary>
         /// <param name="hostname">IP address or hostname.</param>
         /// <param name="port">TCP port to connect.</param>
-        /// <param name="serverKey">Public RSA key of the server.</param>
         /// <param name="progress">Reports the progress of connection build up.</param>
-        /// <returns></returns>
-        public async Task ConnectAsync(string hostname, int port, string serverKey, IProgress<ConnectionState> progress)
+        public async Task<bool> ConnectAsync(string hostname, int port, IProgress<ConnectionState> progress)
         {
             progress?.Report(ConnectionState.Stalled);
-            
+
             // check args
             if (string.IsNullOrEmpty(hostname)) throw new ArgumentNullException(nameof(hostname));
             if (port < 0 || port > 65535)
                 throw new ArgumentOutOfRangeException(nameof(port), port, "You must provide a valid port number");
-            if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException(nameof(serverKey));
+            // TODO: Write new validation logic for RSAParameters
+            //if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException(nameof(serverKey));
 
             progress?.Report(ConnectionState.DnsLookup);
             IPAddress[] ipaddr = await Dns.GetHostAddressesAsync(hostname);
@@ -65,10 +55,10 @@ namespace VSL
             tcp.Client.DualMode = true;
             progress?.Report(ConnectionState.TcpConnect);
             await tcp.ConnectAsync(ipaddr, port);
-            Channel = new NetworkChannel(tcp.Client, ExceptionHandler);
+            Channel = new NetworkChannel(tcp.Client, ExceptionHandler, CreateFakeCache());
 
             // initialize component
-            Manager = new NetworkManager(this, serverKey);
+            Manager = new NetworkManager(this, Settings.RsaKey);
             Handler = new PacketHandlerClient(this);
             StartReceiveLoop();
 
@@ -78,21 +68,28 @@ namespace VSL
             Manager.GenerateKeys();
             await s;
             await Manager.SendPacketAsync(CryptoAlgorithm.RSA_2048_OAEP, new P01KeyExchange(Manager.AesKey, Manager.SendIV,
-                Manager.ReceiveIV, Constants.VersionNumber, Constants.CompatibilityVersion, latestProduct, oldestProduct));
+                Manager.ReceiveIV, Constants.ProtocolVersion, Constants.CompatibilityVersion, Settings.LatestProductVersion, Settings.OldestProductVersion));
 
             // wait for response
             progress?.Report(ConnectionState.KeyExchange);
-            tcs = new TaskCompletionSource<int>();
-            await tcs.Task;
+            tcs = new TaskCompletionSource<bool>();
+            bool result = await tcs.Task;
             tcs = null;
 
-            progress?.Report(ConnectionState.Finished);
+            progress?.Report(result ? ConnectionState.Finished : ConnectionState.Canceled);
+            return result;
         }
 
         internal override void OnConnectionEstablished()
         {
             base.OnConnectionEstablished();
-            tcs?.SetResult(0);
+            tcs?.SetResult(true);
+        }
+
+        internal override void OnConnectionClosed(ConnectionClosedEventArgs e)
+        {
+            base.OnConnectionClosed(e);
+            tcs?.SetResult(false);
         }
 
         /// <summary>
@@ -124,6 +121,10 @@ namespace VSL
             /// The connection build up was finished.
             /// </summary>
             Finished,
+            /// <summary>
+            /// The connection was closed before a secure channel had been established.
+            /// </summary>
+            Canceled
         }
     }
 }

@@ -6,10 +6,13 @@ using System.Xml;
 
 namespace VSL.Crypt
 {
+    /// <summary>
+    /// Provides extension methods for easier usage of <see cref="RSAParameters"/>.
+    /// </summary>
     public static class RSAParametersExtensions
     {
         /// <summary>
-        /// Imports a XML formatted key in this <see cref="RSAParameters"/> struct.
+        /// Imports an XML formatted key in this <see cref="RSAParameters"/> struct.
         /// </summary>
         public static RSAParameters ImportXmlKey(this RSAParameters parameters, string xmlKey)
         {
@@ -59,6 +62,9 @@ namespace VSL.Crypt
             return parameters;
         }
 
+        /// <summary>
+        /// Exports this <see cref="RSAParameters"/> struct to an XML formatted key.
+        /// </summary>
         public static string ExportXmlKey(this RSAParameters parameters)
         {
             StringBuilder result = new StringBuilder();

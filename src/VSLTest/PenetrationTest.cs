@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace VSLTest
@@ -15,6 +12,7 @@ namespace VSLTest
         private volatile bool running = false;
         public int Total { get; private set; }
         public int Done { get; private set; }
+        public int Errors { get; private set; }
         public long ElapsedTime => stopwatch.ElapsedMilliseconds;
         public bool Running => running;
 
@@ -27,6 +25,7 @@ namespace VSLTest
         {
             Total = count;
             Done = 0;
+            Errors = 0;
             IPAddress address = IPAddress.Parse("::1");
             Random random = new Random();
             stopwatch.Reset();
@@ -47,7 +46,10 @@ namespace VSLTest
                         tcp.Close();
                         Done++;
                     }
-                    catch { }
+                    catch
+                    {
+                        Errors++;
+                    }
                 }
             });
         }

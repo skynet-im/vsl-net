@@ -39,22 +39,22 @@ namespace VSL.Network
         internal override Task<bool> HandleP00Handshake(P00Handshake p)
         {
             parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                "VSL clients cannot handle P00Handshake.\r\n" +
-                "\tat PacketHandlerClient.HandleP00Handshake(P00Handshake)");
+                "VSL clients cannot handle P00Handshake.",
+                nameof(PacketHandlerClient), nameof(HandleP00Handshake));
             return Task.FromResult(false);
         }
         internal override Task<bool> HandleP01KeyExchange(P01KeyExchange p)
         {
             parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                "VSL clients cannot handle P01KeyExchange.\r\n" +
-                "\tat PacketHandlerClient.HandleP01KeyExchange(P01KeyExchange)");
+                "VSL clients cannot handle P01KeyExchange.",
+                nameof(PacketHandlerClient), nameof(HandleP01KeyExchange));
             return Task.FromResult(false);
         }
         internal override Task<bool> HandleP02Certificate(P02Certificate p)
         {
             parent.ExceptionHandler.CloseConnection("NotSupported",
-                "VSL 1.2 does not support key exchange validated by certificates.\r\n" +
-                "\tat PacketHandlerClient.HandleP02Certificate(P02Certificate)");
+                "VSL 1.2 does not support key exchange validated by certificates.",
+                nameof(PacketHandlerClient), nameof(HandleP02Certificate));
             return Task.FromResult(false);
         }
         internal override Task<bool> HandleP03FinishHandshake(P03FinishHandshake p)
@@ -67,13 +67,13 @@ namespace VSL.Network
                     return Task.FromResult(true);
                 case ConnectionState.Redirect:
                     parent.ExceptionHandler.CloseConnection("NotSupported",
-                        "This VSL version does not support redirects.\r\n" +
-                        "\tat PacketHandlerClient.HandleP03FinishHandshake(P03FinishHandshake)");
+                        "This VSL version does not support redirects.",
+                        nameof(PacketHandlerClient), nameof(HandleP03FinishHandshake));
                     return Task.FromResult(false);
                 case ConnectionState.NotCompatible:
                     parent.ExceptionHandler.CloseConnection("ConnectionDenied",
-                        "The specified server denied the connection to this VSL/application version client.\r\n" +
-                        "\tat PacketHandlerClient.HandleP03FinishHandshake(P03FinishHandshake)");
+                        "The specified server denied the connection to this VSL/application version client.",
+                        nameof(PacketHandlerClient), nameof(HandleP03FinishHandshake));
                     return Task.FromResult(false);
                 case ConnectionState.Compatible:
                     parent.ConnectionVersion = p.VSLVersion;
@@ -86,8 +86,8 @@ namespace VSL.Network
         internal override Task<bool> HandleP04ChangeIV(P04ChangeIV p)
         {
             parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                "VSL clients can not handle P04ChangeIV.\r\n" +
-                "\tat PacketHandlerClient.HandleP04ChangeIV(P04ChangeIV)");
+                "VSL clients can not handle P04ChangeIV.",
+                nameof(PacketHandlerClient), nameof(HandleP04ChangeIV));
             return Task.FromResult(false);
         }
         // overriding HandleP05KeepAlive is not neccessary.
@@ -96,7 +96,9 @@ namespace VSL.Network
         {
             if (parent.ConnectionVersion.Value < 2) // before VSL 1.2
             {
-                parent.ExceptionHandler.CloseConnection("InvalidPacket", "VSL clients can not handle P07OpenFileTransfer.");
+                parent.ExceptionHandler.CloseConnection("InvalidPacket",
+                    "VSL clients can not handle P07OpenFileTransfer.",
+                    nameof(PacketHandlerClient), nameof(HandleP07OpenFileTransfer));
                 return Task.FromResult(false);
             }
             else
