@@ -62,7 +62,7 @@ namespace VSLTest
                 vslClient.ConnectionClosed += VSL_Close;
                 vslClient.PacketReceived += VslClient_Received;
 #if DEBUG
-                vslClient.LogHandler = (o, x) => Console.WriteLine("[Client] " + x);
+                vslClient.LogHandler = Program.Log;
 #endif
                 var progress = new Progress<VSLClient.ConnectionState>((state) => Console.WriteLine(state));
                 await vslClient.ConnectAsync("localhost", Program.Port, progress);
@@ -83,11 +83,15 @@ namespace VSLTest
 
         private void VSL_Close(object sender, ConnectionClosedEventArgs e)
         {
+            btnConnect.Enabled = true;
             btnConnect.Text = "Verbinden";
             btnClientSendPacket.Enabled = false;
             btnReceiveFile.Enabled = false;
             btnSendFile.Enabled = false;
             clientConnected = false;
+#if DEBUG
+            Program.Log((VSLClient)sender, e.Message);
+#endif
         }
 
         private void BtnSendPacket_Click(object sender, EventArgs e)

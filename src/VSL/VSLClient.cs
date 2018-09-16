@@ -12,7 +12,7 @@ namespace VSL
     /// </summary>
     public sealed class VSLClient : VSLSocket
     {
-        private TaskCompletionSource<int> tcs;
+        private TaskCompletionSource<bool> tcs;
 
         /// <summary>
         /// Creates a VSL Client that has to be connected.
@@ -27,9 +27,7 @@ namespace VSL
         /// </summary>
         /// <param name="hostname">IP address or hostname.</param>
         /// <param name="port">TCP port to connect.</param>
-        /// <param name="serverKey">Public RSA key of the server.</param>
-        /// <returns></returns>
-        public Task ConnectAsync(string hostname, int port)
+        public Task<bool> ConnectAsync(string hostname, int port)
         {
             return ConnectAsync(hostname, port, null);
         }
@@ -39,10 +37,8 @@ namespace VSL
         /// </summary>
         /// <param name="hostname">IP address or hostname.</param>
         /// <param name="port">TCP port to connect.</param>
-        /// <param name="serverKey">Public RSA key of the server.</param>
         /// <param name="progress">Reports the progress of connection build up.</param>
-        /// <returns></returns>
-        public async Task ConnectAsync(string hostname, int port, IProgress<ConnectionState> progress)
+        public async Task<bool> ConnectAsync(string hostname, int port, IProgress<ConnectionState> progress)
         {
             progress?.Report(ConnectionState.Stalled);
 
@@ -76,17 +72,24 @@ namespace VSL
 
             // wait for response
             progress?.Report(ConnectionState.KeyExchange);
-            tcs = new TaskCompletionSource<int>();
-            await tcs.Task;
+            tcs = new TaskCompletionSource<bool>();
+            bool result = await tcs.Task;
             tcs = null;
 
-            progress?.Report(ConnectionState.Finished);
+            progress?.Report(result ? ConnectionState.Finished : ConnectionState.Canceled);
+            return result;
         }
 
         internal override void OnConnectionEstablished()
         {
             base.OnConnectionEstablished();
-            tcs?.SetResult(0);
+            tcs?.SetResult(true);
+        }
+
+        internal override void OnConnectionClosed(ConnectionClosedEventArgs e)
+        {
+            base.OnConnectionClosed(e);
+            tcs?.SetResult(false);
         }
 
         /// <summary>
@@ -118,6 +121,10 @@ namespace VSL
             /// The connection build up was finished.
             /// </summary>
             Finished,
+            /// <summary>
+            /// The connection was closed before a secure channel had been established.
+            /// </summary>
+            Canceled
         }
     }
 }

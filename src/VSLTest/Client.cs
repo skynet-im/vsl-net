@@ -23,7 +23,7 @@ namespace VSLTest
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
             Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
 #if DEBUG
-            Vsl.LogHandler = (o, x) => Console.WriteLine("[Server] " + x);
+            Vsl.LogHandler = Program.Log;
 #endif
             Program.Clients.Add(this);
         }
@@ -53,7 +53,7 @@ namespace VSLTest
                 throw new Exception("Second ConnectionClosed event");
             Interlocked.Increment(ref Program.Disconnects);
 #if DEBUG
-            Console.WriteLine(e.Message);
+            Program.Log((VSLServer)sender, e.Message);
 #endif
         }
 

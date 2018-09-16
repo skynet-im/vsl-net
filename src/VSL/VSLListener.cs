@@ -1,17 +1,24 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Cryptography;
-using VSL.Crypt;
 
 namespace VSL
 {
+    /// <summary>
+    /// A high-performance tcp listener to accept VSL client connects.
+    /// </summary>
     public class VSLListener
     {
         private readonly Socket[] sockets;
         private readonly MemoryCache<SocketAsyncEventArgs> cache;
         private readonly Action<VSLServer> acceptor;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VSLListener"/> class for the given endpoints.
+        /// </summary>
+        /// <param name="addresses">Endpoints to listen on.</param>
+        /// <param name="settings">Default settings for accepted clients.</param>
+        /// <param name="acceptor">Callback to execute before starting the accepted <see cref="VSLServer"/> objects.</param>
         public VSLListener(IPEndPoint[] addresses, SocketSettings settings, Action<VSLServer> acceptor)
         {
             sockets = new Socket[addresses.Length];
@@ -40,6 +47,9 @@ namespace VSL
         /// </summary>
         public SocketSettings Settings { get; }
 
+        /// <summary>
+        /// Starts listening on the specified endpoints.
+        /// </summary>
         public void Start()
         {
             foreach (Socket socket in sockets)
@@ -51,6 +61,9 @@ namespace VSL
             }
         }
 
+        /// <summary>
+        /// Stops all listeners.
+        /// </summary>
         public void Stop()
         {
             foreach (Socket socket in sockets)
@@ -81,7 +94,9 @@ namespace VSL
             }
             else
             {
+#if DEBUG
                 Console.WriteLine("SocketError." + e.SocketError);
+#endif
                 e.Dispose();
             }
         }

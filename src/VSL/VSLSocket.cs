@@ -12,7 +12,7 @@ namespace VSL
     public abstract class VSLSocket : IDisposable
     {
         // fields
-        private object connectionLostLock;
+        private readonly object connectionLostLock;
         private bool connectionEstablished;
         private bool connectionLost;
 
@@ -172,6 +172,7 @@ namespace VSL
         /// Closes the TCP Connection, raises the related event and releases all associated resources.
         /// </summary>
         /// <param name="message">The reason to print and share in the related event.</param>
+        /// <param name="ex">The exception that caused disconnect.</param>
         /// <exception cref="ObjectDisposedException"/>
         public void CloseConnection(string message, Exception ex)
         {
@@ -191,7 +192,6 @@ namespace VSL
         /// <summary>
         /// Closes the TCP Connection and raises the related event.
         /// </summary>
-        /// <param name="message">The exception text to share in the related event.</param>
         internal void CloseInternal(ConnectionCloseReason reason, string message, Exception ex)
         {
             lock (connectionLostLock)
