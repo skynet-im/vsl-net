@@ -172,17 +172,27 @@ namespace VSL.FileTransfer
             }
             else if (packet.Accepted && packet.RelatedPacket == 9)
             {
-                if (currentItem.Mode != StreamMode.PushFile)
+                if (parent.ConnectionVersion <= 2)
+                {
+                    if (currentItem.Mode != StreamMode.PushFile)
+                    {
+                        parent.ExceptionHandler.CloseConnection("InvalidPacket",
+                            "The running file transfer is not supposed to receive an accepted packet for a file data block.",
+                            nameof(FTSocket), name);
+                        return false;
+                    }
+                    else if (currentItem.Stream != null)
+                        return await SendBlockAsync();
+                    else
+                        currentItem = null;
+                }
+                else
                 {
                     parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                        "The running file transfer is not supposed to receive an accepted packet for a file data block.",
+                        "VSL 1.3 does not accept data block acknoledges anymore.",
                         nameof(FTSocket), name);
                     return false;
                 }
-                else if (currentItem.Stream != null)
-                    return await SendBlockAsync();
-                else
-                    currentItem = null;
             }
             return true;
         }
@@ -194,14 +204,14 @@ namespace VSL.FileTransfer
             int count;
             try
             {
-                count = currentItem.Stream.Read(buffer, 0, buffer.Length);
+                count = await currentItem.Stream.ReadAsync(buffer, 0, buffer.Length);
             }
             catch (Exception ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
-            if (!await parent.Manager.SendPacketAsync(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
+            if (!await parent.Manager.SendPacketAsyncBackground(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
             currentItem.OnProgress();
             if (count < buffer.Length)
                 return currentItem.CloseStream(true);
@@ -231,7 +241,7 @@ namespace VSL.FileTransfer
 
         internal async Task<bool> OnPacketReceivedAsync(P08FileHeader packet)
         {
-            const string name = nameof(OnPacketReceivedAsync) + "(" + nameof(P08FileHeader) + "(";
+            const string name = nameof(OnPacketReceivedAsync) + "(" + nameof(P08FileHeader) + ")";
 
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {
@@ -309,7 +319,11 @@ namespace VSL.FileTransfer
                 if (!currentItem.CloseStream(true)) return false;
                 currentItem = null;
             }
-            return await parent.Manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
+
+            if (parent.ConnectionVersion <= 2) // Until version 1.2 we have to request the counterpart to continue
+                return await parent.Manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
+
+            return true;
         }
     }
 }
