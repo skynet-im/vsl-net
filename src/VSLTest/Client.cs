@@ -19,6 +19,7 @@ namespace VSLTest
         public Client(VSLServer server)
         {
             Vsl = server;
+            Vsl.ConnectionEstablished += Vsl_ConnectionEstablished;
             Vsl.PacketReceived += Vsl_PacketReceived;
             Vsl.ConnectionClosed += Vsl_ConnectionClosed;
             Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
@@ -36,6 +37,11 @@ namespace VSLTest
         public void CloseConnection(string reason, Exception ex)
         {
             Vsl.CloseConnection(reason, ex);
+        }
+
+        private void Vsl_ConnectionEstablished(object sender, EventArgs e)
+        {
+            Program.Log(Vsl, "Client connected using protocol version " + Vsl.ConnectionVersionString);
         }
 
         private void Vsl_PacketReceived(object sender, PacketReceivedEventArgs e)

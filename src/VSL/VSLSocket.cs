@@ -182,9 +182,7 @@ namespace VSL
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {
-                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(ConnectionCloseReason.UserRequested, message, ex);
-                    Channel.Shutdown();
-                    OnConnectionClosed(e);
+                    ClosePrivate(ConnectionCloseReason.UserRequested, message, ex);
                     Dispose();
                 }
         }
@@ -197,21 +195,20 @@ namespace VSL
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {
-                    ConnectionClosedEventArgs e = PrepareOnConnectionClosed(reason, message, ex);
-                    Channel.Shutdown();
-                    OnConnectionClosed(e);
+                    ClosePrivate(reason, message, ex);
                 }
         }
 
         /// <summary>
         /// Sets all variables to the closed state.
         /// </summary>
-        /// <returns>Returns the <see cref="ConnectionClosedEventArgs"/> for the upcoming event.</returns>
-        private ConnectionClosedEventArgs PrepareOnConnectionClosed(ConnectionCloseReason reason, string message, Exception ex)
+        private void ClosePrivate(ConnectionCloseReason reason, string message, Exception ex)
         {
             ConnectionAvailable = false;
             connectionLost = true;
-            return new ConnectionClosedEventArgs(reason, message, ex);
+            Channel.Shutdown();
+            // TODO: Cancel running file transfer
+            OnConnectionClosed(new ConnectionClosedEventArgs(reason, message, ex));
         }
         #endregion
         #region IDisposable Support

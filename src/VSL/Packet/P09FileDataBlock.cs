@@ -10,13 +10,13 @@ namespace VSL.Packet
     internal class P09FileDataBlock : IPacket
     {
         internal ulong StartPosition { get; private set; }
-        internal byte[] DataBlock { get; private set; }
+        internal ArraySegment<byte> DataBlock { get; private set; }
 
         internal P09FileDataBlock()
         {
         }
 
-        internal P09FileDataBlock(ulong startPosition, byte[] dataBlock)
+        internal P09FileDataBlock(ulong startPosition, ArraySegment<byte> dataBlock)
         {
             StartPosition = startPosition;
             DataBlock = dataBlock;
@@ -36,13 +36,13 @@ namespace VSL.Packet
         public void ReadPacket(PacketBuffer buf)
         {
             StartPosition = buf.ReadULong();
-            DataBlock = buf.ReadByteArray(buf.Pending);
+            DataBlock = new ArraySegment<byte>(buf.ReadByteArray(buf.Pending));
         }
 
         public void WritePacket(PacketBuffer buf)
         {
             buf.WriteULong(StartPosition);
-            buf.WriteByteArray(DataBlock, false);
+            buf.WriteByteArray(DataBlock.Array, DataBlock.Offset, DataBlock.Count, false);
         }
     }
 }

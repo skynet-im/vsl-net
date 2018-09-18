@@ -63,27 +63,25 @@ namespace VSL.Network
 
             parent.Manager.AesKey = p.AesKey;
             parent.ConnectionVersion = vslVersion.Value;
+            P03FinishHandshake packet;
 
             if (vslVersion.Value < 2)
             {
                 parent.Manager.SendIV = p.ServerIV;
                 parent.Manager.ReceiveIV = p.ClientIV;
                 parent.Manager.Ready4Aes = true;
-
-                if (!await parent.Manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_SP, new P03FinishHandshake(ConnectionState.CompatibilityMode)))
-                    return false;
-                parent.OnConnectionEstablished();
+                packet = new P03FinishHandshake(ConnectionState.CompatibilityMode);
             }
-
-            if (vslVersion.Value == 2)
+            else
             {
                 parent.Manager.HmacKey = Util.ConcatBytes(p.ClientIV, p.ServerIV);
                 parent.Manager.Ready4Aes = true;
-
-                if (!await parent.Manager.SendPacketAsync(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value)))
-                    return false;
-                parent.OnConnectionEstablished();
+                packet = new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value);
             }
+
+            if (!await parent.Manager.SendPacketAsync(VersionManager.GetNetworkAlgorithm(vslVersion), packet))
+                return false;
+            parent.OnConnectionEstablished();
             return true;
         }
         internal override Task<bool> HandleP02Certificate(P02Certificate p)
