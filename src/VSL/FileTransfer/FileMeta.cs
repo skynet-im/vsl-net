@@ -94,7 +94,7 @@ namespace VSL.FileTransfer
                 if (binaryData.Length < 44) throw new ArgumentOutOfRangeException(nameof(binaryData), binaryData.Length, "A valid v1.1 FileHeader packet must contain at least 44 bytes.");
                 Read_v1_1(PacketBuffer.CreateStatic(binaryData));
             }
-            else if (connectionVersion == 2)
+            else if (connectionVersion >= 2)
             {
                 if (binaryData.Length < 78) throw new ArgumentOutOfRangeException(nameof(binaryData), binaryData.Length, "A valid v1.2 FileHeader packet must contain at least 78 bytes.");
                 Read_v1_2(PacketBuffer.CreateStatic(binaryData));

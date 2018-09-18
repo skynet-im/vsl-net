@@ -13,7 +13,7 @@ namespace VSL
         /// <summary>
         /// The latest supported protocol version.
         /// </summary>
-        public const ushort ProtocolVersion = 2;
+        public const ushort ProtocolVersion = 3;
 
         /// <summary>
         /// The oldest supported protocol version.

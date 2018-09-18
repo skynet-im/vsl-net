@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using VSL.BinaryTools;
 using VSL.Crypt;
@@ -160,7 +161,10 @@ namespace VSL.FileTransfer
                 if (currentItem.Mode == StreamMode.PushFile) // only StreamMode.PushFile wants to receive the file data
                 {
                     if (!currentItem.OpenStream()) return false;
-                    return await SendBlockAsync();
+                    if (parent.ConnectionVersion <= 2)
+                        return await SendBlockAsync();
+                    else
+                        return ThreadPool.QueueUserWorkItem(SendFileAsync);
                 }
                 else if (currentItem.Mode != StreamMode.PushHeader)
                 {
@@ -183,7 +187,7 @@ namespace VSL.FileTransfer
                     }
                     else if (currentItem.Stream != null)
                         return await SendBlockAsync();
-                    else
+                    else // accept for the last file data block
                         currentItem = null;
                 }
                 else
@@ -199,7 +203,7 @@ namespace VSL.FileTransfer
 
         private async Task<bool> SendBlockAsync()
         {
-            byte[] buffer = new byte[262144];
+            byte[] buffer = new byte[parent.Settings.FTBlockSize];
             ulong pos = Convert.ToUInt64(currentItem.Stream.Position);
             int count;
             try
@@ -211,11 +215,36 @@ namespace VSL.FileTransfer
                 parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
-            if (!await parent.Manager.SendPacketAsyncBackground(new P09FileDataBlock(pos, buffer.Take(count)))) return false;
+            var packet = new P09FileDataBlock(pos, new ArraySegment<byte>(buffer, 0, count));
+            if (!await parent.Manager.SendPacketAsyncBackground(packet)) return false;
             currentItem.OnProgress();
             if (count < buffer.Length)
                 return currentItem.CloseStream(true);
             return true;
+        }
+
+        private async void SendFileAsync(object state)
+        {
+            try
+            {
+                byte[] buffer = new byte[parent.Settings.FTBlockSize];
+                ulong position = 0;
+                int count = 0;
+                do
+                {
+                    position = (ulong)currentItem.Stream.Position;
+                    count = await currentItem.Stream.ReadAsync(buffer, 0, buffer.Length);
+                    var packet = new P09FileDataBlock(position, new ArraySegment<byte>(buffer, 0, count));
+                    if (!await parent.Manager.SendPacketAsyncBackground(packet)) return;
+                    currentItem.OnProgress();
+                } while (count == buffer.Length);
+                currentItem.CloseStream(true);
+                currentItem = null;
+            }
+            catch (Exception ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+            }
         }
 
         internal Task<bool> OnPacketReceivedAsync(P07OpenFileTransfer packet)
@@ -306,7 +335,7 @@ namespace VSL.FileTransfer
             }
             try
             {
-                await currentItem.Stream.WriteAsync(packet.DataBlock, 0, packet.DataBlock.Length);
+                await currentItem.Stream.WriteAsync(packet.DataBlock.Array, 0, packet.DataBlock.Count, currentItem.CancellationToken);
             }
             catch (Exception ex)
             {
@@ -319,8 +348,15 @@ namespace VSL.FileTransfer
                 if (!currentItem.CloseStream(true)) return false;
                 currentItem = null;
             }
+            else if (currentItem.Stream.Position > currentItem.FileMeta.Length)
+            {
+                parent.ExceptionHandler.CloseConnection("EndOfFileExpected",
+                    $"The file meta indicates a size of {currentItem.FileMeta.Length} bytes for this file " +
+                    $"but the stream position is already at {currentItem.Stream.Position} bytes",
+                    nameof(FTSocket), name);
+            }
 
-            if (parent.ConnectionVersion <= 2) // Until version 1.2 we have to request the counterpart to continue
+            if (parent.ConnectionVersion <= 2) // Previous versions to 1.3 need to request the counterpart to continue
                 return await parent.Manager.SendPacketAsync(new P06Accepted(true, 9, ProblemCategory.None));
 
             return true;

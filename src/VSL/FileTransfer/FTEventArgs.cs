@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using VSL.BinaryTools;
 using VSL.Crypt;
 using VSL.Crypt.Streams;
@@ -9,10 +10,11 @@ namespace VSL.FileTransfer
     /// <summary>
     /// Represents a running or upcoming file transfer and provides all required information. Use with <see cref="FTSocket"/>. Design inspired by <see cref="System.Net.Sockets.SocketAsyncEventArgs"/>.
     /// </summary>
-    public class FTEventArgs : EventArgs
+    public class FTEventArgs : EventArgs, IDisposable
     {
         private VSLSocket parent;
         private FTSocket socket;
+        private CancellationTokenSource cts;
 
         /// <summary>
         /// Initalizes a new instance of the <see cref="FTEventArgs"/> that can be used to send the associated file.
@@ -21,6 +23,7 @@ namespace VSL.FileTransfer
         /// <param name="meta">Meta data of the file and required cryptographic keys.</param>
         /// <param name="path">The path where file currently exists or will be stored.</param>
         public FTEventArgs(Identifier identifier, FileMeta meta, string path)
+            : this()
         {
             Identifier = identifier;
             FileMeta = meta;
@@ -28,9 +31,16 @@ namespace VSL.FileTransfer
         }
 
         internal FTEventArgs(Identifier identifier, StreamMode mode)
+            : this()
         {
             Identifier = identifier;
             Mode = mode;
+        }
+
+        private FTEventArgs()
+        {
+            cts = new CancellationTokenSource();
+            CancellationToken = cts.Token;
         }
 
         /// <summary>
@@ -67,6 +77,7 @@ namespace VSL.FileTransfer
         /// </summary>
         public string Path { get; internal set; }
         internal HashStream Stream { get; private set; }
+        internal CancellationToken CancellationToken { get; }
 
         /// <summary>
         /// Assigns this <see cref="FTEventArgs"/> to a <see cref="FTSocket"/>. If it is already assigned, the method returns false.
@@ -165,7 +176,7 @@ namespace VSL.FileTransfer
                         $"Expected hash was {Util.ToHexString(FileMeta.SHA256)} " +
                         $"but the hash over the transfered data actually is {Util.ToHexString(hash)}",
                         nameof(FTEventArgs), nameof(CloseStream));
-                    CloseStreamInternal(false, false);
+                    CloseStreamInternal(events: false, success: false);
                     return false;
                 }
             }
@@ -176,8 +187,8 @@ namespace VSL.FileTransfer
         {
             try
             {
-                Stream?.Dispose();
                 if (events) OnFinished();
+                Stream?.Dispose();
                 return true;
             }
             catch (Exception ex)
@@ -216,11 +227,50 @@ namespace VSL.FileTransfer
             parent.Log($"Successfully transfered file with id {Identifier} and {Mode}{Environment.NewLine}" +
                 $"to \"{Path}\" using ContentAlgorithm.{FileMeta.Algorithm}");
 #endif
+            Dispose();
         }
 
         internal void OnCanceled()
         {
             parent.ThreadManager.Post(() => Canceled?.Invoke(this, null));
+            cts.Cancel();
+            Dispose();
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // -TODO: dispose managed state (managed objects).
+                    cts.Dispose();
+                }
+
+                // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // -TODO: set large fields to null.
+
+                disposedValue = true;
+            }
+        }
+
+        // -TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~FTEventArgs() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // -TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }

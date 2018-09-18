@@ -17,9 +17,14 @@ namespace VSL
         public int ReceiveSendBufferSize { get; set; } = 65536;
 
         /// <summary>
-        /// Gets the maximum admissible packet size. If a received packet is bigger the receiver closes the connection.
+        /// Gets or sets the maximum admissible packet size. If a received packet is bigger the receiver closes the connection.
         /// </summary>
         public int MaxPacketSize { get; set; } = 1048576;
+
+        /// <summary>
+        /// Gets or sets the block size used to transfer files. Per <see cref="Packet.P09FileDataBlock"/> you have at most 65 bytes overhead
+        /// </summary>
+        public int FTBlockSize { get; set; } = 65536;
 
         /// <summary>
         /// Gets or sets whether VSL should catch exceptions thrown in an event handler.

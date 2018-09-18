@@ -16,13 +16,15 @@ namespace VSL
             {
                 { 0, "1.0" },
                 { 1, "1.1" },
-                { 2, "1.2" }
+                { 2, "1.2" },
+                { 3, "1.3" }
             };
             netAlgs = new Dictionary<ushort, CryptoAlgorithm>()
             {
                 { 0, CryptoAlgorithm.AES_256_CBC_SP },
                 { 1, CryptoAlgorithm.AES_256_CBC_SP },
-                { 2, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3 }
+                { 2, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3 },
+                { 3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3 }
             };
         }
 
