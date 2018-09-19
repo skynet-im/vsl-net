@@ -1,13 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using System.Security.Cryptography;
 using VSL.BinaryTools;
-#if WINDOWS_UWP
-using Windows.Security.Cryptography;
-using Windows.Storage.Streams;
-#endif
 
 namespace VSL.Crypt
 {
@@ -16,19 +9,11 @@ namespace VSL.Crypt
     /// </summary>
     public static class AesStatic
     {
-#if WINDOWS_UWP
         private static Aes aes;
-#else
-        private static AesCryptoServiceProvider aes;
-#endif
 
         static AesStatic()
         {
-#if WINDOWS_UWP
             aes = Aes.Create();
-#else
-            aes = new AesCryptoServiceProvider();
-#endif
         }
         #region public low-level API
         /// <summary>
@@ -48,27 +33,33 @@ namespace VSL.Crypt
             if (key.Length != 16 && key.Length != 32) throw new ArgumentOutOfRangeException(nameof(key), key.Length * 8, "The key must have a length of 128 or 256 bit");
             if (iv.Length != 16) throw new ArgumentOutOfRangeException(nameof(iv), iv.Length * 8, "The initialization vector must have a length of 128 bit");
 
-            return EncryptInternal(buffer, key, iv);
+            using (ICryptoTransform transform = aes.CreateEncryptor(key, iv))
+            {
+                return ProcessData(buffer, transform);
+            }
         }
 
         /// <summary>
-        /// Executes an AES encryption asychronously
+        /// Executes an AES encryption.
         /// </summary>
-        /// <param name="buffer">Plaintext</param>
-        /// <param name="key">AES key (128 or 256 bit)</param>
-        /// <param name="iv">Optional initialization vector (128 bit)</param>
+        /// <param name="buffer">Plaintext.</param>
+        /// <param name="key">AES key (128 or 256 bit).</param>
+        /// <param name="iv">Initialization vector (128 bit).</param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <returns></returns>
-        public static Task<byte[]> EncryptAsync(byte[] buffer, byte[] key, byte[] iv)
+        public static ArraySegment<byte> Encrypt(ArraySegment<byte> buffer, byte[] key, byte[] iv)
         {
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+            if (buffer.Array == null) throw new ArgumentNullException(nameof(buffer));
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (iv == null) throw new ArgumentNullException(nameof(iv));
             if (key.Length != 16 && key.Length != 32) throw new ArgumentOutOfRangeException(nameof(key), key.Length * 8, "The key must have a length of 128 or 256 bit");
             if (iv.Length != 16) throw new ArgumentOutOfRangeException(nameof(iv), iv.Length * 8, "The initialization vector must have a length of 128 bit");
 
-            return Task.Run(() => EncryptInternal(buffer, key, iv));
+            using (ICryptoTransform transform = aes.CreateEncryptor(key, iv))
+            {
+                return ProcessData(buffer, transform);
+            }
         }
 
         /// <summary>
@@ -90,29 +81,37 @@ namespace VSL.Crypt
             if (key.Length != 16 && key.Length != 32) throw new ArgumentOutOfRangeException(nameof(key), key.Length * 8, "The key must have a length of 128 or 256 bit");
             if (iv.Length != 16) throw new ArgumentOutOfRangeException(nameof(iv), iv.Length * 8, "The initialization vector must have a length of 128 bit");
 
-            return DecryptInternal(buffer, key, iv);
+            using (ICryptoTransform transform = aes.CreateDecryptor(key, iv))
+            {
+                return ProcessData(buffer, transform);
+            }
         }
+
         /// <summary>
-        /// Executes an AES decryption asynchronously.
+        /// Executes an AES decryption.
         /// </summary>
-        /// <param name="buffer">Ciphertext</param>
-        /// <param name="key">AES key (128 or 256 bit)</param>
-        /// <param name="iv">Optional initialization vector (128 bit)</param>
+        /// <param name="buffer">Ciphertext.</param>
+        /// <param name="key">AES key (128 or 256 bit).</param>
+        /// <param name="iv">Initialization vector (128 bit).</param>
         /// <exception cref="ArgumentNullException"/>
         /// <exception cref="ArgumentOutOfRangeException"/>
         /// <exception cref="CryptographicException"/>
         /// <returns></returns>
-        public static Task<byte[]> DecryptAsync(byte[] buffer, byte[] key, byte[] iv)
+        public static ArraySegment<byte> Decrypt(ArraySegment<byte> buffer, byte[] key, byte[] iv)
         {
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+            if (buffer.Array == null) throw new ArgumentNullException(nameof(buffer));
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (iv == null) throw new ArgumentNullException(nameof(iv));
-            if (buffer.Length % 16 != 0) throw new ArgumentOutOfRangeException(nameof(buffer), "The input must have a valid block size");
+            if (buffer.Count % 16 != 0) throw new ArgumentOutOfRangeException(nameof(buffer), "The input must have a valid block size");
             if (key.Length != 16 && key.Length != 32) throw new ArgumentOutOfRangeException(nameof(key), key.Length * 8, "The key must have a length of 128 or 256 bit");
             if (iv.Length != 16) throw new ArgumentOutOfRangeException(nameof(iv), iv.Length * 8, "The initialization vector must have a length of 128 bit");
 
-            return Task.Run(() => DecryptInternal(buffer, key, iv));
+            using (ICryptoTransform transform = aes.CreateDecryptor(key, iv))
+            {
+                return ProcessData(buffer, transform);
+            }
         }
+
         /// <summary>
         /// Generates a new 256 bit AES key.
         /// </summary>
@@ -122,20 +121,26 @@ namespace VSL.Crypt
         /// Generates a new 128 bit initialization vector.
         /// </summary>
         public static byte[] GenerateIV() => GenerateRandom(16);
+
+        /// <summary>
+        /// Increments the little endian value of an array by one.
+        /// </summary>
+        /// <param name="iv"></param>
+        public static unsafe void IncrementIV(byte[] iv)
+        {
+            if (!BitConverter.IsLittleEndian)
+                Array.Reverse(iv);
+
+            fixed (byte* ptr = iv)
+            {
+                *(long*)ptr = *(long*)ptr + 1;
+            }
+
+            if (!BitConverter.IsLittleEndian)
+                Array.Reverse(iv);
+        }
         #endregion
         #region private low-level API
-        private static byte[] DecryptInternal(byte[] buffer, byte[] key, byte[] iv)
-        {
-            using (ICryptoTransform transform = aes.CreateDecryptor(key, iv))
-                return ProcessData(buffer, transform);
-        }
-
-        private static byte[] EncryptInternal(byte[] buffer, byte[] key, byte[] iv)
-        {
-            using (ICryptoTransform transform = aes.CreateEncryptor(key, iv))
-                return ProcessData(buffer, transform);
-        }
-
         private static byte[] ProcessData(byte[] buffer, ICryptoTransform transform)
         {
             int inlen = buffer.Length;
@@ -152,6 +157,24 @@ namespace VSL.Crypt
             else
             {
                 return transform.TransformFinalBlock(buffer, 0, inlen);
+            }
+        }
+
+        private static ArraySegment<byte> ProcessData(ArraySegment<byte> buffer, ICryptoTransform transform)
+        {
+            if (buffer.Count > 16)
+            {
+                int first = buffer.Count - buffer.Count % 16;
+                byte[] output = new byte[first + 16];
+                int outlen = transform.TransformBlock(buffer.Array, buffer.Offset, first, output, 0);
+                byte[] last = transform.TransformFinalBlock(buffer.Array, buffer.Offset + first, buffer.Count - first);
+                Array.Copy(last, 0, output, outlen, last.Length);
+                outlen += last.Length;
+                return new ArraySegment<byte>(output, 0, outlen);
+            }
+            else
+            {
+                return new ArraySegment<byte>(transform.TransformFinalBlock(buffer.Array, buffer.Offset, buffer.Count));
             }
         }
 
@@ -194,7 +217,7 @@ namespace VSL.Crypt
             if (writeLength) target.WriteUInt((uint)length);
             // Encrypt data
             byte[] iv = GenerateIV();
-            byte[] ciphertext = EncryptInternal(source, aesKey, iv);
+            byte[] ciphertext = Encrypt(source, aesKey, iv);
             // Compute HMAC
             using (var hmacCsp = new HMACSHA256(hmacKey))
                 target.WriteByteArray(hmacCsp.ComputeHash(Util.ConcatBytes(iv, ciphertext)), false);
@@ -244,7 +267,7 @@ namespace VSL.Crypt
                 if (!hmac.SafeEquals(hmacCsp.ComputeHash(Util.ConcatBytes(iv, ciphertext))))
                     throw new CryptographicException("Message Corrupted: The HMAC values are not equal. The encrypted block may be tampered.");
             // Decrypt data
-            return DecryptInternal(ciphertext, aesKey, iv);
+            return Decrypt(ciphertext, aesKey, iv);
         }
         #endregion
     }

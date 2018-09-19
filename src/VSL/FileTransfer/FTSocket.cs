@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using VSL.BinaryTools;
 using VSL.Crypt;
 using VSL.Packet;
 
@@ -132,7 +131,7 @@ namespace VSL.FileTransfer
 
         internal async Task<bool> OnPacketReceivedAsync(P06Accepted packet)
         {
-            const string name = nameof(OnPacketReceivedAsync) + "(" + nameof(P06Accepted) + "(";
+            const string name = nameof(OnPacketReceivedAsync) + "(" + nameof(P06Accepted) + ")";
 
             if (currentItem == null) // It may be more efficient not to close the connection but only to cancel the file transfer.
             {

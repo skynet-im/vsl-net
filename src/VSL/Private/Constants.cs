@@ -24,5 +24,8 @@ namespace VSL
         /// The count of internal packets. This important to split the ID range in two spaces.
         /// </summary>
         public const int InternalPacketCount = 10;
+
+        public const string DefaultMemberName = "$UnknownMember";
+        public const int CryptoAlgorithmCount = 5;
     }
 }

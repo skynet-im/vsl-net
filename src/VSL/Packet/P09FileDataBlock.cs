@@ -42,7 +42,7 @@ namespace VSL.Packet
         public void WritePacket(PacketBuffer buf)
         {
             buf.WriteULong(StartPosition);
-            buf.WriteByteArray(DataBlock.Array, DataBlock.Offset, DataBlock.Count, false);
+            buf.WriteByteArray(DataBlock, false);
         }
     }
 }

@@ -19,13 +19,13 @@ namespace VSL.Network
                 // P00Handshake     -   Server only
                 // P01KeyExchange   -   Server only
                 // P02Certificate   -   Not supported in VSL 1.1/1.2
-                new PacketRule(new P03FinishHandshake(), CryptoAlgorithm.None, CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
+                new PacketRule(new P03FinishHandshake(), CryptoAlgorithm.None, CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR),
                 // P04ChangeIV      -   Server only
                 new PacketRule(new P05KeepAlive(), CryptoAlgorithm.None), // For client since VSL 1.2.2
-                new PacketRule(new P06Accepted(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
-                new PacketRule(new P07OpenFileTransfer(), CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3), // For client since VSL 1.2
-                new PacketRule(new P08FileHeader(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
-                new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3)
+                new PacketRule(new P06Accepted(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR),
+                new PacketRule(new P07OpenFileTransfer(), CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR), // For client since VSL 1.2
+                new PacketRule(new P08FileHeader(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR),
+                new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR)
             );
         }
         internal PacketHandlerClient(VSLClient parent) : base(parent) { }

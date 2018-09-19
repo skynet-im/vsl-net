@@ -12,7 +12,7 @@ namespace VSL.BinaryTools
 
         private byte[] baseBuffer;
         private GCHandle baseHandle;
-        private unsafe byte* basePtr;
+        private readonly unsafe byte* basePtr;
 
         [SecuritySafeCritical]
         internal unsafe PacketBufferStatic(int size)

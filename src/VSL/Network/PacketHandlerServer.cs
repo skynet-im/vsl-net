@@ -23,12 +23,12 @@ namespace VSL.Network
                 new PacketRule(new P01KeyExchange(), CryptoAlgorithm.RSA_2048_OAEP),
                 // P02Certificate   -   Not supported in VSL 1.1
                 // P03FinishHandshake - Client only
-                new PacketRule(new P04ChangeIV(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
+                new PacketRule(new P04ChangeIV(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR),
                 new PacketRule(new P05KeepAlive(), CryptoAlgorithm.None),  // since VSL 1.2.2
-                new PacketRule(new P06Accepted(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
-                new PacketRule(new P07OpenFileTransfer(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
-                new PacketRule(new P08FileHeader(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3),
-                new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3)
+                new PacketRule(new P06Accepted(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR),
+                new PacketRule(new P07OpenFileTransfer(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR),
+                new PacketRule(new P08FileHeader(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR),
+                new PacketRule(new P09FileDataBlock(), CryptoAlgorithm.AES_256_CBC_SP, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR)
             );
         }
         internal PacketHandlerServer(VSLServer parent, ushort latestProduct, ushort oldestProduct) : base(parent)
@@ -72,8 +72,16 @@ namespace VSL.Network
                 parent.Manager.Ready4Aes = true;
                 packet = new P03FinishHandshake(ConnectionState.CompatibilityMode);
             }
+            else if (vslVersion.Value == 2)
+            {
+                parent.Manager.HmacKey = Util.ConcatBytes(p.ClientIV, p.ServerIV);
+                parent.Manager.Ready4Aes = true;
+                packet = new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value);
+            }
             else
             {
+                parent.Manager.SendIV = p.ServerIV;
+                parent.Manager.ReceiveIV = p.ClientIV;
                 parent.Manager.HmacKey = Util.ConcatBytes(p.ClientIV, p.ServerIV);
                 parent.Manager.Ready4Aes = true;
                 packet = new P03FinishHandshake(ConnectionState.Compatible, vslVersion.Value, productVersion.Value);
