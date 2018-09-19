@@ -14,7 +14,7 @@ namespace VSL.Network
         internal PacketRule(IPacket packet, params CryptoAlgorithm[] algs)
         {
             Packet = packet;
-            algorithms = new bool[4];
+            algorithms = new bool[Constants.CryptoAlgorithmCount];
             foreach (CryptoAlgorithm alg in algs)
                 algorithms[(byte)alg] = true;
             Available = true;

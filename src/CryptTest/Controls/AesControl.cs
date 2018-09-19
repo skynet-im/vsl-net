@@ -19,12 +19,12 @@ namespace CryptTest.Controls
         private void btnAesGenerateIV_Click(object sender, EventArgs e)
             => tbAesIV.Text = Util.ToHexString(AesStatic.GenerateIV());
 
-        private async void btnAesDecrypt_Click(object sender, EventArgs e)
+        private void btnAesDecrypt_Click(object sender, EventArgs e)
         {
             byte[] ciphertext = Util.GetBytes(tbAesCipherText.Text);
             byte[] key = Util.GetBytes(tbAesKey.Text);
             byte[] iv = Util.GetBytes(tbAesIV.Text);
-            byte[] plaintext = await AesStatic.DecryptAsync(ciphertext, key, iv);
+            byte[] plaintext = AesStatic.Decrypt(ciphertext, key, iv);
             if (EncodingUTF8Rb.Checked)
                 tbAesPlainText.Text = Encoding.UTF8.GetString(plaintext);
             else
@@ -32,7 +32,7 @@ namespace CryptTest.Controls
             tbAesCipherText.Text = "";
         }
 
-        private async void btnAesEncrypt_Click(object sender, EventArgs e)
+        private void btnAesEncrypt_Click(object sender, EventArgs e)
         {
             byte[] plaintext;
             if (EncodingUTF8Rb.Checked)
@@ -41,7 +41,7 @@ namespace CryptTest.Controls
                 plaintext = Util.GetBytes(tbAesPlainText.Text);
             byte[] key = Util.GetBytes(tbAesKey.Text);
             byte[] iv = Util.GetBytes(tbAesIV.Text);
-            byte[] ciphertext = await AesStatic.EncryptAsync(plaintext, key, iv);
+            byte[] ciphertext = AesStatic.Encrypt(plaintext, key, iv);
             tbAesCipherText.Text = Util.ToHexString(ciphertext);
             tbAesPlainText.Text = "";
         }

@@ -24,7 +24,7 @@ namespace VSL
                 { 0, CryptoAlgorithm.AES_256_CBC_SP },
                 { 1, CryptoAlgorithm.AES_256_CBC_SP },
                 { 2, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3 },
-                { 3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3 }
+                { 3, CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR }
             };
         }
 

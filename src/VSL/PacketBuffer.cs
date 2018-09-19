@@ -96,9 +96,16 @@ namespace VSL
         /// Writes a byte array to the buffer.
         /// </summary>
         /// <param name="buffer">Source byte array with data.</param>
-        /// <param name="autosize">True to write a <see cref="uint"/> for length, otherwise false.</param>
+        /// <param name="autosize"><c>true</c> to write a <see cref="uint"/> for length, otherwise <c>false</c>.</param>
         public void WriteByteArray(byte[] buffer, bool autosize)
             => WriteByteArray(buffer, 0, buffer.Length, autosize);
+        /// <summary>
+        /// Writes a byte array limited by an <see cref="ArraySegment{T}"/> to the buffer.
+        /// </summary>
+        /// <param name="buffer">Byte array segment with data.</param>
+        /// <param name="autosize"></param>
+        public void WriteByteArray(ArraySegment<byte> buffer, bool autosize)
+            => WriteByteArray(buffer.Array, buffer.Offset, buffer.Count, autosize);
         /// <summary>
         /// Writes a byte array to the buffer.
         /// </summary>

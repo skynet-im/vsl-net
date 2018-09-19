@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 
 namespace VSL
 {
@@ -24,7 +25,7 @@ namespace VSL
             parent.CloseInternal(ConnectionCloseReason.SocketError, msg, null);
         }
 
-        internal void CloseConnection(string errorCode, string message, string className, string memberName)
+        internal void CloseConnection(string errorCode, string message, string className, [CallerMemberName]string memberName = Constants.DefaultMemberName)
         {
             string msg = $"An internal error occured - {errorCode}: {message}{Environment.NewLine}\tat {className}.{memberName}";
             parent.CloseInternal(ConnectionCloseReason.InternalError, msg, null);
