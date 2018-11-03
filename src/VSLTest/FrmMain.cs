@@ -33,9 +33,19 @@ namespace VSLTest
             {
                 btnStartServer.Enabled = false;
                 CbLocalhost.Enabled = false;
-                server.Start(CbLocalhost.Checked);
-                btnStartServer.Text = "Server stoppen";
-                btnStartServer.Enabled = true;
+                try
+                {
+                    server.Start(CbLocalhost.Checked);
+                    btnStartServer.Text = "Server stoppen";
+                    btnStartServer.Enabled = true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString(), "Fehler beim Serverstart");
+                    btnStartServer.Text = "Server starten";
+                    btnStartServer.Enabled = true;
+                    CbLocalhost.Enabled = true;
+                }
             }
             else
             {
@@ -113,10 +123,13 @@ namespace VSLTest
         private void BtnReceiveFile_Click(object sender, EventArgs e)
         {
             string path = Path.Combine(Program.TempPath, Path.GetRandomFileName());
-            MessageBox.Show(path);
+            MessageBox.Show($"Temporary file path: {path}\r\n\r\n" +
+                "Default value if defined is %VSLTest_Temp%\\{filename}\r\n" +
+                "otherwise it is %TEMP%\\VSLTest\\{filename}");
             FTEventArgs args = new FTEventArgs(new Identifier(0), null, path);
             args.Progress += VslClient_FTProgress;
             args.Finished += VslClient_FTFinished;
+            args.Canceled += VslClient_FTCanceled;
             args.FileMetaReceived += VslClient_FTFileMetaReceived;
             vslClient.FileTransfer.StartDownloadAsync(args);
             btnReceiveFile.Enabled = false;
@@ -132,7 +145,6 @@ namespace VSLTest
                 if (fd.ShowDialog() == DialogResult.Cancel) return;
                 path = fd.FileName;
             }
-            MessageBox.Show(path);
 
             ContentAlgorithm algorithm = ContentAlgorithm.None;
             byte[] aesKey = null;
@@ -190,10 +202,21 @@ namespace VSLTest
             FTEventArgs args = (FTEventArgs)sender;
             args.Progress -= VslClient_FTProgress;
             args.Finished -= VslClient_FTFinished;
+            args.Canceled -= VslClient_FTCanceled;
             if (args.Mode == StreamMode.GetFile &&
                 MessageBox.Show("Möchten Sie die empfangenen Metadaten übernehmen?",
                 "Metadaten übernehmen?", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 args.FileMeta.Apply(args.Path, Program.TempPath);
+            btnReceiveFile.Enabled = true;
+            btnSendFile.Enabled = true;
+        }
+
+        private void VslClient_FTCanceled(object sender, EventArgs e)
+        {
+            FTEventArgs args = (FTEventArgs)sender;
+            args.Progress -= VslClient_FTProgress;
+            args.Finished -= VslClient_FTFinished;
+            args.Canceled -= VslClient_FTCanceled;
             btnReceiveFile.Enabled = true;
             btnSendFile.Enabled = true;
         }
