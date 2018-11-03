@@ -137,7 +137,7 @@ namespace VSLTest
                 algorithm = ContentAlgorithm.Aes256CbcHmacSha256;
                 byte[] keys = Util.GetBytes(TbFileKey.Text);
                 hmacKey = Util.TakeBytes(keys, 32);
-                aesKey = Util.TakeBytes(keys, 32, 32);
+                aesKey = Util.SkipBytes(keys, 32);
             }
             FTEventArgs args = new FTEventArgs(new Identifier(0), new FileMeta(path, algorithm, hmacKey, aesKey, null), path);
             args.Progress += VslClient_FTProgress;
@@ -197,7 +197,7 @@ namespace VSLTest
             if (args.FileMeta.Algorithm == ContentAlgorithm.Aes256CbcHmacSha256 && !string.IsNullOrWhiteSpace(TbFileKey.Text))
             {
                 byte[] keys = Util.GetBytes(TbFileKey.Text);
-                args.FileMeta.Decrypt(Util.TakeBytes(keys, 32), Util.TakeBytes(keys, 32));
+                args.FileMeta.Decrypt(Util.TakeBytes(keys, 32), Util.SkipBytes(keys, 32));
             }
             vslClient.FileTransfer.Continue(args);
         }
