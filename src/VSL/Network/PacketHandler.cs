@@ -117,7 +117,7 @@ namespace VSL.Network
         }
         internal virtual Task<bool> HandleP07OpenFileTransfer(P07OpenFileTransfer p)
         {
-            p.ReverseStreamMode(parent.ConnectionVersion.Value);
+            p.PrepareReceive(parent.ConnectionVersion.Value);
             return parent.FileTransfer.OnPacketReceivedAsync(p);
         }
         internal Task<bool> HandleP08FileHeader(P08FileHeader p)

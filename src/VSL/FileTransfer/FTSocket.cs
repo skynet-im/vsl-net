@@ -106,7 +106,9 @@ namespace VSL.FileTransfer
             e.Assign(parent, this);
             e.Mode = StreamMode.PushFile;
             currentItem = e;
-            return parent.Manager.SendPacketAsync(new P07OpenFileTransfer(e.Identifier, e.Mode));
+            var packet = new P07OpenFileTransfer(e.Identifier, e.Mode);
+            packet.PrepareSend(parent.ConnectionVersion.Value);
+            return parent.Manager.SendPacketAsync(packet);
         }
 
         /// <summary>
