@@ -19,26 +19,44 @@ namespace VSLTest
         public static int Disconnects = 0;
         public static string TempPath;
 
-        static Program()
-        {
-            Clients = new VSL.ThreadSafeList<Client>();
-            if (Directory.Exists(Path.Combine("D:", "ProgramData")))
-                TempPath = Path.Combine("D:", "ProgramData", "VSLTest");
-            else
-                TempPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp", "VSLTest");
-            Directory.CreateDirectory(TempPath);
-        }
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
         static void Main()
         {
+            Clients = new ThreadSafeList<Client>();
+            CreateTempFolder();
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             MainInstance = new FrmMain();
             Application.Run(MainInstance);
+        }
+
+        static void CreateTempFolder()
+        {
+            try
+            {
+                string path;
+
+                path = Environment.GetEnvironmentVariable("VSLTest_Temp");
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    TempPath = Directory.CreateDirectory(path).FullName;
+                    return;
+                }
+
+                path = Environment.GetEnvironmentVariable("TEMP");
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    TempPath = Directory.CreateDirectory(Path.Combine(path, "VSLTest")).FullName;
+                    return;
+                }
+            }
+            catch { }
+
+            MessageBox.Show("The temporary folder could not be created. File transfer won't work.", "Folder missing", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         public static void Log(VSLSocket socket, string message)
