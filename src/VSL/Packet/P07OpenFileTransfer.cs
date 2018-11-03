@@ -47,12 +47,20 @@ namespace VSL.Packet
             buf.WriteByte((byte)StreamMode);
         }
 
-        public void ReverseStreamMode(ushort connectionVersion)
+        public void PrepareReceive(ushort connectionVersion)
         {
             byte streamMode = (byte)StreamMode;
             if (connectionVersion < 2 && streamMode == 2)
                 streamMode++; // StreamMode.PushHeader (zero based index 2) is not implemented in VSL 1.1
             StreamMode = (StreamMode)((streamMode + 2) % 4);
+        }
+
+        public void PrepareSend(ushort connectionVersion)
+        {
+            byte streamMode = (byte)StreamMode;
+            if (connectionVersion < 2 && streamMode == 3)
+                streamMode = 2; // StreamMode.PushHeader (zero based index 2) is not implemented in VSL 1.1
+            StreamMode = (StreamMode)streamMode;
         }
     }
 }

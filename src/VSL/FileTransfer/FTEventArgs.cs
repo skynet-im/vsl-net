@@ -187,7 +187,14 @@ namespace VSL.FileTransfer
         {
             try
             {
-                if (events) OnFinished();
+                if (events)
+                {
+                    if (success)
+                        OnFinished();
+                    else
+                        OnCanceled();
+                }
+
                 Stream?.Dispose();
                 return true;
             }
