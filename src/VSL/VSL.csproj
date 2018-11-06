@@ -9,6 +9,12 @@
     <Company>VectorData</Company>
     <RepositoryUrl>https://github.com/skynet-im/vsl-net</RepositoryUrl>
     <PackageProjectUrl>https://github.com/skynet-im/vsl-net</PackageProjectUrl>
+    <Description>VectorData Security Layer - a managed transport security implementation.
+This version supports protocol versions from 1.1 to 1.3.</Description>
+    <Version>1.3.0</Version>
+    <AssemblyVersion>1.3.0.34</AssemblyVersion>
+    <FileVersion>1.3.0.34</FileVersion>
+    <PackageId>VectorData.SecurityLayer</PackageId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{FE36152A-69DC-4504-82CE-32786D6B37B7}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_root", "_root", "{6CE1813E-D485-4CE7-984F-D29AADA5D7A9}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_", "_", "{6CE1813E-D485-4CE7-984F-D29AADA5D7A9}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 	EndProjectSection
@@ -16,7 +16,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSL", "src\VSL\VSL.csproj",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSLTest", "src\VSLTest\VSLTest.csproj", "{F1D1356A-9E8B-4E82-B155-0400D1D30B0B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VSL.UnitTests", "src\VSL.UnitTests\VSL.UnitTests.csproj", "{1406BB52-F71D-4E85-ADDF-04C8BFA73C04}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VSL.UnitTests", "src\VSL.UnitTests\VSL.UnitTests.csproj", "{1406BB52-F71D-4E85-ADDF-04C8BFA73C04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
