@@ -128,8 +128,9 @@ namespace VSL.Crypt
         /// <param name="iv"></param>
         public static unsafe void IncrementIV(byte[] iv)
         {
+            // Reverse first 8 bytes on Big Endian systems for correct incrementing
             if (!BitConverter.IsLittleEndian)
-                Array.Reverse(iv);
+                Array.Reverse(iv, 0, 8);
 
             fixed (byte* ptr = iv)
             {
@@ -137,7 +138,7 @@ namespace VSL.Crypt
             }
 
             if (!BitConverter.IsLittleEndian)
-                Array.Reverse(iv);
+                Array.Reverse(iv, 0, 8);
         }
         #endregion
         #region private low-level API

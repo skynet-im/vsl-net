@@ -200,7 +200,7 @@ namespace VSL.Network
             }
         }
 
-        private bool TryDeqeue(out ReceiveSendItem item)
+        private bool TryDequeue(out ReceiveSendItem item)
         {
             if (realtimeQueue.TryDequeue(out item))
                 return true;
@@ -213,7 +213,7 @@ namespace VSL.Network
         {
             if (!locked)
                 Monitor.Enter(sendLock);
-            if (TryDeqeue(out ReceiveSendItem item))
+            if (TryDequeue(out ReceiveSendItem item))
             {
                 sending = true;
                 Monitor.Exit(sendLock);
