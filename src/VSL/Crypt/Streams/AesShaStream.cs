@@ -11,12 +11,12 @@ namespace VSL.Crypt.Streams
         private CryptoStream topStream;
         private CryptoStream aesStream;
         private CryptoStream shaStream;
-        private byte[] key;
+        private readonly byte[] key;
         private byte[] iv;
         private Aes csp;
         private ICryptoTransform transform;
         private SHA256CryptoServiceProvider sha;
-        private CryptographicOperation operation;
+        private readonly CryptographicOperation operation;
         private bool first = true;
 
         internal AesShaStream(Stream stream, byte[] key, CryptoStreamMode mode, CryptographicOperation operation) : base(stream, mode)
@@ -26,8 +26,7 @@ namespace VSL.Crypt.Streams
                 throw new ArgumentOutOfRangeException(nameof(key), key.Length, "The AES key must have a length of 256 bit.");
             if (operation == CryptographicOperation.Encrypt)
                 iv = AesStatic.GenerateIV();
-            else if (operation == CryptographicOperation.Decrypt) { }
-            else
+            else if (operation != CryptographicOperation.Decrypt)
                 throw new NotSupportedException("This stream does not support cryptographic operations other than encrypt and decrypt.");
 
             this.operation = operation;
@@ -152,9 +151,20 @@ namespace VSL.Crypt.Streams
             {
                 if (disposing)
                 {
-                    topStream.Dispose(); // This call will flush and dispose all chained streams.
-                    transform.Dispose();
-                    sha.Dispose();
+                    try
+                    {
+                        topStream.Dispose(); // This call will flush and dispose all chained streams.
+                    }
+                    catch (CryptographicException)
+                    {
+                        topStream.Dispose();
+                        throw;
+                    }
+                    finally
+                    {
+                        transform.Dispose();
+                        sha.Dispose();
+                    }
                 }
 
                 disposedValue = true;
