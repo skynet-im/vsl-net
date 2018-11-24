@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Reflection;
 using VSL.BinaryTools;
 
 namespace VSL.UnitTests.BinaryTools
@@ -14,7 +13,7 @@ namespace VSL.UnitTests.BinaryTools
         public void TestFromBytes(string hexbuffer, int index, uint expected)
         {
             byte[] buffer = Util.GetBytes(hexbuffer);
-            uint actual = (uint)InvokeStatic("FromBytes", buffer, index);
+            uint actual = UInt24.FromBytes(buffer, index);
             Assert.AreEqual(expected, actual);
         }
 
@@ -25,7 +24,7 @@ namespace VSL.UnitTests.BinaryTools
         {
             byte[] expected = Util.GetBytes(hexbuffer);
             byte[] buffer = new byte[expected.Length];
-            InvokeStatic("ToBytes", input, buffer, index);
+            UInt24.ToBytes(input, buffer, index);
             CollectionAssert.AreEqual(expected, buffer);
         }
 
@@ -36,21 +35,8 @@ namespace VSL.UnitTests.BinaryTools
             Random random = new Random();
             random.NextBytes(buffer);
 
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => InvokeStatic("FromBytes", buffer, 3));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => InvokeStatic("ToBytes", 2345325U, buffer, 3));
-        }
-
-        private object InvokeStatic(string name, params object[] args)
-        {
-            Type type = Assembly.GetAssembly(typeof(VSLSocket)).GetType("VSL.BinaryTools.UInt24");
-            try
-            {
-                return type.InvokeMember(name, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.InvokeMethod, null, null, args);
-            }
-            catch (TargetInvocationException ex)
-            {
-                throw ex.InnerException;
-            }
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => UInt24.FromBytes(buffer, 3));
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => UInt24.ToBytes(2345325U, buffer, 3));
         }
     }
 }
