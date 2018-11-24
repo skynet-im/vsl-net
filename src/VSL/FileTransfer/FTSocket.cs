@@ -9,7 +9,7 @@ namespace VSL.FileTransfer
     /// <summary>
     /// Provides basic functions for transfering files. Only transfer one file at once!
     /// </summary>
-    public class FTSocket
+    public class FTSocket : IDisposable
     {
         private VSLSocket parent;
         private FTEventArgs currentItem;
@@ -68,7 +68,7 @@ namespace VSL.FileTransfer
         {
             Task<bool> t = parent.Manager.SendPacketAsync(new P06Accepted(false, 7, ProblemCategory.None)); // This packet cancels any request or running transfer.
             e.Assign(parent, this); // This assignment is necessary for FTEventArgs to print exceptions and raise events.
-            e.CloseStream(false);
+            e.Finish(success: false);
             currentItem = null;
             return t;
         }
@@ -144,7 +144,7 @@ namespace VSL.FileTransfer
             }
             if (!packet.Accepted && packet.RelatedPacket == 7) // Cancellation is always made by denying P07OpenFileTransfer
             {
-                currentItem.CloseStream(false);
+                if (!currentItem.Finish(success: false)) return false;
                 currentItem = null;
             }
             else if (packet.Accepted && packet.RelatedPacket == 7)
@@ -220,7 +220,7 @@ namespace VSL.FileTransfer
             if (!await parent.Manager.SendPacketAsyncBackground(packet)) return false;
             currentItem.OnProgress();
             if (count < buffer.Length)
-                return currentItem.CloseStream(true);
+                return currentItem.Finish(success: true);
             return true;
         }
 
@@ -239,7 +239,7 @@ namespace VSL.FileTransfer
                     if (!await parent.Manager.SendPacketAsyncBackground(packet)) return;
                     currentItem.OnProgress();
                 } while (count == buffer.Length);
-                currentItem.CloseStream(true);
+                currentItem.Finish(success: true);
                 currentItem = null;
             }
             catch (Exception ex)
@@ -301,7 +301,7 @@ namespace VSL.FileTransfer
 #endif
             if (currentItem.Mode == StreamMode.GetHeader)
             {
-                currentItem.OnFinished();
+                currentItem.Finish(success: true);
                 return await parent.Manager.SendPacketAsync(new P06Accepted(true, 8, ProblemCategory.None));
             }
             // We do not answer for StreamMode.GetFile here, because this is done by FTSocket.Continue(FTEventArgs)
@@ -346,7 +346,7 @@ namespace VSL.FileTransfer
             currentItem.OnProgress();
             if (currentItem.Stream.Position == currentItem.FileMeta.Length)
             {
-                if (!currentItem.CloseStream(true)) return false;
+                if (!currentItem.Finish(success: true)) return false;
                 currentItem = null;
             }
             else if (currentItem.Stream.Position > currentItem.FileMeta.Length)
@@ -362,5 +362,32 @@ namespace VSL.FileTransfer
 
             return true;
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    currentItem?.Dispose();
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        // ~FTSocket() {
+        //   Dispose(false);
+        // }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }

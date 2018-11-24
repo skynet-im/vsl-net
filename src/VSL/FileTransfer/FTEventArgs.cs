@@ -151,66 +151,74 @@ namespace VSL.FileTransfer
             return true;
         }
 
-        internal bool CloseStream(bool success)
+        internal bool Finish(bool success)
         {
-            if (success)
+            if (!disposedValue)
             {
+                cts.Cancel();
+
+                if (Stream == null) // For header requests and if transfer has not started
+                {
+                    RaiseAndDispose(success);
+                    return true;
+                }
+
+                if (success && Mode == StreamMode.GetFile)
+                {
+                    success = FlushAndVerify();
+                }
+
                 try
                 {
-                    if (Stream.CanWrite && !Stream.HasFlushedFinalBlock)
-                        Stream.FlushFinalBlock();
+                    Stream.Dispose();
                 }
-                catch (Exception ex) // most common: CryptographicException
+                catch (System.Security.Cryptography.CryptographicException)
                 {
-                    OnCanceled();
-                    parent.ExceptionHandler.CloseConnection(ex);
-                    CloseStreamInternal(events: false, success: false); // We don't want to close connection twice -> no events.
-                    return false;
+                    success = false;
                 }
-                byte[] hash = Stream.Hash;
-                if (FileMeta.Available && parent.ConnectionVersion.Value > 1 && !hash.SafeEquals(FileMeta.SHA256))
-                {
-                    // Do not check hash for VSL 1.1 because this version always sends an empty field.
-                    parent.ExceptionHandler.CloseConnection("FileCorrupted",
-                        "The integrity checking resulted in a corrupted message. " +
-                        $"Expected hash was {Util.ToHexString(FileMeta.SHA256)} " +
-                        $"but the hash over the transfered data actually is {Util.ToHexString(hash)}",
-                        nameof(FTEventArgs), nameof(CloseStream));
-                    CloseStreamInternal(events: false, success: false);
-                    return false;
-                }
+
+                RaiseAndDispose(success);
+                return success;
             }
-            return CloseStreamInternal(true, success);
+            else return false;
         }
 
-        private bool CloseStreamInternal(bool events, bool success)
+        private void RaiseAndDispose(bool success)
+        {
+            if (success)
+                OnFinished();
+            else
+                OnCanceled();
+
+            cts.Dispose();
+            disposedValue = true;
+        }
+
+        private bool FlushAndVerify()
         {
             try
             {
-                if (events)
-                {
-                    if (success)
-                        OnFinished();
-                    else
-                        OnCanceled();
-                }
-
-                Stream?.Dispose();
-                return true;
+                if (!Stream.HasFlushedFinalBlock)
+                    Stream.FlushFinalBlock();
             }
-            catch (Exception ex)
+            catch (System.Security.Cryptography.CryptographicException ex)
             {
-                if (events)
-                {
-                    OnCanceled();
-                    parent.ExceptionHandler.CloseConnection(ex);
-                }
+                parent.ExceptionHandler.CloseConnection(ex);
                 return false;
             }
-            finally
+
+            if (FileMeta.Available && parent.ConnectionVersion.Value > 1 && !Stream.Hash.SafeEquals(FileMeta.SHA256))
             {
-                Stream = null;
+                // Do not check hash for VSL 1.1 because this version always sends an empty field.
+                parent.ExceptionHandler.CloseConnection("FileCorrupted",
+                    "The integrity checking resulted in a corrupted message. " +
+                    $"Expected hash was {Util.ToHexString(FileMeta.SHA256)} " +
+                    $"but the hash over the transfered data actually is {Util.ToHexString(Stream.Hash)}",
+                    nameof(FTEventArgs));
+                return false;
             }
+
+            return true;
         }
 
         internal void OnFileMetaTransfered()
@@ -227,21 +235,18 @@ namespace VSL.FileTransfer
             parent.ThreadManager.Post(() => Progress?.Invoke(this, args));
         }
 
-        internal void OnFinished()
+        private void OnFinished()
         {
             parent.ThreadManager.Post(() => Finished?.Invoke(this, null));
 #if DEBUG
             parent.Log($"Successfully transfered file with id {Identifier} and {Mode}{Environment.NewLine}" +
                 $"to \"{Path}\" using ContentAlgorithm.{FileMeta.Algorithm}");
 #endif
-            Dispose();
         }
 
-        internal void OnCanceled()
+        private void OnCanceled()
         {
             parent.ThreadManager.Post(() => Canceled?.Invoke(this, null));
-            cts.Cancel();
-            Dispose();
         }
 
         #region IDisposable Support
@@ -250,31 +255,9 @@ namespace VSL.FileTransfer
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        /// <param name="disposing">Specify whether managed objects should be disposed.</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    cts.Dispose();
-                }
-
-                disposedValue = true;
-            }
-        }
-
-        // ~FTEventArgs() {
-        //   Dispose(false);
-        // }
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
         public void Dispose()
         {
-            Dispose(true);
-            // GC.SuppressFinalize(this);
+            Finish(success: false);
         }
         #endregion
     }
