@@ -94,6 +94,13 @@ namespace VSL.Crypt
             return result.ToString();
         }
 
+        public static void AssertValid(this RSAParameters parameters)
+        {
+            if (parameters.Modulus == null ||
+                parameters.Exponent == null)
+                throw new ArgumentException("The RSAParameters struct is invalid.");
+        }
+
         private static bool ValidByteArray(byte[] buffer)
         {
             return buffer != null && buffer.Length > 0;

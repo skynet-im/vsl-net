@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using VSL.Crypt;
 using VSL.FileTransfer;
 using VSL.Network;
 
@@ -38,6 +39,7 @@ namespace VSL
         /// </summary>
         protected VSLSocket(SocketSettings settings)
         {
+            settings.RsaKey.AssertValid();
             Settings = settings;
             ThreadManager = new InvokationManager();
             ExceptionHandler = new ExceptionHandler(this);

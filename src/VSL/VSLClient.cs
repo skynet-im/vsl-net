@@ -46,8 +46,6 @@ namespace VSL
             if (string.IsNullOrEmpty(hostname)) throw new ArgumentNullException(nameof(hostname));
             if (port < 0 || port > 65535)
                 throw new ArgumentOutOfRangeException(nameof(port), port, "You must provide a valid port number");
-            // TODO: Write new validation logic for RSAParameters
-            //if (string.IsNullOrEmpty(serverKey)) throw new ArgumentNullException(nameof(serverKey));
 
             progress?.Report(ConnectionState.DnsLookup);
             IPAddress[] ipaddr = await Dns.GetHostAddressesAsync(hostname);
