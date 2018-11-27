@@ -94,7 +94,7 @@ namespace VSL.Crypt
             return result.ToString();
         }
 
-        public static void AssertValid(this RSAParameters parameters)
+        internal static void AssertValid(this RSAParameters parameters)
         {
             if (parameters.Modulus == null ||
                 parameters.Exponent == null)
