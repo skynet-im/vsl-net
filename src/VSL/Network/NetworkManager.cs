@@ -44,56 +44,20 @@ namespace VSL.Network
                 {
                     case CryptoAlgorithm.None:
                         return await ReceivePacketAsync_Plaintext();
+
                     case CryptoAlgorithm.RSA_2048_OAEP:
                         return await ReceivePacketAsync_RSA_2048_OAEP();
+
                     case CryptoAlgorithm.AES_256_CBC_SP:
-                        if (!Ready4Aes)
-                        {
-                            parent.ExceptionHandler.CloseConnection("InvalidOperation",
-                                "Not ready to receive an AES packet, because key exchange is not finished yet.",
-                                nameof(NetworkManager), nameof(ReceivePacketAsync));
-                            return false;
-                        }
-                        if (parent.ConnectionVersion.HasValue && parent.ConnectionVersion.Value >= 2)
-                        {
-                            parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
-                                "VSL versions 1.2 and later are not allowed to use an old, insecure algorithm.",
-                                nameof(NetworkManager), nameof(ReceivePacketAsync));
-                            return false;
-                        }
+                        if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
                         return await ReceivePacketAsync_AES_256_CBC_SP();
 
                     case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
-                        if (!Ready4Aes)
-                        {
-                            parent.ExceptionHandler.CloseConnection("InvalidOperation",
-                                "Not ready to receive an AES packet, because key exchange is not finished yet.",
-                                nameof(NetworkManager), nameof(ReceivePacketAsync));
-                            return false;
-                        }
-                        if (parent.ConnectionVersion.HasValue && parent.ConnectionVersion.Value < 2)
-                        {
-                            parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
-                                $"VSL versions older than 1.2 should not be able to use {nameof(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3)}.",
-                                nameof(NetworkManager), nameof(ReceivePacketAsync));
-                            return false;
-                        }
+                        if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
                         return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3();
+
                     case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR:
-                        if (!Ready4Aes)
-                        {
-                            parent.ExceptionHandler.CloseConnection("InvalidOperation",
-                                "Not ready to receive an AES packet, because key exchange is not finished yet.",
-                                nameof(NetworkManager));
-                            return false;
-                        }
-                        if (parent.ConnectionVersion.HasValue && parent.ConnectionVersion.Value < 2)
-                        {
-                            parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
-                                $"VSL versions older than 1.3 should not be able to use {nameof(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR)}.",
-                                nameof(NetworkManager));
-                            return false;
-                        }
+                        if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
                         return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_CTR();
 
                     default:
@@ -609,13 +573,42 @@ namespace VSL.Network
         #endregion
         #region exception
         /// <summary>
+        /// Ensures that cryptographic keys have been exchanged.
+        /// </summary>
+        private bool AssertKeyExchanged([CallerMemberName]string member = Constants.DefaultMemberName)
+        {
+            if (!Ready4Aes)
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidOperation",
+                    "Not ready to receive an AES packet, because key exchange is not finished yet",
+                    nameof(NetworkManager));
+            }
+            return Ready4Aes;
+        }
+
+        /// <summary>
+        /// Ensures that the correct <see cref="CryptoAlgorithm"/> is used.
+        /// </summary>
+        private bool AssertAlgorithm(CryptoAlgorithm alg, [CallerMemberName]string member = Constants.DefaultMemberName)
+        {
+            if (parent.ConnectionVersion.HasValue && alg != VersionManager.GetNetworkAlgorithm(parent.ConnectionVersion))
+            {
+                parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
+                    $"VSL version {parent.ConnectionVersionString} should not use {alg}",
+                    nameof(NetworkManager));
+                return false;
+            }
+            return true;
+        }
+        
+        /// <summary>
         /// Ensures that a packet id is only used for internal purposes.
         /// </summary>
         private bool AssertInternal(byte id, CryptoAlgorithm alg, [CallerMemberName]string member = Constants.DefaultMemberName)
         {
             bool isInternal = parent.Handler.IsInternalPacket(id);
             if (!isInternal) parent.ExceptionHandler.CloseConnection("InvalidPacket",
-                $"Only internal packets are allowed to use {alg}.",
+                $"Only internal packets are allowed to use {alg}",
                 nameof(NetworkManager), member);
             return isInternal;
         }
@@ -627,7 +620,7 @@ namespace VSL.Network
         {
             bool valid = actual <= maximum;
             if (!valid) parent.ExceptionHandler.CloseConnection("TooBigPacket",
-                $"Tried to receive a packet of {actual} bytes. Maximum admissible are {maximum} bytes.",
+                $"Tried to receive a packet of {actual} bytes. Maximum admissible are {maximum} bytes",
                 nameof(NetworkManager), member);
             return valid;
         }
@@ -641,29 +634,21 @@ namespace VSL.Network
             {
                 if (disposing)
                 {
-                    // -TODO: dispose managed state (managed objects).
                     hmacProvider?.Dispose();
                 }
-
-                // -TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-                // -TODO: set large fields to null.
 
                 disposedValue = true;
             }
         }
 
-        // -TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
         // ~NetworkManager() {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
         //   Dispose(false);
         // }
 
         // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
             Dispose(true);
-            // -TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
         }
         #endregion

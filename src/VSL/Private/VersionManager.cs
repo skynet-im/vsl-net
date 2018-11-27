@@ -8,11 +8,11 @@ namespace VSL
 {
     internal static class VersionManager
     {
-        private static Dictionary<ushort?, string> versions;
+        private static Dictionary<ushort, string> versions;
         private static Dictionary<ushort, CryptoAlgorithm> netAlgs;
         static VersionManager()
         {
-            versions = new Dictionary<ushort?, string>()
+            versions = new Dictionary<ushort, string>()
             {
                 { 0, "1.0" },
                 { 1, "1.1" },
@@ -32,7 +32,7 @@ namespace VSL
         {
             if (!versionCode.HasValue)
                 return "waiting for version";
-            else if (versions.TryGetValue(versionCode, out string value))
+            else if (versions.TryGetValue(versionCode.Value, out string value))
                 return value;
             else
                 return "unknown version";
@@ -81,10 +81,10 @@ namespace VSL
         /// <returns></returns>
         internal static CryptoAlgorithm GetNetworkAlgorithm(ushort? connectionVersion)
         {
-            if (!connectionVersion.HasValue || !netAlgs.TryGetValue(connectionVersion.Value, out CryptoAlgorithm alg))
-                return CryptoAlgorithm.None;
-            else
+            if (connectionVersion.HasValue && netAlgs.TryGetValue(connectionVersion.Value, out CryptoAlgorithm alg))
                 return alg;
+            else
+                return CryptoAlgorithm.None;
         }
     }
 }
