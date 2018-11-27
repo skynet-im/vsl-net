@@ -366,6 +366,10 @@ namespace VSL.FileTransfer
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        /// <param name="disposing">Specify whether managed objects should be disposed.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -383,6 +387,9 @@ namespace VSL.FileTransfer
         //   Dispose(false);
         // }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
