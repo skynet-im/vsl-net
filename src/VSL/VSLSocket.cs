@@ -26,13 +26,13 @@ namespace VSL
         /// <summary>
         /// Access file transfer functions.
         /// </summary>
-        public FTSocket FileTransfer { get; private set; }
+        public FTSocket FileTransfer { get; }
 
         internal NetworkChannel Channel { get; set; }
         internal NetworkManager Manager { get; set; }
         internal PacketHandler Handler { get; set; }
-        internal InvokationManager ThreadManager { get; private set; }
-        internal ExceptionHandler ExceptionHandler { get; private set; }
+        internal InvokationManager ThreadManager { get; }
+        internal ExceptionHandler ExceptionHandler { get; }
 
         /// <summary>
         /// Initializes all non-child-specific components.
@@ -82,7 +82,7 @@ namespace VSL
         #endregion
         #region events
         /// <summary>
-        /// The ConnectionEstablished event occurs when the connection was build up and the key exchange was finished
+        /// The ConnectionEstablished event occurs once a secure connection has been established.
         /// </summary>
         public event EventHandler ConnectionEstablished;
         /// <summary>
@@ -176,7 +176,7 @@ namespace VSL
         /// <param name="message">The reason to print and share in the related event.</param>
         /// <param name="ex">The exception that caused disconnect.</param>
         /// <exception cref="ObjectDisposedException"/>
-        public void CloseConnection(string message, Exception ex)
+        public void CloseConnection(string message, Exception ex = null)
         {
             if (disposedValue)
                 throw new ObjectDisposedException(GetType().FullName);
