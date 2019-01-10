@@ -35,6 +35,37 @@ namespace VSL.UnitTests.Crypt
         }
 
         [TestMethod]
+        public void TestXmlImportExport()
+        {
+            RSAParameters @private = RsaStatic.GenerateKeyPairParams();
+            RSAParameters @public = RsaStatic.ExtractPublicKey(@private);
+
+            string privateXml = @private.ExportXmlKey();
+            string publicXml = @public.ExportXmlKey();
+
+            RSAParameters privateImport = new RSAParameters().ImportXmlKey(privateXml);
+            RSAParameters publicImport = new RSAParameters().ImportXmlKey(publicXml);
+
+            CollectionAssert.AreEqual(@private.Modulus, privateImport.Modulus);
+            CollectionAssert.AreEqual(@private.Exponent, privateImport.Exponent);
+            CollectionAssert.AreEqual(@private.P, privateImport.P);
+            CollectionAssert.AreEqual(@private.Q, privateImport.Q);
+            CollectionAssert.AreEqual(@private.DP, privateImport.DP);
+            CollectionAssert.AreEqual(@private.DQ, privateImport.DQ);
+            CollectionAssert.AreEqual(@private.InverseQ, privateImport.InverseQ);
+            CollectionAssert.AreEqual(@private.D, privateImport.D);
+
+            CollectionAssert.AreEqual(@public.Modulus, publicImport.Modulus);
+            CollectionAssert.AreEqual(@public.Exponent, publicImport.Exponent);
+            Assert.IsNull(publicImport.P);
+            Assert.IsNull(publicImport.Q);
+            Assert.IsNull(publicImport.DP);
+            Assert.IsNull(publicImport.DQ);
+            Assert.IsNull(publicImport.InverseQ);
+            Assert.IsNull(publicImport.D);
+        }
+
+        [TestMethod]
         public void TestXmlKeyGeneration()
         {
             string @private = RsaStatic.GenerateKeyPairXml();
@@ -60,7 +91,7 @@ namespace VSL.UnitTests.Crypt
         }
 
         [TestMethod]
-        public void TestCryptMore()
+        public void TestCryptArbitraryLength()
         {
             RSAParameters @private = RsaStatic.GenerateKeyPairParams();
             RSAParameters @public = RsaStatic.ExtractPublicKey(@private);
