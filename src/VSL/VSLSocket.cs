@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using VSL.Crypt;
 using VSL.FileTransfer;
@@ -16,6 +17,7 @@ namespace VSL
         private readonly object connectionLostLock;
         private bool connectionEstablished;
         private bool connectionLost;
+        private readonly IVSLCallback callback;
 
         // components
         /// <summary>
@@ -37,10 +39,12 @@ namespace VSL
         /// <summary>
         /// Initializes all non-child-specific components.
         /// </summary>
-        protected VSLSocket(SocketSettings settings)
+        protected VSLSocket(SocketSettings settings, IVSLCallback callback)
         {
+            this.callback = callback ?? throw new ArgumentNullException(nameof(callback));
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             settings.RsaKey.AssertValid();
-            Settings = settings;
+            callback.OnInstanceCreated(this);
             ThreadManager = new InvokationManager();
             ExceptionHandler = new ExceptionHandler(this);
             FileTransfer = new FTSocket(this);
@@ -82,43 +86,31 @@ namespace VSL
         #endregion
         #region events
         /// <summary>
-        /// The ConnectionEstablished event occurs once a secure connection has been established.
+        /// Occurs once a secure connection has been established.
         /// </summary>
-        public event EventHandler ConnectionEstablished;
-        /// <summary>
-        /// Raises the ConnectionEstablished event
-        /// </summary>
-        internal virtual void OnConnectionEstablished()
+        internal virtual Task OnConnectionEstablished()
         {
             connectionEstablished = true;
             ConnectionAvailable = true;
-            ThreadManager.Post(() => ConnectionEstablished?.Invoke(this, new EventArgs()));
+            return callback.OnConnectionEstablished();
         }
         /// <summary>
-        /// The PacketReceived event occurs when a packet with an external ID was received
+        /// Occurs when a packet with an external ID was received.
         /// </summary>
-        public event EventHandler<PacketReceivedEventArgs> PacketReceived;
-        /// <summary>
-        /// Raises the PacketReceived event and inverts the packet id.
-        /// </summary>
-        /// <param name="id">Packet ID</param>
+        /// <param name="id">Native packet ID</param>
         /// <param name="content">Packet content</param>
-        internal virtual void OnPacketReceived(byte id, byte[] content)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal virtual Task OnPacketReceived(byte id, byte[] content)
         {
-            PacketReceivedEventArgs args = new PacketReceivedEventArgs(Convert.ToByte(255 - id), content);
-            ThreadManager.Post(() => PacketReceived?.Invoke(this, args));
+            return callback.OnPacketReceived((byte)(255 - id), content);
         }
         /// <summary>
-        /// The ConnectionClosed event occurs when the connection was closed or VSL could not use it.
+        /// Occurs when the connection was closed or VSL could not use it.
         /// </summary>
-        public event EventHandler<ConnectionClosedEventArgs> ConnectionClosed;
-        /// <summary>
-        /// Raises the ConnectionClosed event.
-        /// </summary>
-        /// <param name="e"></param>
-        internal virtual void OnConnectionClosed(ConnectionClosedEventArgs e)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal virtual Task OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
         {
-            ThreadManager.Post(() => ConnectionClosed?.Invoke(this, e));
+            return callback.OnConnectionClosed(reason, message, exception);
         }
         #endregion
         #region logging
@@ -210,7 +202,7 @@ namespace VSL
             connectionLost = true;
             Channel.Shutdown();
             FileTransfer?.Dispose(); // Cancel running file transfer
-            OnConnectionClosed(new ConnectionClosedEventArgs(reason, message, ex));
+            OnConnectionClosed(reason, message, ex);
         }
         #endregion
         #region IDisposable Support

@@ -18,7 +18,7 @@ namespace VSL
         /// Creates a VSL Client that has to be connected.
         /// </summary>
         /// <param name="settings">Class containing the RSA key and more settings.</param>
-        public VSLClient(SocketSettings settings) : base(settings)
+        public VSLClient(SocketSettings settings, IVSLCallback callback) : base(settings, callback)
         {
         }
 
@@ -78,16 +78,16 @@ namespace VSL
             return result;
         }
 
-        internal override void OnConnectionEstablished()
+        internal override Task OnConnectionEstablished()
         {
-            base.OnConnectionEstablished();
             tcs?.SetResult(true);
+            return base.OnConnectionEstablished();
         }
 
-        internal override void OnConnectionClosed(ConnectionClosedEventArgs e)
+        internal override Task OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
         {
-            base.OnConnectionClosed(e);
             tcs?.SetResult(false);
+            return base.OnConnectionClosed(reason, message, exception);
         }
 
         /// <summary>
