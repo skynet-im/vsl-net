@@ -168,41 +168,42 @@ namespace VSL
         /// <param name="message">The reason to print and share in the related event.</param>
         /// <param name="ex">The exception that caused disconnect.</param>
         /// <exception cref="ObjectDisposedException"/>
-        public void CloseConnection(string message, Exception ex = null)
+        public bool CloseConnection(string message, Exception ex = null)
         {
-            if (disposedValue)
-                throw new ObjectDisposedException(GetType().FullName);
-
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {
                     ClosePrivate(ConnectionCloseReason.UserRequested, message, ex);
-                    Dispose();
+                    Dispose(true);
+                    return true;
                 }
+                else return false;
         }
 
         /// <summary>
         /// Closes the TCP Connection and raises the related event.
         /// </summary>
-        internal void CloseInternal(ConnectionCloseReason reason, string message, Exception ex)
+        internal bool CloseInternal(ConnectionCloseReason reason, string message, Exception exception)
         {
             lock (connectionLostLock)
                 if (!connectionLost) // To detect redundant calls
                 {
-                    ClosePrivate(reason, message, ex);
+                    ClosePrivate(reason, message, exception);
+                    return true;
                 }
+                else return false;
         }
 
         /// <summary>
         /// Sets all variables to the closed state.
         /// </summary>
-        private void ClosePrivate(ConnectionCloseReason reason, string message, Exception ex)
+        private void ClosePrivate(ConnectionCloseReason reason, string message, Exception exception)
         {
             ConnectionAvailable = false;
             connectionLost = true;
             Channel.Shutdown();
             FileTransfer?.Dispose(); // Cancel running file transfer
-            OnConnectionClosed(reason, message, ex);
+            OnConnectionClosed(reason, message, exception);
         }
         #endregion
         #region IDisposable Support

@@ -103,7 +103,13 @@ namespace VSL.Network
 
             if (!shutdown)
             {
-                socket.Shutdown(SocketShutdown.Both);
+                try
+                {
+                    socket.Shutdown(SocketShutdown.Both);
+                }
+                catch (SocketException) { } 
+                // Errors may occur when shutting down while the counterpart has closed the connection.
+
                 while (realtimeQueue.TryDequeue(out ReceiveSendItem item))
                     item.Tcs.SetResult(false);
                 while (backgroundQueue.TryDequeue(out ReceiveSendItem item))
