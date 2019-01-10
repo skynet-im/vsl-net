@@ -44,11 +44,11 @@ namespace VSL
             this.callback = callback ?? throw new ArgumentNullException(nameof(callback));
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             settings.RsaKey.AssertValid();
-            callback.OnInstanceCreated(this);
             ThreadManager = new InvokationManager();
             ExceptionHandler = new ExceptionHandler(this);
             FileTransfer = new FTSocket(this);
             connectionLostLock = new object();
+            callback.OnInstanceCreated(this);
         }
 
         internal static MemoryCache<SocketAsyncEventArgs> CreateFakeCache()
@@ -108,9 +108,9 @@ namespace VSL
         /// Occurs when the connection was closed or VSL could not use it.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal virtual Task OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
+        internal virtual void OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
         {
-            return callback.OnConnectionClosed(reason, message, exception);
+            callback.OnConnectionClosed(reason, message, exception);
         }
         #endregion
         #region logging
