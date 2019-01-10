@@ -84,10 +84,10 @@ namespace VSL
             return base.OnConnectionEstablished();
         }
 
-        internal override Task OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
+        internal override void OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
         {
             tcs?.SetResult(false);
-            return base.OnConnectionClosed(reason, message, exception);
+            base.OnConnectionClosed(reason, message, exception);
         }
 
         /// <summary>

@@ -31,6 +31,6 @@ namespace VSL
         /// <param name="reason"></param>
         /// <param name="message"></param>
         /// <param name="exception"></param>
-        Task OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception);
+        void OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception);
     }
 }

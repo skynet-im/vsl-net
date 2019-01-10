@@ -57,30 +57,33 @@ namespace VSL.Network
                 nameof(PacketHandlerClient), nameof(HandleP02Certificate));
             return Task.FromResult(false);
         }
-        internal override Task<bool> HandleP03FinishHandshake(P03FinishHandshake p)
+        internal override async Task<bool> HandleP03FinishHandshake(P03FinishHandshake p)
         {
             switch (p.ConnectionState)
             {
                 case ConnectionState.CompatibilityMode:
                     parent.ConnectionVersion = 1; // A VSL 1.1 Server sends this response.
-                    parent.OnConnectionEstablished();
-                    return Task.FromResult(true);
+                    await parent.OnConnectionEstablished();
+                    return true;
                 case ConnectionState.Redirect:
                     parent.ExceptionHandler.CloseConnection("NotSupported",
                         "This VSL version does not support redirects.",
-                        nameof(PacketHandlerClient), nameof(HandleP03FinishHandshake));
-                    return Task.FromResult(false);
+                        nameof(PacketHandlerClient));
+                    return false;
                 case ConnectionState.NotCompatible:
                     parent.ExceptionHandler.CloseConnection("ConnectionDenied",
                         "The specified server denied the connection to this VSL/application version client.",
-                        nameof(PacketHandlerClient), nameof(HandleP03FinishHandshake));
-                    return Task.FromResult(false);
+                        nameof(PacketHandlerClient));
+                    return false;
                 case ConnectionState.Compatible:
                     parent.ConnectionVersion = p.VSLVersion;
-                    parent.OnConnectionEstablished();
-                    return Task.FromResult(true);
+                    await parent.OnConnectionEstablished();
+                    return true;
                 default:
-                    return Task.FromResult(false);
+                    parent.ExceptionHandler.CloseConnection("InvalidConnectionState",
+                        $"The specified ConnectionState.{p.ConnectionState} is invalid",
+                        nameof(PacketHandlerClient));
+                    return false;
             }
         }
         internal override Task<bool> HandleP04ChangeIV(P04ChangeIV p)
