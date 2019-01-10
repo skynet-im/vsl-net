@@ -11,7 +11,7 @@ namespace VSL
     {
         private readonly Socket[] sockets;
         private readonly MemoryCache<SocketAsyncEventArgs> cache;
-        private readonly Action<VSLServer> acceptor;
+        private readonly Func<IVSLCallback> acceptor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VSLListener"/> class for the given endpoints.
@@ -19,7 +19,7 @@ namespace VSL
         /// <param name="addresses">Endpoints to listen on.</param>
         /// <param name="settings">Default settings for accepted clients.</param>
         /// <param name="acceptor">Callback to execute before starting the accepted <see cref="VSLServer"/> objects.</param>
-        public VSLListener(IPEndPoint[] addresses, SocketSettings settings, Action<VSLServer> acceptor)
+        public VSLListener(IPEndPoint[] addresses, SocketSettings settings, Func<IVSLCallback> acceptor)
         {
             sockets = new Socket[addresses.Length];
             for (int i = 0; i < addresses.Length; i++)
@@ -88,15 +88,10 @@ namespace VSL
                 e.AcceptSocket = null;
                 ((Socket)sender).AcceptAsync(e);
 
-                VSLServer server = new VSLServer(accepted, cache, Settings);
-                acceptor(server);
-                server.Start();
+                new VSLServer(accepted, cache, Settings, acceptor());
             }
             else
             {
-#if DEBUG
-                Console.WriteLine("SocketError." + e.SocketError);
-#endif
                 e.Dispose();
             }
         }
