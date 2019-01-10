@@ -35,10 +35,11 @@ namespace VSLTest
                 RsaXmlKey = Program.Keypair
             };
 
-            listener = new VSLListener(endPoints, settings, x =>
+            listener = new VSLListener(endPoints, settings, () =>
             {
-                new Client(x);
+                var client = new RemoteClient();
                 Interlocked.Increment(ref Program.Connects);
+                return client;
             });
 
             Running = true;
@@ -48,7 +49,7 @@ namespace VSLTest
         public void Stop()
         {
             Running = false;
-            Program.Clients.ParallelForEach((c) => c.CloseConnection("Stopping server", null));
+            Program.Clients.ForEach(c => c.CloseConnection("Stopping server"));
             listener?.Stop();
         }
     }
