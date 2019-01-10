@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace VSL
 {
+    /// <summary>
+    /// Defines callbacks for event handling of a <see cref="VSLSocket"/>.
+    /// </summary>
     public interface IVSLCallback
     {
         /// <summary>
