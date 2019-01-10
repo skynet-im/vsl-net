@@ -28,7 +28,8 @@ namespace VSL.BinaryTools
         public override byte[] ReadByteArray(int count)
         {
             byte[] buffer = new byte[count];
-            if (baseStream.Read(buffer, 0, count) < count) throw new InvalidOperationException();
+            if (baseStream.Read(buffer, 0, count) < count)
+                throw new ArgumentException("The buffer is not big enough to perform this operation.");
             return buffer;
         }
         public override void WriteByteArray(byte[] buffer, int offset, int count, bool autosize)
