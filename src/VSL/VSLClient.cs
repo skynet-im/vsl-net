@@ -18,6 +18,7 @@ namespace VSL
         /// Creates a VSL Client that has to be connected.
         /// </summary>
         /// <param name="settings">Class containing the RSA key and more settings.</param>
+        /// <param name="callback">Inferface for event handling callbacks.</param>
         public VSLClient(SocketSettings settings, IVSLCallback callback) : base(settings, callback)
         {
         }

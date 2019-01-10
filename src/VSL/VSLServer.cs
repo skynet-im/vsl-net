@@ -12,7 +12,7 @@ namespace VSL
     public sealed class VSLServer : VSLSocket
     {
         /// <summary>
-        /// Creates a VSL server for the specified client. To start working, call <see cref="Start"/>.
+        /// Creates a VSL server for the specified client and starts receiving.
         /// </summary>
         /// <param name="socket">Connected <see cref="Socket"/>.</param>
         /// <param name="settings">Class containing the RSA key and more settings.</param>
