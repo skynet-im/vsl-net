@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
 using VSL.BinaryTools;
@@ -8,59 +10,59 @@ using VSL.FileTransfer;
 
 namespace VSLTest
 {
-    public class Client
+    public class RemoteClient : IVSLCallback
     {
         private VSLServer Vsl;
         private FileMeta lastMeta;
-        /// <summary>
-        /// Creates a VSLServer.
-        /// </summary>
-        /// <param name="native"></param>
-        public Client(VSLServer server)
+
+        public RemoteClient()
         {
-            Vsl = server;
-            Vsl.ConnectionEstablished += Vsl_ConnectionEstablished;
-            Vsl.PacketReceived += Vsl_PacketReceived;
-            Vsl.ConnectionClosed += Vsl_ConnectionClosed;
+            ImmutableInterlocked.Update(ref Program.Clients, x => x.Add(this));
+        }
+
+        public void OnInstanceCreated(VSLSocket socket)
+        {
+            Vsl = (VSLServer)socket;
             Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
 #if DEBUG
             Vsl.LogHandler = Program.Log;
 #endif
-            Program.Clients.Add(this);
         }
+
+        public Task OnConnectionEstablished()
+        {
+            Program.Log(Vsl, "Client connected using protocol version " + Vsl.ConnectionVersionString);
+            return Task.CompletedTask;
+        }
+
+        public Task OnPacketReceived(byte id, byte[] content)
+        {
+            if (content.Length > 1024)
+                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", id, content.Length));
+            else
+                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", id, Util.ToHexString(content)));
+            return Task.CompletedTask;
+        }
+
+        public void OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
+        {
+            Vsl.Dispose();
+            ImmutableInterlocked.Update(ref Program.Clients, x => x.Remove(this));
+            Interlocked.Increment(ref Program.Disconnects);
+#if DEBUG
+            Program.Log(Vsl, message);
+#endif
+        }
+
 
         public void SendPacket(byte id, byte[] content)
         {
             Vsl.SendPacketAsync(id, content);
         }
 
-        public void CloseConnection(string reason, Exception ex)
+        public void CloseConnection(string message, Exception exception = null)
         {
-            Vsl.CloseConnection(reason, ex);
-        }
-
-        private void Vsl_ConnectionEstablished(object sender, EventArgs e)
-        {
-            Program.Log(Vsl, "Client connected using protocol version " + Vsl.ConnectionVersionString);
-        }
-
-        private void Vsl_PacketReceived(object sender, PacketReceivedEventArgs e)
-        {
-            if (e.Content.Length > 1024)
-                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.Id, e.Content.Length));
-            else
-                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", e.Id, Util.ToHexString(e.Content)));
-        }
-
-        private void Vsl_ConnectionClosed(object sender, ConnectionClosedEventArgs e)
-        {
-            Vsl.Dispose();
-            if (!Program.Clients.Remove(this))
-                throw new Exception("Second ConnectionClosed event");
-            Interlocked.Increment(ref Program.Disconnects);
-#if DEBUG
-            Program.Log((VSLServer)sender, e.Message);
-#endif
+            Vsl.CloseConnection(message, exception);
         }
 
         private async void Vsl_FileTransferRequested(object sender, FTEventArgs e)

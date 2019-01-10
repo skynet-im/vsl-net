@@ -11,12 +11,13 @@ using VSL.FileTransfer;
 
 namespace VSLTest
 {
-    public partial class FrmMain : Form
+    public partial class FrmMain : Form, IVSLCallback
     {
         private VSLClient vslClient;
         private Server server;
         private PenetrationTest pentest;
         private bool clientConnected;
+        private bool formClosing;
 
         public FrmMain()
         {
@@ -67,13 +68,7 @@ namespace VSLTest
                     CatchApplicationExceptions = false,
                     RsaXmlKey = Program.PublicKey
                 };
-                vslClient = new VSLClient(settings);
-                vslClient.ConnectionEstablished += VSL_Open;
-                vslClient.ConnectionClosed += VSL_Close;
-                vslClient.PacketReceived += VslClient_Received;
-#if DEBUG
-                vslClient.LogHandler = Program.Log;
-#endif
+                new VSLClient(settings, this);
                 var progress = new Progress<VSLClient.ConnectionState>((state) => Console.WriteLine(state));
                 await vslClient.ConnectAsync("localhost", Program.Port, progress);
             }
@@ -81,27 +76,45 @@ namespace VSLTest
                 vslClient.CloseConnection("The user requested to disconnect", null);
         }
 
-        private void VSL_Open(object sender, EventArgs e)
+        public void OnInstanceCreated(VSLSocket socket)
         {
-            btnConnect.Enabled = true;
-            btnConnect.Text = "Trennen";
-            btnClientSendPacket.Enabled = true;
-            btnReceiveFile.Enabled = true;
-            btnSendFile.Enabled = true;
-            clientConnected = true;
+            vslClient = (VSLClient)socket;
+#if DEBUG
+            vslClient.LogHandler = Program.Log;
+#endif
         }
 
-        private void VSL_Close(object sender, ConnectionClosedEventArgs e)
+        public Task OnConnectionEstablished()
         {
-            btnConnect.Enabled = true;
-            btnConnect.Text = "Verbinden";
-            btnClientSendPacket.Enabled = false;
-            btnReceiveFile.Enabled = false;
-            btnSendFile.Enabled = false;
-            clientConnected = false;
+            Invoke((MethodInvoker)delegate
+            {
+                btnConnect.Enabled = true;
+                btnConnect.Text = "Trennen";
+                btnClientSendPacket.Enabled = true;
+                btnReceiveFile.Enabled = true;
+                btnSendFile.Enabled = true;
+            });
+            clientConnected = true;
+            return Task.CompletedTask;
+        }
+
+        public void OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
+        {
+            if (!formClosing)
+            {
+                Invoke((MethodInvoker)delegate
+                {
+                    btnConnect.Enabled = true;
+                    btnConnect.Text = "Verbinden";
+                    btnClientSendPacket.Enabled = false;
+                    btnReceiveFile.Enabled = false;
+                    btnSendFile.Enabled = false;
+                });
+                clientConnected = false;
 #if DEBUG
-            Program.Log((VSLClient)sender, e.Message);
+                Program.Log(vslClient, message);
 #endif
+            }
         }
 
         private void BtnSendPacket_Click(object sender, EventArgs e)
@@ -112,12 +125,13 @@ namespace VSLTest
             if ((Button)sender == btnClientSendPacket)
                 vslClient.SendPacketAsync(1, b);
             else if ((Button)sender == btnServerSendPacket)
-                Program.Clients.ParallelForEach((c) => c.SendPacket(1, b));
+                Program.Clients.ForEach(c => c.SendPacket(1, b));
         }
 
-        private void VslClient_Received(object sender, PacketReceivedEventArgs e)
+        public Task OnPacketReceived(byte id, byte[] content)
         {
-            MessageBox.Show(string.Format("Client received: ID={0} Content={1}", e.Id, e.Content.Length));
+            MessageBox.Show(string.Format("Client received: ID={0} Content={1}", id, content.Length));
+            return Task.CompletedTask;
         }
 
         private void BtnReceiveFile_Click(object sender, EventArgs e)
@@ -182,16 +196,6 @@ namespace VSLTest
             }
         }
 
-        private void BtnCleanup_Click(object sender, EventArgs e)
-        {
-            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-            stopwatch.Start();
-            Program.Clients.Cleanup();
-            stopwatch.Stop();
-            MessageBox.Show($"Cleanup successful after {stopwatch.ElapsedMilliseconds} ms.");
-            GC.Collect();
-        }
-
         private void VslClient_FTProgress(object sender, FTProgressEventArgs e)
         {
             PbFileTransfer.Value = Convert.ToInt32(e.Percentage * 100);
@@ -234,9 +238,9 @@ namespace VSLTest
 
         private void FrmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
+            formClosing = true;
             if (vslClient != null)
             {
-                vslClient.ConnectionClosed -= VSL_Close;
                 if (clientConnected)
                     vslClient.CloseConnection("Closing VSLTest", null);
                 else

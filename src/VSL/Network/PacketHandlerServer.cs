@@ -89,7 +89,7 @@ namespace VSL.Network
 
             if (!await parent.Manager.SendPacketAsync(VersionManager.GetNetworkAlgorithm(vslVersion), packet))
                 return false;
-            parent.OnConnectionEstablished();
+            await parent.OnConnectionEstablished();
             return true;
         }
         internal override Task<bool> HandleP02Certificate(P02Certificate p)
