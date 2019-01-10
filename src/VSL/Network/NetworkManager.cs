@@ -205,7 +205,7 @@ namespace VSL.Network
 #if DEBUG
                     parent.Log($"Received external insecure AES packet: ID={255 - id} Length={content.Length}");
 #endif
-                    parent.OnPacketReceived(id, content);
+                    await parent.OnPacketReceived(id, content);
                     return true;
                 }
             }
@@ -272,7 +272,7 @@ namespace VSL.Network
 #if DEBUG
                             parent.Log($"Received external AES packet: ID={255 - id} Length={content.Length}");
 #endif
-                            parent.OnPacketReceived(id, content);
+                            await parent.OnPacketReceived(id, content);
                         }
                     }
                 }
@@ -329,7 +329,7 @@ namespace VSL.Network
 #if DEBUG
                         parent.Log($"Received external AES packet: ID={255 - id} Length={content.Length}");
 #endif
-                        parent.OnPacketReceived(id, content);
+                        await parent.OnPacketReceived(id, content);
                     }
                 }
                 return true;

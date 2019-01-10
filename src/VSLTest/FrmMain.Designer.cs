@@ -38,7 +38,6 @@
             this.btnPenetrationTest = new System.Windows.Forms.Button();
             this.LbServer = new System.Windows.Forms.Label();
             this.LbServerUpdateTimer = new System.Windows.Forms.Timer(this.components);
-            this.BtnCleanup = new System.Windows.Forms.Button();
             this.btnSendFile = new System.Windows.Forms.Button();
             this.TbFileKey = new System.Windows.Forms.TextBox();
             this.LbFileKey = new System.Windows.Forms.Label();
@@ -129,16 +128,6 @@
             this.LbServerUpdateTimer.Enabled = true;
             this.LbServerUpdateTimer.Tick += new System.EventHandler(this.LbServerUpdateTimer_Tick);
             // 
-            // BtnCleanup
-            // 
-            this.BtnCleanup.Location = new System.Drawing.Point(12, 197);
-            this.BtnCleanup.Name = "BtnCleanup";
-            this.BtnCleanup.Size = new System.Drawing.Size(97, 23);
-            this.BtnCleanup.TabIndex = 8;
-            this.BtnCleanup.Text = "Liste aufräumen";
-            this.BtnCleanup.UseVisualStyleBackColor = true;
-            this.BtnCleanup.Click += new System.EventHandler(this.BtnCleanup_Click);
-            // 
             // btnSendFile
             // 
             this.btnSendFile.Enabled = false;
@@ -188,7 +177,6 @@
             this.Controls.Add(this.LbFileKey);
             this.Controls.Add(this.TbFileKey);
             this.Controls.Add(this.btnSendFile);
-            this.Controls.Add(this.BtnCleanup);
             this.Controls.Add(this.LbServer);
             this.Controls.Add(this.btnPenetrationTest);
             this.Controls.Add(this.btnServerSendPacket);
@@ -216,7 +204,6 @@
         private System.Windows.Forms.Button btnPenetrationTest;
         private System.Windows.Forms.Label LbServer;
         private System.Windows.Forms.Timer LbServerUpdateTimer;
-        private System.Windows.Forms.Button BtnCleanup;
         private System.Windows.Forms.Button btnSendFile;
         private System.Windows.Forms.TextBox TbFileKey;
         private System.Windows.Forms.Label LbFileKey;
