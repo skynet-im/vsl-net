@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -35,6 +36,12 @@ namespace VSL.BinaryTools
 
         public override byte[] ToArray() => baseBuffer;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AssertPending(int count)
+        {
+            if (Pending < count) throw new ArgumentOutOfRangeException(nameof(Pending), "The buffer is not big enough to perform this operation.");
+        }
+
         #region byte array
         public override byte[] ReadByteArray(int count)
         {
@@ -45,8 +52,13 @@ namespace VSL.BinaryTools
         }
         public override void WriteByteArray(byte[] buffer, int offset, int count, bool autosize)
         {
-            if (Pending < count + (autosize ? 4 : 0)) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
-            if (autosize) WriteUInt((uint)count);
+            if (autosize)
+            {
+                AssertPending(count + 4);
+                WriteUInt((uint)count);
+            }
+            else AssertPending(count);
+
             Array.Copy(buffer, offset, baseBuffer, position, count);
             position += count;
         }
@@ -60,7 +72,7 @@ namespace VSL.BinaryTools
         }
         public override void WriteByte(byte b)
         {
-            if (Pending < 1) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
+            AssertPending(1);
             baseBuffer[position] = b;
             position++;
         }
@@ -73,7 +85,7 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         public override unsafe void WriteShort(short s)
         {
-            if (Pending < 2) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
+            AssertPending(2);
             *(short*)(basePtr + position) = s;
             position += 2;
         }
@@ -86,7 +98,7 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         public override unsafe void WriteUShort(ushort s)
         {
-            if (Pending < 2) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
+            AssertPending(2);
             *(ushort*)(basePtr + position) = s;
             position += 2;
         }
@@ -99,7 +111,7 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         public override unsafe void WriteInt(int i)
         {
-            if (Pending < 4) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
+            AssertPending(4);
             *(int*)(basePtr + position) = i;
             position += 4;
         }
@@ -112,7 +124,7 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         public override unsafe void WriteUInt(uint i)
         {
-            if (Pending < 4) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
+            AssertPending(4);
             *(uint*)(basePtr + position) = i;
             position += 4;
         }
@@ -125,7 +137,7 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         public override unsafe void WriteLong(long l)
         {
-            if (Pending < 8) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
+            AssertPending(8);
             *(long*)(basePtr + position) = l;
             position += 8;
         }
@@ -138,7 +150,7 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         public override unsafe void WriteULong(ulong l)
         {
-            if (Pending < 8) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
+            AssertPending(8);
             *(ulong*)(basePtr + position) = l;
             position += 8;
         }
@@ -153,7 +165,7 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         public override unsafe void WriteSingle(float f)
         {
-            if (Pending < 4) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
+            AssertPending(4);
             *(float*)(basePtr + position) = f;
             position += 4;
         }
@@ -166,7 +178,7 @@ namespace VSL.BinaryTools
         [SecuritySafeCritical]
         public override unsafe void WriteDouble(double f)
         {
-            if (Pending < 8) throw new InvalidOperationException("The buffer is not big enough to perform this operation.");
+            AssertPending(8);
             *(double*)(basePtr + position) = f;
             position += 8;
         }
