@@ -34,57 +34,37 @@ namespace VSL.Network
         #region receive
         internal async Task<bool> ReceivePacketAsync()
         {
-            try
+            byte[] buffer = new byte[1];
+            if (!await parent.Channel.ReceiveAsync(buffer, 0, 1))
+                return false;
+            CryptoAlgorithm algorithm = (CryptoAlgorithm)buffer[0];
+            switch (algorithm)
             {
-                byte[] buffer = new byte[1];
-                if (!await parent.Channel.ReceiveAsync(buffer, 0, 1))
+                case CryptoAlgorithm.None:
+                    return await ReceivePacketAsync_Plaintext();
+
+                case CryptoAlgorithm.RSA_2048_OAEP:
+                    return await ReceivePacketAsync_RSA_2048_OAEP();
+
+                case CryptoAlgorithm.AES_256_CBC_SP:
+                    if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
+                    return await ReceivePacketAsync_AES_256_CBC_SP();
+
+                case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
+                    if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
+                    return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3();
+
+                case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR:
+                    if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
+                    return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_CTR();
+
+                default:
+                    parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
+                        $"Received packet with unknown algorithm ({algorithm}).",
+                        nameof(NetworkManager));
                     return false;
-                CryptoAlgorithm algorithm = (CryptoAlgorithm)buffer[0];
-                switch (algorithm)
-                {
-                    case CryptoAlgorithm.None:
-                        return await ReceivePacketAsync_Plaintext();
-
-                    case CryptoAlgorithm.RSA_2048_OAEP:
-                        return await ReceivePacketAsync_RSA_2048_OAEP();
-
-                    case CryptoAlgorithm.AES_256_CBC_SP:
-                        if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
-                        return await ReceivePacketAsync_AES_256_CBC_SP();
-
-                    case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
-                        if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
-                        return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3();
-
-                    case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR:
-                        if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
-                        return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_CTR();
-
-                    default:
-                        parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
-                            $"Received packet with unknown algorithm ({algorithm}).",
-                            nameof(NetworkManager), nameof(ReceivePacketAsync));
-                        return false;
-                }
             }
-            catch (OperationCanceledException) // NetworkChannel.Read()
-            {
-                return false; // Already shutting down...
-            }
-            catch (TimeoutException ex) // NetworkChannel.Read()
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-                return false;
-            }
-#if DEBUG
-            catch (Exception ex) when (!System.Diagnostics.Debugger.IsAttached)
-#else
-            catch (Exception ex)
-#endif
-            {
-                parent.ExceptionHandler.CloseUncaught(ex);
-                return false;
-            }
+
         }
         private async Task<bool> ReceivePacketAsync_Plaintext()
         {
@@ -122,222 +102,193 @@ namespace VSL.Network
         private async Task<bool> ReceivePacketAsync_RSA_2048_OAEP()
         {
             CryptoAlgorithm alg = CryptoAlgorithm.RSA_2048_OAEP;
+            int index = 1;
+            byte[] ciphertext = new byte[256];
+            if (!await parent.Channel.ReceiveAsync(ciphertext, 0, 256))
+                return false;
+            byte[] plaintext;
             try
             {
-                int index = 1;
-                byte[] ciphertext = new byte[256];
-                if (!await parent.Channel.ReceiveAsync(ciphertext, 0, 256))
-                    return false;
-                byte[] plaintext = RsaStatic.DecryptBlock(ciphertext, rsaKey);
-                byte id = plaintext[0]; // index = 1
-                if (!AssertInternal(id, alg) || !parent.Handler.ValidatePacket(id, alg, out PacketRule rule))
-                    return false;
-
-                uint length = 0;
-                if (rule.Packet.ConstantLength.HasValue)
-                    length = rule.Packet.ConstantLength.Value;
-                else
-                {
-                    length = BitConverter.ToUInt32(plaintext, index);
-                    index += 4;
-                    if (!AssertSize(209, (int)length))
-                        return false; // 214 - 1 (id) - 4 (uint) => 209
-                }
-#if DEBUG
-                parent.Log($"Received internal RSA packet: ID={id} Length={length}");
-#endif
-                return await parent.Handler.HandleInternalPacketAsync(rule, plaintext.TakeAt(index, (int)length));
+                plaintext = RsaStatic.DecryptBlock(ciphertext, rsaKey);
             }
-            catch (CryptographicException ex) // RSA.DecryptBlock()
+            catch (CryptographicException ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
+                return false;
             }
-            return false;
+            byte id = plaintext[0]; // index = 1
+            if (!AssertInternal(id, alg) || !parent.Handler.ValidatePacket(id, alg, out PacketRule rule))
+                return false;
+
+            uint length = 0;
+            if (rule.Packet.ConstantLength.HasValue)
+                length = rule.Packet.ConstantLength.Value;
+            else
+            {
+                length = BitConverter.ToUInt32(plaintext, index);
+                index += 4;
+                if (!AssertSize(209, (int)length))
+                    return false; // 214 - 1 (id) - 4 (uint) => 209
+            }
+            if (!AssertAvailable(plaintext.Length - index, (int)length))
+                return false;
+            parent.Log($"Received internal RSA packet: ID={id} Length={length}");
+            return await parent.Handler.HandleInternalPacketAsync(rule, plaintext.TakeAt(index, (int)length));
         }
         private async Task<bool> ReceivePacketAsync_AES_256_CBC_SP()
         {
             CryptoAlgorithm alg = CryptoAlgorithm.AES_256_CBC_SP;
-            try
-            {
-                int index = 1;
-                byte[] ciphertext = new byte[16];
-                if (!await parent.Channel.ReceiveAsync(ciphertext, 0, 16))
-                    return false;
-                byte[] plaintext = AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV); //CryptographicException
-                byte id = plaintext[0]; // index = 1
+            int index = 1;
+            byte[] ciphertext = new byte[16];
+            if (!await parent.Channel.ReceiveAsync(ciphertext, 0, 16))
+                return false;
+            if (!TryDecrypt(ciphertext, AesKey, ReceiveIV, out byte[] plaintext))
+                return false;
+            byte id = plaintext[0]; // index = 1
 
-                bool isInternal = parent.Handler.IsInternalPacket(id);
-                PacketRule rule = default(PacketRule);
-                if (isInternal && !parent.Handler.ValidatePacket(id, alg, out rule))
-                    return false;
+            bool isInternal = parent.Handler.IsInternalPacket(id);
+            PacketRule rule = default(PacketRule);
+            if (isInternal && !parent.Handler.ValidatePacket(id, alg, out rule))
+                return false;
 
-                uint length = 0;
-                if (isInternal && rule.Packet.ConstantLength.HasValue)
-                    length = rule.Packet.ConstantLength.Value;
-                else
-                {
-                    length = BitConverter.ToUInt32(plaintext, index);
-                    index += 4;
-                    if (!AssertSize(parent.Settings.MaxPacketSize, (int)length))
-                        return false;
-                }
-                plaintext = plaintext.Skip(index);
-                if (length > plaintext.Length - 2) // 2 random bytes
-                {
-                    int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
-                    int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
-                    ciphertext = new byte[pendingBlocks * 16];
-                    if (!await parent.Channel.ReceiveAsync(ciphertext, 0, pendingBlocks * 16))
-                        return false;
-                    plaintext = Util.ConcatBytes(plaintext, AesStatic.Decrypt(ciphertext, AesKey, ReceiveIV));
-                }
-                int startIndex = Convert.ToInt32(plaintext.Length - length);
-                byte[] content = plaintext.Skip(startIndex); // remove random bytes
-                if (isInternal)
-                {
-#if DEBUG
-                    parent.Log($"Received internal insecure AES packet: ID={id} Length={content.Length}");
-#endif
-                    return await parent.Handler.HandleInternalPacketAsync(rule, content);
-                }
-                else
-                {
-#if DEBUG
-                    parent.Log($"Received external insecure AES packet: ID={255 - id} Length={content.Length}");
-#endif
-                    await parent.OnPacketReceived(id, content);
-                    return true;
-                }
-            }
-            catch (CryptographicException ex) // AES.Decrypt()
+            uint length = 0;
+            if (isInternal && rule.Packet.ConstantLength.HasValue)
+                length = rule.Packet.ConstantLength.Value;
+            else
             {
-                parent.ExceptionHandler.CloseConnection(ex);
+                length = BitConverter.ToUInt32(plaintext, index);
+                index += 4;
+                if (!AssertSize(parent.Settings.MaxPacketSize, (int)length))
+                    return false;
             }
-            return false;
+            plaintext = plaintext.Skip(index);
+            if (length > plaintext.Length - 2) // 2 random bytes
+            {
+                int pendingLength = Convert.ToInt32(length - plaintext.Length + 2);
+                int pendingBlocks = Convert.ToInt32(Math.Ceiling((pendingLength + 1) / 16d)); // round up, first blocks only 15 bytes (padding)
+                ciphertext = new byte[pendingBlocks * 16];
+                if (!await parent.Channel.ReceiveAsync(ciphertext, 0, pendingBlocks * 16))
+                    return false;
+                if (!TryDecrypt(ciphertext, AesKey, ReceiveIV, out byte[] tail))
+                    return false;
+                plaintext = Util.ConcatBytes(plaintext, tail);
+            }
+            if (!AssertAvailable(plaintext.Length, (int)length))
+                return false;
+            int startIndex = plaintext.Length - (int)length;
+            byte[] content = plaintext.Skip(startIndex); // remove random bytes
+            if (isInternal)
+            {
+                parent.Log($"Received internal insecure AES packet: ID={id} Length={content.Length}");
+                return await parent.Handler.HandleInternalPacketAsync(rule, content);
+            }
+            else
+            {
+                parent.Log($"Received external insecure AES packet: ID={255 - id} Length={content.Length}");
+                return await parent.OnPacketReceived(id, content);
+            }
         }
         private async Task<bool> ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3()
         {
             CryptoAlgorithm alg = CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3;
-            try
+            byte[] buffer = new byte[35];
+            if (!await parent.Channel.ReceiveAsync(buffer, 0, 35)) // 3 (length) + 32 (HMAC)
+                return false;
+            int blocks = (int)UInt24.FromBytes(buffer, 0);
+            byte[] hmac = buffer.Skip(3);
+            const int defaultOverhead = 16 + 1 + 4; // iv + id + len
+            int pendingLength = (blocks + 2) * 16; // at least one block; inclusive iv
+            if (!AssertSize(parent.Settings.MaxPacketSize + defaultOverhead, pendingLength))
+                return false;
+            byte[] cipherblock = new byte[pendingLength];
+            if (!await parent.Channel.ReceiveAsync(cipherblock, 0, pendingLength))
+                return false;
+            if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
             {
-                byte[] buffer = new byte[35];
-                if (!await parent.Channel.ReceiveAsync(buffer, 0, 35)) // 3 (length) + 32 (HMAC)
-                    return false;
-                int blocks = (int)UInt24.FromBytes(buffer, 0);
-                byte[] hmac = buffer.Skip(3);
-                const int defaultOverhead = 16 + 1 + 4; // iv + id + len
-                int pendingLength = (blocks + 2) * 16; // at least one block; inclusive iv
-                if (!AssertSize(parent.Settings.MaxPacketSize + defaultOverhead, pendingLength))
-                    return false;
-                byte[] cipherblock = new byte[pendingLength];
-                if (!await parent.Channel.ReceiveAsync(cipherblock, 0, pendingLength))
-                    return false;
-                if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
-                {
-                    parent.ExceptionHandler.CloseConnection("MessageCorrupted",
-                        "The integrity checking resulted in a corrupted message.",
-                        nameof(NetworkManager), nameof(ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3));
-                    return false;
-                }
-                byte[] iv = cipherblock.Take(16);
-                byte[] ciphertext = cipherblock.Skip(16);
-                using (PacketBuffer plaintext = PacketBuffer.CreateStatic(AesStatic.Decrypt(ciphertext, AesKey, iv)))
-                {
-                    while (plaintext.Position < plaintext.Length - 1)
-                    {
-                        byte id = plaintext.ReadByte();
-                        bool isInternal = parent.Handler.IsInternalPacket(id);
-                        PacketRule rule = default(PacketRule);
-                        if (isInternal && !parent.Handler.ValidatePacket(id, alg, out rule))
-                            return false;
-                        uint length = rule.Packet?.ConstantLength ?? plaintext.ReadUInt();
-                        if (length > plaintext.Pending)
-                        {
-                            parent.ExceptionHandler.CloseConnection("TooBigPacket",
-                                $"Tried to receive a packet with {length} bytes length although only {plaintext.Pending} bytes are available.",
-                        nameof(NetworkManager), nameof(ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3));
-                            return false;
-                        }
-                        byte[] content = plaintext.ReadByteArray((int)length);
-                        if (isInternal)
-                        {
-#if DEBUG
-                            parent.Log($"Received internal AES packet: ID={id} Length={content.Length}");
-#endif
-                            if (!await parent.Handler.HandleInternalPacketAsync(rule, content))
-                                return false;
-                        }
-                        else
-                        {
-#if DEBUG
-                            parent.Log($"Received external AES packet: ID={255 - id} Length={content.Length}");
-#endif
-                            await parent.OnPacketReceived(id, content);
-                        }
-                    }
-                }
+                parent.ExceptionHandler.CloseConnection("MessageCorrupted",
+                    "The integrity checking resulted in a corrupted message.",
+                    nameof(NetworkManager));
+                return false;
             }
-            catch (CryptographicException ex) // AES.Decrypt()
+            byte[] iv = cipherblock.Take(16);
+            byte[] ciphertext = cipherblock.Skip(16);
+            if (!TryDecrypt(ciphertext, AesKey, iv, out byte[] plainbuffer))
+                return false;
+            using (PacketBuffer plaintext = PacketBuffer.CreateStatic(plainbuffer))
             {
-                parent.ExceptionHandler.CloseConnection(ex);
-            }
-            return true;
-        }
-        private async Task<bool> ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_CTR()
-        {
-            const CryptoAlgorithm alg = CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR;
-            try
-            {
-                byte[] buffer = new byte[35];
-                if (!await parent.Channel.ReceiveAsync(buffer, 0, 35)) // 3 (length) + 32 (HMAC)
-                    return false;
-                int blocks = (int)UInt24.FromBytes(buffer, 0);
-                byte[] hmac = buffer.Skip(3);
-                int pendingLength = (blocks + 1) * 16; // at least one block, no iv
-                if (!AssertSize(parent.Settings.MaxPacketSize + 1, pendingLength))
-                    return false;
-                byte[] cipherblock = new byte[pendingLength];
-                if (!await parent.Channel.ReceiveAsync(cipherblock, 0, pendingLength))
-                    return false;
-                if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
-                {
-                    parent.ExceptionHandler.CloseConnection("MessageCorrupted",
-                        "The integrity checking resulted in a corrupted message.",
-                        nameof(NetworkManager));
-                    return false;
-                }
-                byte[] plainbuffer = AesStatic.Decrypt(cipherblock, AesKey, ReceiveIV);
-                AesStatic.IncrementIV(ReceiveIV);
-                using (PacketBuffer plaintext = PacketBuffer.CreateStatic(plainbuffer))
+                while (plaintext.Position < plaintext.Length - 1)
                 {
                     byte id = plaintext.ReadByte();
                     bool isInternal = parent.Handler.IsInternalPacket(id);
                     PacketRule rule = default(PacketRule);
                     if (isInternal && !parent.Handler.ValidatePacket(id, alg, out rule))
                         return false;
-                    byte[] content = plaintext.ReadByteArray(plaintext.Pending);
+                    uint length = rule.Packet?.ConstantLength ?? plaintext.ReadUInt();
+                    if (!AssertAvailable(plaintext.Pending, (int)length))
+                        return false;
+                    byte[] content = plaintext.ReadByteArray((int)length);
                     if (isInternal)
                     {
-#if DEBUG
                         parent.Log($"Received internal AES packet: ID={id} Length={content.Length}");
-#endif
                         if (!await parent.Handler.HandleInternalPacketAsync(rule, content))
                             return false;
                     }
                     else
                     {
-#if DEBUG
                         parent.Log($"Received external AES packet: ID={255 - id} Length={content.Length}");
-#endif
-                        await parent.OnPacketReceived(id, content);
+                        if (!await parent.OnPacketReceived(id, content))
+                            return false;
                     }
                 }
-                return true;
             }
-            catch (CryptographicException ex)
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
+            return true;
+        }
+        private async Task<bool> ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_CTR()
+        {
+            const CryptoAlgorithm alg = CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR;
+            byte[] buffer = new byte[35];
+            if (!await parent.Channel.ReceiveAsync(buffer, 0, 35)) // 3 (length) + 32 (HMAC)
                 return false;
+            int blocks = (int)UInt24.FromBytes(buffer, 0);
+            byte[] hmac = buffer.Skip(3);
+            int pendingLength = (blocks + 1) * 16; // at least one block, no iv
+            if (!AssertSize(parent.Settings.MaxPacketSize + 1, pendingLength))
+                return false;
+            byte[] cipherblock = new byte[pendingLength];
+            if (!await parent.Channel.ReceiveAsync(cipherblock, 0, pendingLength))
+                return false;
+            if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
+            {
+                parent.ExceptionHandler.CloseConnection("MessageCorrupted",
+                    "The integrity checking resulted in a corrupted message.",
+                    nameof(NetworkManager));
+                return false;
+            }
+            if (!TryDecrypt(cipherblock, AesKey, ReceiveIV, out byte[] plaintext))
+                return false;
+            AesStatic.IncrementIV(ReceiveIV);
+            if (plaintext.Length < 1)
+            {
+                parent.ExceptionHandler.CloseConnection("TooShortPacket",
+                    "The packet's plaintext must contain at least one byte as ID.",
+                    nameof(NetworkManager));
+                return false;
+            }
+            byte id = plaintext[0];
+            bool isInternal = parent.Handler.IsInternalPacket(id);
+            PacketRule rule = default(PacketRule);
+            if (isInternal && !parent.Handler.ValidatePacket(id, alg, out rule))
+                return false;
+            byte[] content = plaintext.TakeAt(1, plaintext.Length - 1);
+            if (isInternal)
+            {
+                parent.Log($"Received internal AES packet: ID={id} Length={content.Length}");
+                return await parent.Handler.HandleInternalPacketAsync(rule, content);
+            }
+            else
+            {
+                parent.Log($"Received external AES packet: ID={255 - id} Length={content.Length}");
+                return await parent.OnPacketReceived(id, content);
             }
         }
         #endregion receive
@@ -418,77 +369,61 @@ namespace VSL.Network
         }
         private Task<bool> SendPacketAsync_RSA_2048_OAEP(byte realId, bool size, byte[] content, SendCallback send)
         {
-            try
+            int length = 1 + (size ? 4 : 0) + content.Length;
+            byte[] plain;
+            using (PacketBuffer pbuf = PacketBuffer.CreateStatic(length))
             {
-                int length = 1 + (size ? 4 : 0) + content.Length;
-                byte[] plain;
-                using (PacketBuffer pbuf = PacketBuffer.CreateStatic(length))
-                {
-                    pbuf.WriteByte(realId);
-                    if (size) pbuf.WriteUInt((uint)content.Length);
-                    pbuf.WriteByteArray(content, false);
-                    plain = pbuf.ToArray();
-                }
-                byte[] ciphertext = RsaStatic.EncryptBlock(plain, rsaKey);
-                byte[] buf = new byte[1 + ciphertext.Length];
-                buf[0] = (byte)CryptoAlgorithm.RSA_2048_OAEP;
-                Array.Copy(ciphertext, 0, buf, 1, ciphertext.Length);
-                return send(buf, 0, buf.Length);
+                pbuf.WriteByte(realId);
+                if (size) pbuf.WriteUInt((uint)content.Length);
+                pbuf.WriteByteArray(content, false);
+                plain = pbuf.ToArray();
             }
-            catch (CryptographicException ex)
-            {
-                parent.ExceptionHandler.CloseConnection(ex);
-                return Task.FromResult(false);
-            }
+            byte[] ciphertext = RsaStatic.EncryptBlock(plain, rsaKey);
+            byte[] buf = new byte[1 + ciphertext.Length];
+            buf[0] = (byte)CryptoAlgorithm.RSA_2048_OAEP;
+            Array.Copy(ciphertext, 0, buf, 1, ciphertext.Length);
+            return send(buf, 0, buf.Length);
         }
         private Task<bool> SendPacketAsync_AES_256_CBC_SP(byte realId, bool size, byte[] content, SendCallback send)
         {
-            try
+            int headLength = 1 + (size ? 4 : 0);
+            int blocks = 1;
+            int saltLength;
+            if (headLength + 2 + content.Length < 16) // 2 random bytes
+                saltLength = 15 - headLength - content.Length; // 16 - 1 (padding) = 15
+            else
             {
-                int headLength = 1 + (size ? 4 : 0);
-                int blocks = 1;
-                int saltLength;
-                if (headLength + 2 + content.Length < 16) // 2 random bytes
-                    saltLength = 15 - headLength - content.Length; // 16 - 1 (padding) = 15
-                else
-                {
-                    blocks = Util.GetTotalSize(headLength + 4 + content.Length, 16) / 16; // 2 random bytes + 2x padding
-                    saltLength = blocks * 16 - headLength - content.Length - 2; // 2x padding
-                }
-                byte[] salt = new byte[saltLength];
-                Random random = new Random();
-                random.NextBytes(salt);
-                byte[] plaintext;
-                using (PacketBuffer pbuf = PacketBuffer.CreateStatic(headLength + saltLength + content.Length))
-                {
-                    pbuf.WriteByte(realId);
-                    if (size) pbuf.WriteUInt((uint)content.Length);
-                    pbuf.WriteByteArray(salt, false);
-                    pbuf.WriteByteArray(content, false);
-                    plaintext = pbuf.ToArray();
-                }
-                byte[] headBlock = AesStatic.Encrypt(plaintext.Take(15), AesKey, SendIV);
-                byte[] tailBlock = new byte[0];
-                if (plaintext.Length > 15)
-                {
-                    plaintext = plaintext.Skip(15); // skip done bytes
-                    tailBlock = AesStatic.Encrypt(plaintext, AesKey, SendIV); // encrypt remaining data
-                }
-                byte[] buf;
-                using (PacketBuffer pbuf = PacketBuffer.CreateStatic(1 + headBlock.Length + tailBlock.Length))
-                {
-                    pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_SP);
-                    pbuf.WriteByteArray(headBlock, false);
-                    pbuf.WriteByteArray(tailBlock, false);
-                    buf = pbuf.ToArray();
-                }
-                return send(buf, 0, buf.Length);
+                blocks = Util.GetTotalSize(headLength + 4 + content.Length, 16) / 16; // 2 random bytes + 2x padding
+                saltLength = blocks * 16 - headLength - content.Length - 2; // 2x padding
             }
-            catch (CryptographicException ex) //Invalid key/iv
+            byte[] salt = new byte[saltLength];
+            Random random = new Random();
+            random.NextBytes(salt);
+            byte[] plaintext;
+            using (PacketBuffer pbuf = PacketBuffer.CreateStatic(headLength + saltLength + content.Length))
             {
-                parent.ExceptionHandler.CloseConnection(ex);
-                return Task.FromResult(false);
+                pbuf.WriteByte(realId);
+                if (size) pbuf.WriteUInt((uint)content.Length);
+                pbuf.WriteByteArray(salt, false);
+                pbuf.WriteByteArray(content, false);
+                plaintext = pbuf.ToArray();
             }
+            byte[] headBlock = AesStatic.Encrypt(plaintext.Take(15), AesKey, SendIV);
+            byte[] tailBlock = new byte[0];
+            if (plaintext.Length > 15)
+            {
+                plaintext = plaintext.Skip(15); // skip done bytes
+                tailBlock = AesStatic.Encrypt(plaintext, AesKey, SendIV); // encrypt remaining data
+            }
+            byte[] buf;
+            using (PacketBuffer pbuf = PacketBuffer.CreateStatic(1 + headBlock.Length + tailBlock.Length))
+            {
+                pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_SP);
+                pbuf.WriteByteArray(headBlock, false);
+                pbuf.WriteByteArray(tailBlock, false);
+                buf = pbuf.ToArray();
+            }
+            return send(buf, 0, buf.Length);
         }
         private Task<bool> SendPacketAsync_AES_256_CBC_HMAC_SHA256_MP3(byte realId, bool size, byte[] content, SendCallback send)
         {
@@ -581,7 +516,7 @@ namespace VSL.Network
             {
                 parent.ExceptionHandler.CloseConnection("InvalidOperation",
                     "Not ready to receive an AES packet, because key exchange is not finished yet",
-                    nameof(NetworkManager));
+                    nameof(NetworkManager), member);
             }
             return Ready4Aes;
         }
@@ -595,12 +530,12 @@ namespace VSL.Network
             {
                 parent.ExceptionHandler.CloseConnection("InvalidAlgorithm",
                     $"VSL version {parent.ConnectionVersionString} should not use {alg}",
-                    nameof(NetworkManager));
+                    nameof(NetworkManager), member);
                 return false;
             }
             return true;
         }
-        
+
         /// <summary>
         /// Ensures that a packet id is only used for internal purposes.
         /// </summary>
@@ -623,6 +558,36 @@ namespace VSL.Network
                 $"Tried to receive a packet of {actual} bytes. Maximum admissible are {maximum} bytes",
                 nameof(NetworkManager), member);
             return valid;
+        }
+
+        /// <summary>
+        /// Ensures that the packet length marker is valid.
+        /// </summary>
+        private bool AssertAvailable(int maximum, int actual, [CallerMemberName]string member = Constants.DefaultMemberName)
+        {
+            bool valid = actual <= maximum;
+            if (!valid) parent.ExceptionHandler.CloseConnection("TooBigPacket",
+                $"Tried to receive a packet with {actual} bytes length although only {maximum} bytes are available.",
+                nameof(NetworkManager), member);
+            return valid;
+        }
+
+        /// <summary>
+        /// Exception catching wrapper for <see cref="AesStatic.Decrypt(byte[], byte[], byte[])"/>
+        /// </summary>
+        private bool TryDecrypt(byte[] buffer, byte[] key, byte[] iv, out byte[] plaintext)
+        {
+            try
+            {
+                plaintext = AesStatic.Decrypt(buffer, key, iv);
+                return true;
+            }
+            catch (CryptographicException ex)
+            {
+                parent.ExceptionHandler.CloseConnection(ex);
+                plaintext = null;
+                return false;
+            }
         }
         #endregion
         #region IDisposable Support

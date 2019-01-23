@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -100,9 +101,18 @@ namespace VSL
         /// <param name="id">Native packet ID</param>
         /// <param name="content">Packet content</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal virtual Task OnPacketReceived(byte id, byte[] content)
+        internal virtual async Task<bool> OnPacketReceived(byte id, byte[] content)
         {
-            return callback.OnPacketReceived((byte)(255 - id), content);
+            try
+            {
+                await callback.OnPacketReceived((byte)(255 - id), content);
+                return true;
+            }
+            catch (Exception ex) when (Settings.CatchApplicationExceptions)
+            {
+                ExceptionHandler.CloseUncaught(ex);
+                return false;
+            }
         }
         /// <summary>
         /// Occurs when the connection was closed or VSL could not use it.
@@ -116,11 +126,14 @@ namespace VSL
         #region logging
 #if DEBUG
         public Action<VSLSocket, string> LogHandler { get; set; }
+#endif
+        [Conditional("DEBUG")]
         internal void Log(string message)
         {
+#if DEBUG
             LogHandler?.Invoke(this, message);
-        }
 #endif
+        }
         #endregion
         // <functions
         #region Receive
