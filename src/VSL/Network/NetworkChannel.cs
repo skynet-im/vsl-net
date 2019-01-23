@@ -42,6 +42,10 @@ namespace VSL.Network
         public long ReceivedBytes { get; private set; }
         public long SentBytes { get; private set; }
 
+        /// <summary>
+        /// Receives the specified count of bytes from the remote host asynchronously.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException" />
         public Task<bool> ReceiveAsync(byte[] buffer, int offset, int count)
         {
             if (disposed)
@@ -70,6 +74,10 @@ namespace VSL.Network
             }
         }
 
+        /// <summary>
+        /// Sends data to the remote host asynchronously.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException" />
         public Task<bool> SendAsync(byte[] buffer, int offset, int count)
         {
             if (disposed)
@@ -83,6 +91,10 @@ namespace VSL.Network
             return item.Task;
         }
 
+        /// <summary>
+        /// Sends data to the remote host asynchronously without blocking the connection.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException" />
         public Task<bool> SendAsyncBackground(byte[] buffer, int offset, int count)
         {
             if (disposed)

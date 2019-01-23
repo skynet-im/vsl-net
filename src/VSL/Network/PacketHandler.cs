@@ -72,13 +72,13 @@ namespace VSL.Network
             {
                 using (PacketBuffer buf = PacketBuffer.CreateStatic(content))
                     packet.ReadPacket(buf);
-                return packet.HandlePacketAsync(this);
             }
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentException ex)
             {
                 parent.ExceptionHandler.CloseConnection(ex);
                 return Task.FromResult(false);
             }
+            return packet.HandlePacketAsync(this);
         }
 
         internal abstract Task<bool> HandleP00Handshake(P00Handshake p);

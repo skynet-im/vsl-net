@@ -35,7 +35,7 @@ namespace VSL.Packet
         /// Reads the data from a PacketBuffer.
         /// </summary>
         /// <param name="buf">PacketBuffer to read the packet content.</param>
-        /// <exception cref="ArgumentOutOfRangeException"/>
+        /// <exception cref="ArgumentException"/>
         void ReadPacket(PacketBuffer buf);
         /// <summary>
         /// Writes the data to a PacketBuffer.
