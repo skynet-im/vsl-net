@@ -25,7 +25,7 @@ namespace VSLTest
             ToolTipMain.SetToolTip(LbFileKey, "Zum Generieren eines Schlüssels klicken.");
             Text = string.Format(Text, Assembly.GetAssembly(typeof(VSLSocket)).GetName().Version);
             server = new Server(Program.Port, Program.Keypair);
-            pentest = new PenetrationTest();
+            pentest = new SendTest();
         }
 
         private void BtnStartServer_Click(object sender, EventArgs e)
