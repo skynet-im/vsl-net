@@ -98,8 +98,10 @@ namespace VSLTest
                     {
                         byte[] buf = new byte[random.Next(2048)];
                         random.NextBytes(buf);
-                        await client.SendPacketAsync(0, buf);
-                        Interlocked.Increment(ref Done);
+                        if (await client.SendPacketAsync(0, buf))
+                            Interlocked.Increment(ref Done);
+                        else
+                            running = false;
                     }
                 }
                 await Task.WhenAll(Enumerable.Range(0, 4).Select(x => inner()));
