@@ -12,7 +12,7 @@ namespace VSLTest
 {
     public class RemoteClient : IVSLCallback
     {
-        private VSLServer Vsl;
+        private VSLServer vsl;
         private FileMeta lastMeta;
 
         public RemoteClient()
@@ -22,47 +22,47 @@ namespace VSLTest
 
         public void OnInstanceCreated(VSLSocket socket)
         {
-            Vsl = (VSLServer)socket;
-            Vsl.FileTransfer.Request += Vsl_FileTransferRequested;
+            vsl = (VSLServer)socket;
+            vsl.FileTransfer.Request += Vsl_FileTransferRequested;
 #if DEBUG
-            Vsl.LogHandler = Program.Log;
+            vsl.LogHandler = Program.Log;
 #endif
         }
 
         public Task OnConnectionEstablished()
         {
-            Program.Log(Vsl, "Client connected using protocol version " + Vsl.ConnectionVersionString);
+            Program.Log(vsl, "Client connected using protocol version " + vsl.ConnectionVersionString);
             return Task.CompletedTask;
         }
 
         public Task OnPacketReceived(byte id, byte[] content)
         {
-            if (content.Length > 1024)
-                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", id, content.Length));
-            else
-                MessageBox.Show(string.Format("Server received: ID={0} Content={1}", id, Util.ToHexString(content)));
+            //if (content.Length > 1024)
+            //    MessageBox.Show(string.Format("Server received: ID={0} Content={1}", id, content.Length));
+            //else
+            //    MessageBox.Show(string.Format("Server received: ID={0} Content={1}", id, Util.ToHexString(content)));
             return Task.CompletedTask;
         }
 
         public void OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
         {
-            Vsl.Dispose();
+            vsl.Dispose();
             ImmutableInterlocked.Update(ref Program.Clients, x => x.Remove(this));
             Interlocked.Increment(ref Program.Disconnects);
 #if DEBUG
-            Program.Log(Vsl, message);
+            Program.Log(vsl, message);
 #endif
         }
 
 
         public void SendPacket(byte id, byte[] content)
         {
-            Vsl.SendPacketAsync(id, content);
+            vsl.SendPacketAsync(id, content);
         }
 
         public void CloseConnection(string message, Exception exception = null)
         {
-            Vsl.CloseConnection(message, exception);
+            vsl.CloseConnection(message, exception);
         }
 
         private async void Vsl_FileTransferRequested(object sender, FTEventArgs e)
@@ -78,16 +78,16 @@ namespace VSLTest
                             "Metadaten wiederverwenden?", MessageBoxButtons.YesNo) == DialogResult.No)
                             lastMeta = null;
 
-                        await Vsl.FileTransfer.AcceptAsync(e, fd.FileName, lastMeta);
+                        await vsl.FileTransfer.AcceptAsync(e, fd.FileName, lastMeta);
                     }
                     else
-                        await Vsl.FileTransfer.CancelAsync(e);
+                        await vsl.FileTransfer.CancelAsync(e);
                 }
             }
             else
             {
                 e.FileMetaReceived += Vsl_FTFileMetaReceived;
-                await Vsl.FileTransfer.AcceptAsync(e, Path.Combine(Program.TempPath, Path.GetRandomFileName()));
+                await vsl.FileTransfer.AcceptAsync(e, Path.Combine(Program.TempPath, Path.GetRandomFileName()));
             }
         }
 
@@ -95,7 +95,7 @@ namespace VSLTest
         {
             FTEventArgs args = (FTEventArgs)sender;
             lastMeta = args.FileMeta;
-            await Vsl.FileTransfer.ContinueAsync(args);
+            await vsl.FileTransfer.ContinueAsync(args);
             args.FileMetaReceived -= Vsl_FTFileMetaReceived;
         }
     }
