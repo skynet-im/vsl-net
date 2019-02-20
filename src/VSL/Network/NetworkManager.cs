@@ -20,6 +20,7 @@ namespace VSL.Network
         private delegate Task<bool> SendCallback(byte[] buffer, int offset, int count);
         private readonly SendCallback defaultSend;
         private readonly SendCallback backgroundSend;
+        private readonly object writePacketLock;
         //  fields>
         // <constructor
         internal NetworkManager(VSLSocket parent, RSAParameters rsaKey)
@@ -28,6 +29,7 @@ namespace VSL.Network
             this.rsaKey = rsaKey;
             defaultSend = parent.Channel.SendAsync;
             backgroundSend = parent.Channel.SendAsyncBackground;
+            writePacketLock = new object();
         }
         //  constructor>
         // <functions
@@ -257,7 +259,8 @@ namespace VSL.Network
             byte[] cipherblock = new byte[pendingLength];
             if (!await parent.Channel.ReceiveAsync(cipherblock, 0, pendingLength))
                 return false;
-            if (!hmac.SafeEquals(hmacProvider.ComputeHash(cipherblock)))
+            byte[] realHmac = hmacProvider.ComputeHash(cipherblock);
+            if (!hmac.SafeEquals(realHmac))
             {
                 parent.ExceptionHandler.CloseConnection("MessageCorrupted",
                     "The integrity checking resulted in a corrupted message.",
@@ -322,52 +325,54 @@ namespace VSL.Network
             }
             return SendPacketAsync(alg, packet.PacketId, !packet.ConstantLength.HasValue, content, send);
         }
-        private async Task<bool> SendPacketAsync(CryptoAlgorithm alg, byte realId, bool size, byte[] content, SendCallback send)
+        private Task<bool> SendPacketAsync(CryptoAlgorithm alg, byte realId, bool size, byte[] content, SendCallback send)
         {
-            bool success;
-            switch (alg)
+            Task<bool> task;
+            lock (writePacketLock) // Some calls like IncrementIV or HMAC are not threadsafe
             {
-                case CryptoAlgorithm.None:
-                    success = await SendPacketAsync_Plaintext(realId, size, content, send);
-                    break;
-                case CryptoAlgorithm.RSA_2048_OAEP:
-                    success = await SendPacketAsync_RSA_2048_OAEP(realId, size, content, send);
-                    break;
-                case CryptoAlgorithm.AES_256_CBC_SP:
-                    success = await SendPacketAsync_AES_256_CBC_SP(realId, size, content, send);
-                    break;
-                case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
-                    success = await SendPacketAsync_AES_256_CBC_HMAC_SHA256_MP3(realId, size, content, send);
-                    break;
-                case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR:
-                    success = await SendPacketAsync_AES_256_CBC_HMAC_SHA256_CTR(realId, content, send);
-                    break;
-                default:
-                    throw new ArgumentException("Unknown CryptoAlgorithm", nameof(alg));
-            }
+                byte[] buffer;
+                switch (alg)
+                {
+                    case CryptoAlgorithm.None:
+                        buffer = SendPacketAsync_Plaintext(realId, size, content);
+                        break;
+                    case CryptoAlgorithm.RSA_2048_OAEP:
+                        buffer = SendPacketAsync_RSA_2048_OAEP(realId, size, content);
+                        break;
+                    case CryptoAlgorithm.AES_256_CBC_SP:
+                        buffer = SendPacketAsync_AES_256_CBC_SP(realId, size, content);
+                        break;
+                    case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
+                        buffer = SendPacketAsync_AES_256_CBC_HMAC_SHA256_MP3(realId, size, content);
+                        break;
+                    case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR:
+                        buffer = SendPacketAsync_AES_256_CBC_HMAC_SHA256_CTR(realId, content);
+                        break;
+                    default:
+                        throw new ArgumentException("Unknown CryptoAlgorithm", nameof(alg));
+                }
 #if DEBUG
-            string @namespace = realId < Constants.InternalPacketCount ? "internal" : "external";
-            string prefix = success ? "Sent" : "Failed to send";
-            byte displayId = realId < Constants.InternalPacketCount ? realId : (byte)(255 - realId);
-            parent.Log($"{prefix} {@namespace} packet: ID={displayId} Length={content.Length} Algorithm={alg}");
+                string @namespace = realId < Constants.InternalPacketCount ? "internal" : "external";
+                byte displayId = realId < Constants.InternalPacketCount ? realId : (byte)(255 - realId);
+                parent.Log($"Sending {@namespace} packet: ID={displayId} Length={content.Length} Algorithm={alg}");
 #endif
-            return success;
+                task = send(buffer, 0, buffer.Length);
+            }
+            return task;
         }
-        private Task<bool> SendPacketAsync_Plaintext(byte realId, bool size, byte[] content, SendCallback send)
+        private byte[] SendPacketAsync_Plaintext(byte realId, bool size, byte[] content)
         {
             int length = 2 + (size ? 4 : 0) + content.Length;
-            byte[] buf;
             using (PacketBuffer pbuf = PacketBuffer.CreateStatic(length))
             {
                 pbuf.WriteByte((byte)CryptoAlgorithm.None);
                 pbuf.WriteByte(realId);
                 if (size) pbuf.WriteUInt((uint)content.Length);
                 pbuf.WriteByteArray(content, false);
-                buf = pbuf.ToArray();
+                return pbuf.ToArray();
             }
-            return send(buf, 0, buf.Length);
         }
-        private Task<bool> SendPacketAsync_RSA_2048_OAEP(byte realId, bool size, byte[] content, SendCallback send)
+        private byte[] SendPacketAsync_RSA_2048_OAEP(byte realId, bool size, byte[] content)
         {
             int length = 1 + (size ? 4 : 0) + content.Length;
             byte[] plain;
@@ -382,9 +387,9 @@ namespace VSL.Network
             byte[] buf = new byte[1 + ciphertext.Length];
             buf[0] = (byte)CryptoAlgorithm.RSA_2048_OAEP;
             Array.Copy(ciphertext, 0, buf, 1, ciphertext.Length);
-            return send(buf, 0, buf.Length);
+            return buf;
         }
-        private Task<bool> SendPacketAsync_AES_256_CBC_SP(byte realId, bool size, byte[] content, SendCallback send)
+        private byte[] SendPacketAsync_AES_256_CBC_SP(byte realId, bool size, byte[] content)
         {
             int headLength = 1 + (size ? 4 : 0);
             int blocks = 1;
@@ -415,17 +420,15 @@ namespace VSL.Network
                 plaintext = plaintext.Skip(15); // skip done bytes
                 tailBlock = AesStatic.Encrypt(plaintext, AesKey, SendIV); // encrypt remaining data
             }
-            byte[] buf;
             using (PacketBuffer pbuf = PacketBuffer.CreateStatic(1 + headBlock.Length + tailBlock.Length))
             {
                 pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_SP);
                 pbuf.WriteByteArray(headBlock, false);
                 pbuf.WriteByteArray(tailBlock, false);
-                buf = pbuf.ToArray();
+                return pbuf.ToArray();
             }
-            return send(buf, 0, buf.Length);
         }
-        private Task<bool> SendPacketAsync_AES_256_CBC_HMAC_SHA256_MP3(byte realId, bool size, byte[] content, SendCallback send)
+        private byte[] SendPacketAsync_AES_256_CBC_HMAC_SHA256_MP3(byte realId, bool size, byte[] content)
         {
             int headLength = 1 + (size ? 4 : 0) + content.Length;
             byte[] plaintext;
@@ -441,18 +444,16 @@ namespace VSL.Network
             byte[] blocks = UInt24.ToBytes((uint)ciphertext.Length / 16 - 1);
             byte[] cipherblock = Util.ConcatBytes(iv, ciphertext);
             byte[] hmac = hmacProvider.ComputeHash(cipherblock);
-            byte[] buf;
             using (PacketBuffer pbuf = PacketBuffer.CreateStatic(1 + 3 + hmac.Length + cipherblock.Length))
             {
                 pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3);
                 pbuf.WriteByteArray(blocks, false);
                 pbuf.WriteByteArray(hmac, false);
                 pbuf.WriteByteArray(cipherblock, false);
-                buf = pbuf.ToArray();
+                return pbuf.ToArray();
             }
-            return send(buf, 0, buf.Length);
         }
-        private Task<bool> SendPacketAsync_AES_256_CBC_HMAC_SHA256_CTR(byte realId, byte[] content, SendCallback send)
+        private byte[] SendPacketAsync_AES_256_CBC_HMAC_SHA256_CTR(byte realId, byte[] content)
         {
             byte[] plaintext;
             using (PacketBuffer pbuf = PacketBuffer.CreateStatic(1 + content.Length))
@@ -465,16 +466,14 @@ namespace VSL.Network
             AesStatic.IncrementIV(SendIV);
             byte[] blocks = UInt24.ToBytes((uint)ciphertext.Count / 16 - 1);
             byte[] hmac = hmacProvider.ComputeHash(ciphertext.Array, ciphertext.Offset, ciphertext.Count);
-            byte[] buffer;
             using (PacketBuffer pbuf = PacketBuffer.CreateStatic(1 + 3 + hmac.Length + ciphertext.Count))
             {
                 pbuf.WriteByte((byte)CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR);
                 pbuf.WriteByteArray(blocks, false);
                 pbuf.WriteByteArray(hmac, false);
                 pbuf.WriteByteArray(ciphertext, false);
-                buffer = pbuf.ToArray();
+                return pbuf.ToArray();
             }
-            return send(buffer, 0, buffer.Length);
         }
         #endregion send
         #region keys
