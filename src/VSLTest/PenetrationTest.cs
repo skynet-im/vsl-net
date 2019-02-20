@@ -1,24 +1,31 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
+using VSL;
 
 namespace VSLTest
 {
-    public class PenetrationTest
+    public abstract class PenetrationTest
     {
-        private Stopwatch stopwatch;
-        private volatile bool running = false;
-        public int Total { get; private set; }
-        public int Done { get; private set; }
-        public int Errors { get; private set; }
+        protected Stopwatch stopwatch;
+        protected Random random;
+        protected IPAddress address;
+        protected volatile bool running = false;
+        public int Total;
+        public int Done;
+        public int Errors;
         public long ElapsedTime => stopwatch.ElapsedMilliseconds;
         public bool Running => running;
 
         public PenetrationTest()
         {
             stopwatch = new Stopwatch();
+            random = new Random();
+            address = IPAddress.Parse("::1");
         }
 
         public Task RunAsync(int count)
@@ -26,9 +33,23 @@ namespace VSLTest
             Total = count;
             Done = 0;
             Errors = 0;
-            IPAddress address = IPAddress.Parse("::1");
-            Random random = new Random();
             stopwatch.Reset();
+            return RunInternal();
+        }
+
+        public void Stop()
+        {
+            stopwatch.Stop();
+            running = false;
+        }
+
+        protected abstract Task RunInternal();
+    }
+
+    public class ConnectTest : PenetrationTest
+    {
+        protected override Task RunInternal()
+        {
             return Task.Run(() =>
             {
                 running = true;
@@ -53,11 +74,38 @@ namespace VSLTest
                 }
             });
         }
+    }
 
-        public void Stop()
+    public class SendTest : PenetrationTest
+    {
+        protected override Task RunInternal()
         {
-            stopwatch.Stop();
-            running = false;
+            return Task.Run(async () =>
+            {
+                SocketSettings settings = new SocketSettings
+                {
+                    CatchApplicationExceptions = false,
+                    RsaXmlKey = Program.PublicKey
+                };
+                LocalClient local = new LocalClient();
+                VSLClient client = new VSLClient(settings, local);
+                await client.ConnectAsync("::1", Program.Port);
+                running = true;
+                stopwatch.Start();
+                async Task inner()
+                {
+                    while (running && Done < Total)
+                    {
+                        byte[] buf = new byte[random.Next(2048)];
+                        random.NextBytes(buf);
+                        if (await client.SendPacketAsync(0, buf))
+                            Interlocked.Increment(ref Done);
+                        else
+                            running = false;
+                    }
+                }
+                await Task.WhenAll(Enumerable.Range(0, 4).Select(x => inner()));
+            });
         }
     }
 }

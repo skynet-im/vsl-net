@@ -12,13 +12,12 @@ namespace VSL.Network
         private readonly ExceptionHandler exhandler;
         private readonly MemoryCache<SocketAsyncEventArgs> cache;
 
-        private byte[] receiveBuffer;
-        private int receiveOffset;
-        private int receiveCount;
+        private SocketAsyncEventArgs receiveCache;
 
         private readonly ConcurrentQueue<ReceiveSendItem> realtimeQueue;
         private readonly ConcurrentQueue<ReceiveSendItem> backgroundQueue;
         private readonly object sendLock;
+        private readonly object recvLock;
         private bool sending = false;
 
         private bool shutdown = false;
@@ -30,13 +29,10 @@ namespace VSL.Network
             this.exhandler = exhandler ?? throw new ArgumentNullException(nameof(exhandler));
             this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
 
-            receiveBuffer = new byte[0];
-            receiveOffset = 0;
-            receiveCount = 0;
-
             realtimeQueue = new ConcurrentQueue<ReceiveSendItem>();
             backgroundQueue = new ConcurrentQueue<ReceiveSendItem>();
             sendLock = new object();
+            recvLock = new object();
         }
 
         public long ReceivedBytes { get; private set; }
@@ -53,24 +49,33 @@ namespace VSL.Network
             if (shutdown)
                 return Task.FromResult(false);
 
-            if (receiveCount > 0)
+            lock (recvLock)
             {
-                int cplen = Math.Min(receiveCount, count);
-                Array.Copy(receiveBuffer, receiveOffset, buffer, offset, cplen);
-                receiveOffset += cplen;
-                receiveCount -= cplen;
-                offset += cplen;
-                count -= cplen;
-            }
-            if (count > 0)
-            {
-                ReceiveSendItem item = new ReceiveSendItem(buffer, offset, count);
-                ReceiveItem(item);
-                return item.Task;
-            }
-            else
-            {
-                return Task.FromResult(true);
+                if (receiveCache != null)
+                {
+                    int cplen = Math.Min(receiveCache.Count, count);
+                    Array.Copy(receiveCache.Buffer, receiveCache.Offset, buffer, offset, cplen);
+                    receiveCache.SetBuffer(receiveCache.Offset + cplen, receiveCache.Count - cplen);
+                    offset += cplen;
+                    count -= cplen;
+
+                    if (receiveCache.Count == 0)
+                    {
+                        receiveCache.SetBuffer(0, receiveCache.Buffer.Length);
+                        RecycleReceive(receiveCache);
+                        receiveCache = null;
+                    }
+                }
+                if (count > 0)
+                {
+                    ReceiveSendItem item = new ReceiveSendItem(buffer, offset, count);
+                    ReceiveItem(item);
+                    return item.Task;
+                }
+                else
+                {
+                    return Task.FromResult(true);
+                }
             }
         }
 
@@ -160,20 +165,20 @@ namespace VSL.Network
             if (e.SocketError == SocketError.Shutdown || e.SocketError == SocketError.OperationAborted)
             {
                 item.Tcs.SetResult(false);
-                DestroyReceive(e);
+                RecycleReceive(e);
                 return;
             }
             else if (e.SocketError != SocketError.Success)
             {
                 item.Tcs.SetResult(false);
-                DestroyReceive(e);
+                RecycleReceive(e);
                 exhandler.CloseConnection(e.SocketError, e.LastOperation);
                 return;
             }
             if (e.BytesTransferred == 0)
             {
                 item.Tcs.SetResult(false);
-                DestroyReceive(e);
+                RecycleReceive(e);
                 exhandler.CloseConnection(SocketError.Disconnecting, e.LastOperation);
                 return;
             }
@@ -186,17 +191,21 @@ namespace VSL.Network
             {
                 ReceiveItem(item, e);
             }
+            else if (e.BytesTransferred - cplen > 0)
+            {
+                e.SetBuffer(e.Offset + cplen, e.BytesTransferred - cplen);
+                receiveCache = e;
+                item.Tcs.SetResult(true);
+                // Do not recycle this item now when we cache its buffer
+            }
             else
             {
-                receiveBuffer = e.Buffer;
-                receiveOffset = e.Offset + cplen;
-                receiveCount = e.BytesTransferred - cplen;
                 item.Tcs.SetResult(true);
-                DestroyReceive(e);
+                RecycleReceive(e);
             }
         }
 
-        private void DestroyReceive(SocketAsyncEventArgs args)
+        private void RecycleReceive(SocketAsyncEventArgs args)
         {
             args.Completed -= Receive_Completed;
             cache.Push(args);
@@ -267,21 +276,21 @@ namespace VSL.Network
             if (e.SocketError == SocketError.Shutdown)
             {
                 item.Tcs.SetResult(false);
-                DestroySend(e);
+                RecycleSend(e);
                 return;
             }
             else if (e.SocketError != SocketError.Success)
             {
                 item.Tcs.SetResult(false);
                 exhandler.CloseConnection(e.SocketError, e.LastOperation);
-                DestroySend(e);
+                RecycleSend(e);
                 return;
             }
             if (e.BytesTransferred == 0)
             {
                 item.Tcs.SetResult(false);
                 exhandler.CloseConnection(SocketError.ConnectionReset, e.LastOperation);
-                DestroySend(e);
+                RecycleSend(e);
                 return;
             }
             SentBytes += e.BytesTransferred;
@@ -294,12 +303,12 @@ namespace VSL.Network
             else
             {
                 item.Tcs.SetResult(true);
-                DestroySend(e);
+                RecycleSend(e);
                 StartSend(locked: false);
             }
         }
 
-        private void DestroySend(SocketAsyncEventArgs args)
+        private void RecycleSend(SocketAsyncEventArgs args)
         {
             args.SetBuffer(0, args.Buffer.Length);
             args.Completed -= Send_Completed;

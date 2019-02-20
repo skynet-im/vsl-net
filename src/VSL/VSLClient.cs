@@ -59,6 +59,7 @@ namespace VSL
             // initialize component
             Manager = new NetworkManager(this, Settings.RsaKey);
             Handler = new PacketHandlerClient(this);
+            tcs = new TaskCompletionSource<bool>();
             StartReceiveLoop();
 
             // key exchange
@@ -71,7 +72,6 @@ namespace VSL
 
             // wait for response
             progress?.Report(ConnectionState.KeyExchange);
-            tcs = new TaskCompletionSource<bool>();
             bool result = await tcs.Task;
             tcs = null;
 
@@ -79,16 +79,16 @@ namespace VSL
             return result;
         }
 
-        internal override Task OnConnectionEstablished()
+        internal override async Task OnConnectionEstablished()
         {
+            await base.OnConnectionEstablished();
             tcs?.SetResult(true);
-            return base.OnConnectionEstablished();
         }
 
         internal override void OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
         {
-            tcs?.SetResult(false);
             base.OnConnectionClosed(reason, message, exception);
+            tcs?.SetResult(false);
         }
 
         /// <summary>
