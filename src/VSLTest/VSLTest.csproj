@@ -101,8 +101,12 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\VSL.Common\VSL.Common.csproj">
+      <Project>{0a80837c-efc5-431d-b8e7-01aa01cd2c5e}</Project>
+      <Name>VSL.Common</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VSL\VSL.csproj">
-      <Project>{6211932d-eb6d-4a3e-b85e-b0d4d70621f3}</Project>
+      <Project>{8e1fedb1-700d-4759-bee8-c1b4e3cc81ff}</Project>
       <Name>VSL</Name>
     </ProjectReference>
   </ItemGroup>
