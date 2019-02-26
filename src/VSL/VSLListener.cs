@@ -57,7 +57,8 @@ namespace VSL
                 socket.Listen(Backlog);
                 var args = new SocketAsyncEventArgs();
                 args.Completed += Accept_Completed;
-                socket.AcceptAsync(args);
+                if (!socket.AcceptAsync(args))
+                    Accept_Completed(socket, args);
             }
         }
 
@@ -86,7 +87,8 @@ namespace VSL
             {
                 Socket accepted = e.AcceptSocket;
                 e.AcceptSocket = null;
-                ((Socket)sender).AcceptAsync(e);
+                if (!((Socket)sender).AcceptAsync(e))
+                    Accept_Completed(sender, e);
 
                 new VSLServer(accepted, cache, Settings, acceptor());
             }

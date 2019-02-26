@@ -14,7 +14,7 @@ namespace VSL.Network
     {
         // <fields
         private VSLSocket parent;
-        internal bool Ready4Aes = false;
+        internal volatile bool Ready4Aes = false;
         private readonly RSAParameters rsaKey;
         private HMACSHA256 hmacProvider;
         private delegate Task<bool> SendCallback(byte[] buffer, int offset, int count);
@@ -49,15 +49,15 @@ namespace VSL.Network
                     return await ReceivePacketAsync_RSA_2048_OAEP();
 
                 case CryptoAlgorithm.AES_256_CBC_SP:
-                    if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
+                    if (!AssertKeyExchanged(CryptoAlgorithm.AES_256_CBC_SP) || !AssertAlgorithm(algorithm)) return false;
                     return await ReceivePacketAsync_AES_256_CBC_SP();
 
                 case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3:
-                    if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
+                    if (!AssertKeyExchanged(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_MP3) || !AssertAlgorithm(algorithm)) return false;
                     return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_MP3();
 
                 case CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR:
-                    if (!AssertKeyExchanged() || !AssertAlgorithm(algorithm)) return false;
+                    if (!AssertKeyExchanged(CryptoAlgorithm.AES_256_CBC_HMAC_SHA256_CTR) || !AssertAlgorithm(algorithm)) return false;
                     return await ReceivePacketAsync_AES_256_CBC_HMAC_SHA_256_CTR();
 
                 default:
@@ -509,12 +509,12 @@ namespace VSL.Network
         /// <summary>
         /// Ensures that cryptographic keys have been exchanged.
         /// </summary>
-        private bool AssertKeyExchanged([CallerMemberName]string member = Constants.DefaultMemberName)
+        private bool AssertKeyExchanged(CryptoAlgorithm algorithm, [CallerMemberName]string member = Constants.DefaultMemberName)
         {
             if (!Ready4Aes)
             {
                 parent.ExceptionHandler.CloseConnection("InvalidOperation",
-                    "Not ready to receive an AES packet, because key exchange is not finished yet",
+                    $"Not ready to receive a packet with CryptoAlgorithm.{algorithm}, because key exchange is not finished yet",
                     nameof(NetworkManager), member);
             }
             return Ready4Aes;
