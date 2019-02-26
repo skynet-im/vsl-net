@@ -46,7 +46,7 @@ namespace VSLTest
         protected abstract Task RunInternal();
     }
 
-    public class ConnectTest : PenetrationTest
+    public class SpamTest : PenetrationTest
     {
         protected override Task RunInternal()
         {
@@ -63,6 +63,40 @@ namespace VSLTest
                         Random rand = new Random();
                         byte[] buf = new byte[rand.Next(2048)];
                         rand.NextBytes(buf);
+                        tcp.Client.Send(buf);
+                        tcp.Close();
+                        Done++;
+                    }
+                    catch
+                    {
+                        Errors++;
+                    }
+                }
+            });
+        }
+    }
+
+    public class ConnectTest : PenetrationTest
+    {
+        protected override Task RunInternal()
+        {
+            return Task.Run(() =>
+            {
+                running = true;
+                stopwatch.Start();
+                while (running && Done < Total)
+                {
+                    try
+                    {
+                        TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
+                        tcp.Connect(address, Program.Port);
+                        Random rand = new Random();
+                        byte[] buf = new byte[rand.Next(4, 2048)];
+                        rand.NextBytes(buf);
+                        buf[0] = 0; // CryptoAlgorithm.None
+                        buf[1] = 0; // P00Handshake
+                        buf[2] = 0; //     RequestType.DirectPublicKey
+                        buf[3] = 1; // CryptoAlgorithm.RSA_2048_OAEP
                         tcp.Client.Send(buf);
                         tcp.Close();
                         Done++;
