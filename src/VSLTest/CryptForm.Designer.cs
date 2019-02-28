@@ -1,6 +1,6 @@
-﻿namespace CryptTest
+﻿namespace VSLTest
 {
-    partial class MainForm
+    partial class CryptForm
     {
         /// <summary>
         /// Required designer variable.
@@ -30,15 +30,15 @@
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.aesTab = new System.Windows.Forms.TabPage();
-            this.aesControl1 = new CryptTest.Controls.AesControl();
+            this.aesControl1 = new VSLTest.Controls.AesControl();
             this.rsaTab = new System.Windows.Forms.TabPage();
-            this.rsaControl1 = new CryptTest.Controls.RsaControl();
+            this.rsaControl1 = new VSLTest.Controls.RsaControl();
             this.e2eFileTab = new System.Windows.Forms.TabPage();
-            this.e2EFileControl1 = new CryptTest.Controls.E2EFileControl();
+            this.e2EFileControl1 = new VSLTest.Controls.E2EFileControl();
             this.shaTab = new System.Windows.Forms.TabPage();
-            this.shaControl1 = new CryptTest.Controls.ShaControl();
+            this.shaControl1 = new VSLTest.Controls.ShaControl();
             this.ecdhTab = new System.Windows.Forms.TabPage();
-            this.ecdhControl1 = new CryptTest.Controls.EcdhControl();
+            this.ecdhControl1 = new VSLTest.Controls.EcdhControl();
             this.tabControl1.SuspendLayout();
             this.aesTab.SuspendLayout();
             this.rsaTab.SuspendLayout();
@@ -172,15 +172,15 @@
 
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage e2eFileTab;
-        private CryptTest.Controls.E2EFileControl e2EFileControl1;
+        private VSLTest.Controls.E2EFileControl e2EFileControl1;
         private System.Windows.Forms.TabPage aesTab;
-        private CryptTest.Controls.AesControl aesControl1;
+        private VSLTest.Controls.AesControl aesControl1;
         private System.Windows.Forms.TabPage rsaTab;
-        private CryptTest.Controls.RsaControl rsaControl1;
+        private VSLTest.Controls.RsaControl rsaControl1;
         private System.Windows.Forms.TabPage shaTab;
-        private CryptTest.Controls.ShaControl shaControl1;
+        private VSLTest.Controls.ShaControl shaControl1;
         private System.Windows.Forms.TabPage ecdhTab;
-        private CryptTest.Controls.EcdhControl ecdhControl1;
+        private VSLTest.Controls.EcdhControl ecdhControl1;
     }
 }
 

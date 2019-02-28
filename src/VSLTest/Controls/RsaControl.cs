@@ -5,7 +5,7 @@ using System.Windows.Forms;
 using VSL.BinaryTools;
 using VSL.Crypt;
 
-namespace CryptTest.Controls
+namespace VSLTest.Controls
 {
     public partial class RsaControl : UserControl
     {

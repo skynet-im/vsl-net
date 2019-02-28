@@ -1,6 +1,6 @@
 ﻿namespace VSLTest
 {
-    partial class FrmMain
+    partial class MainForm
     {
         /// <summary>
         /// Required designer variable.
@@ -43,6 +43,7 @@
             this.LbFileKey = new System.Windows.Forms.Label();
             this.CbLocalhost = new System.Windows.Forms.CheckBox();
             this.ToolTipMain = new System.Windows.Forms.ToolTip(this.components);
+            this.btnCryptTest = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnStartServer
@@ -167,6 +168,16 @@
             this.CbLocalhost.TabIndex = 12;
             this.CbLocalhost.Text = "localhost";
             this.CbLocalhost.UseVisualStyleBackColor = true;
+            //
+            // btnCryptTest
+            //
+            this.btnCryptTest.Location = new System.Drawing.Point(12, 190);
+            this.btnCryptTest.Name = "btnCryptTest";
+            this.btnCryptTest.Size = new System.Drawing.Size(97, 23);
+            this.btnCryptTest.TabIndex = 13;
+            this.btnCryptTest.Text = "CryptTest öffnen";
+            this.btnCryptTest.UseVisualStyleBackColor = true;
+            this.btnCryptTest.Click += new System.EventHandler(this.BtnCryptTest_Click);
             // 
             // FrmMain
             // 
@@ -185,6 +196,7 @@
             this.Controls.Add(this.btnClientSendPacket);
             this.Controls.Add(this.btnConnect);
             this.Controls.Add(this.btnStartServer);
+            this.Controls.Add(this.btnCryptTest);
             this.Name = "FrmMain";
             this.Text = "VSL {0} Test";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmMain_FormClosing);
@@ -209,6 +221,7 @@
         private System.Windows.Forms.Label LbFileKey;
         private System.Windows.Forms.CheckBox CbLocalhost;
         private System.Windows.Forms.ToolTip ToolTipMain;
+        private System.Windows.Forms.Button btnCryptTest;
     }
 }
 

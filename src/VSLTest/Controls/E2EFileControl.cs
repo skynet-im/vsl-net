@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL.BinaryTools;
 
-namespace CryptTest.Controls
+namespace VSLTest.Controls
 {
     public partial class E2EFileControl : UserControl
     {

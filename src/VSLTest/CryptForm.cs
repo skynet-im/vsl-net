@@ -8,11 +8,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace CryptTest
+namespace VSLTest
 {
-    public partial class MainForm : Form
+    public partial class CryptForm : Form
     {
-        public MainForm()
+        public CryptForm()
         {
             InitializeComponent();
         }

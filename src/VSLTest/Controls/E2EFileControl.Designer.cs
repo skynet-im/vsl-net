@@ -1,4 +1,4 @@
-﻿namespace CryptTest.Controls
+﻿namespace VSLTest.Controls
 {
     partial class E2EFileControl
     {
