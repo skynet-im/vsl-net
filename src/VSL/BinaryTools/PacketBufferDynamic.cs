@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace VSL.BinaryTools
 {
-    internal class PacketBufferDynamic : PacketBuffer
+    internal sealed class PacketBufferDynamic : PacketBuffer
     {
         private MemoryStream baseStream;
 
@@ -53,7 +51,7 @@ namespace VSL.BinaryTools
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
-        protected override void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -64,6 +62,16 @@ namespace VSL.BinaryTools
 
                 disposedValue = true;
             }
+        }
+
+        // ~PacketBufferDynamic() {
+        //   Dispose(false);
+        // }
+
+        public override void Dispose()
+        {
+            Dispose(true);
+            // GC.SuppressFinalize(this);
         }
         #endregion
     }

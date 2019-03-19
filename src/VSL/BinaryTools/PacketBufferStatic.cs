@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Text;
 
 namespace VSL.BinaryTools
 {
-    internal class PacketBufferStatic : PacketBuffer
+    internal sealed class PacketBufferStatic : PacketBuffer
     {
         private int position;
 
@@ -201,19 +199,29 @@ namespace VSL.BinaryTools
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
-        protected override void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
-
                 }
 
                 baseHandle.Free();
 
                 disposedValue = true;
             }
+        }
+
+        ~PacketBufferStatic()
+        {
+            Dispose(false);
+        }
+
+        public override void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
         #endregion
     }
