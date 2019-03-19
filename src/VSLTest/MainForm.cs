@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using VSL;
 using VSL.BinaryTools;
+using VSL.Common;
 using VSL.Crypt;
 using VSL.FileTransfer;
 
@@ -24,7 +25,7 @@ namespace VSLTest
             InitializeComponent();
             ToolTipMain.SetToolTip(LbFileKey, "Zum Generieren eines Schlüssels klicken.");
             Text = string.Format(Text, Assembly.GetAssembly(typeof(VSLSocket)).GetName().Version);
-            server = new Server(Program.Port, Program.Keypair);
+            server = new Server(Library.Port, Library.Keypair);
             pentest = new SendTest();
         }
 
@@ -66,11 +67,11 @@ namespace VSLTest
                 SocketSettings settings = new SocketSettings()
                 {
                     CatchApplicationExceptions = false,
-                    RsaXmlKey = Program.PublicKey
+                    RsaXmlKey = Library.PublicKey
                 };
                 new VSLClient(settings, this);
                 var progress = new Progress<VSLClient.ConnectionState>((state) => Console.WriteLine(state));
-                await vslClient.ConnectAsync("localhost", Program.Port, progress);
+                await vslClient.ConnectAsync("localhost", Library.Port, progress);
             }
             else
                 vslClient.CloseConnection("The user requested to disconnect", null);
@@ -125,7 +126,7 @@ namespace VSLTest
             if ((Button)sender == btnClientSendPacket)
                 vslClient.SendPacketAsync(1, b);
             else if ((Button)sender == btnServerSendPacket)
-                Program.Clients.ForEach(c => c.SendPacket(1, b));
+                Library.Clients.ForEach(c => c.SendPacket(1, b));
         }
 
         public Task OnPacketReceived(byte id, byte[] content)
@@ -252,7 +253,7 @@ namespace VSLTest
         private int maxCount = 0;
         private void LbServerUpdateTimer_Tick(object sender, EventArgs e)
         {
-            int current = Program.Clients.Count;
+            int current = Library.Clients.Count;
             if (current > maxCount)
                 maxCount = current;
             LbServer.Text = string.Format("{0} / {1} Clients\r\nConnects: {2} <> {3}", current, maxCount, Program.Connects, Program.Disconnects);

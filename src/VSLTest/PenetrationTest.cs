@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using VSL;
+using VSL.Common;
 
 namespace VSLTest
 {
@@ -59,7 +60,7 @@ namespace VSLTest
                     try
                     {
                         TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
-                        tcp.Connect(address, Program.Port);
+                        tcp.Connect(address, Library.Port);
                         Random rand = new Random();
                         byte[] buf = new byte[rand.Next(2048)];
                         rand.NextBytes(buf);
@@ -89,7 +90,7 @@ namespace VSLTest
                     try
                     {
                         TcpClient tcp = new TcpClient(AddressFamily.InterNetworkV6);
-                        tcp.Connect(address, Program.Port);
+                        tcp.Connect(address, Library.Port);
                         Random rand = new Random();
                         byte[] buf = new byte[rand.Next(4, 2048)];
                         rand.NextBytes(buf);
@@ -119,11 +120,11 @@ namespace VSLTest
                 SocketSettings settings = new SocketSettings
                 {
                     CatchApplicationExceptions = false,
-                    RsaXmlKey = Program.PublicKey
+                    RsaXmlKey = Library.PublicKey
                 };
                 LocalClient local = new LocalClient();
                 VSLClient client = new VSLClient(settings, local);
-                await client.ConnectAsync("::1", Program.Port);
+                await client.ConnectAsync("::1", Library.Port);
                 running = true;
                 stopwatch.Start();
                 async Task inner()

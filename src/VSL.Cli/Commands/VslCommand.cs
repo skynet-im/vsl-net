@@ -6,7 +6,8 @@ using System.Text;
 namespace VSL.Cli.Commands
 {
     [Command("vsl", Description = "VSL Debugging and Test console")]
-    [Subcommand(typeof(PentestCommand))]
+    [Subcommand(typeof(PentestCommand), typeof(ServeCommand))]
+    [HelpOption]
     internal class VslCommand
     {
         private int OnExecute(CommandLineApplication app)

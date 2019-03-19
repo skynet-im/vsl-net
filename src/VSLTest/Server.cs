@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using VSL;
+using VSL.Common;
 
 namespace VSLTest
 {
@@ -32,7 +33,7 @@ namespace VSLTest
             SocketSettings settings = new SocketSettings()
             {
                 CatchApplicationExceptions = false,
-                RsaXmlKey = Program.Keypair
+                RsaXmlKey = Library.Keypair
             };
 
             listener = new VSLListener(endPoints, settings, () =>
@@ -49,7 +50,7 @@ namespace VSLTest
         public void Stop()
         {
             Running = false;
-            Program.Clients.ForEach(c => c.CloseConnection("Stopping server"));
+            Library.Clients.ForEach(c => c.CloseConnection("Stopping server"));
             listener?.Stop();
         }
     }

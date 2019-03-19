@@ -13,7 +13,7 @@ namespace VSL.Cli
             if (Debugger.IsAttached)
             {
                 Console.Write("VSL is running in debug mode. Please enter your command: ");
-                args = Console.ReadLine().Split(' ');
+                args = Console.ReadLine().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 Console.WriteLine();
                 int result = await CommandLineApplication.ExecuteAsync<VslCommand>(args);
                 Console.WriteLine();
