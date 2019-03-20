@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using VSL.Crypt;
 using VSL.FileTransfer;
 using VSL.Network;
 
@@ -44,7 +43,7 @@ namespace VSL
         {
             this.callback = callback ?? throw new ArgumentNullException(nameof(callback));
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            settings.RsaKey.AssertValid();
+            settings.Validate();
             ThreadManager = new InvokationManager();
             ExceptionHandler = new ExceptionHandler(this);
             FileTransfer = new FTSocket(this);

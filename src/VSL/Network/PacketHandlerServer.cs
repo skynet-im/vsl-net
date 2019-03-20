@@ -55,8 +55,8 @@ namespace VSL.Network
         }
         internal override async Task<bool> HandleP01KeyExchange(P01KeyExchange p)
         {
-            ushort? vslVersion = VersionManager.GetSharedVSLVersion(p.LatestVSL, p.OldestVSL);
-            ushort? productVersion = VersionManager.GetSharedProductVersion(latestProduct, oldestProduct, p.LatestProduct, p.OldestProduct);
+            ushort? vslVersion = VersionManager.GetSharedVersion(parent.Settings.LatestVslVersion, parent.Settings.OldestVslVersion, p.LatestVSL, p.OldestVSL);
+            ushort? productVersion = VersionManager.GetSharedVersion(latestProduct, oldestProduct, p.LatestProduct, p.OldestProduct);
 
             if (!vslVersion.HasValue || !productVersion.HasValue)
                 return await parent.Manager.SendPacketAsync(CryptoAlgorithm.None, new P03FinishHandshake(ConnectionState.NotCompatible));

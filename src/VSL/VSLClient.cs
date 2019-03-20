@@ -68,7 +68,7 @@ namespace VSL
             Manager.GenerateKeys();
             await s;
             await Manager.SendPacketAsync(CryptoAlgorithm.RSA_2048_OAEP, new P01KeyExchange(Manager.AesKey, Manager.SendIV,
-                Manager.ReceiveIV, Constants.ProtocolVersion, Constants.CompatibilityVersion, Settings.LatestProductVersion, Settings.OldestProductVersion));
+                Manager.ReceiveIV, Settings.LatestVslVersion, Settings.OldestVslVersion, Settings.LatestProductVersion, Settings.OldestProductVersion));
 
             // wait for response
             progress?.Report(ConnectionState.KeyExchange);

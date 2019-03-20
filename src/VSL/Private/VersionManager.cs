@@ -39,31 +39,9 @@ namespace VSL
         }
 
         /// <summary>
-        /// Gets the latest VSL version that is supported by both parties. If no matching version could be found the value is null.
+        /// Gets the latest version that is supported by both parties. If no matching version could be found the value is null.
         /// </summary>
-        /// <param name="latestVSL"></param>
-        /// <param name="oldestVSL"></param>
-        /// <returns></returns>
-        internal static ushort? GetSharedVSLVersion(ushort latestVSL, ushort oldestVSL)
-        {
-            if (latestVSL == Constants.ProtocolVersion) // same version
-                return latestVSL;
-            if (latestVSL > Constants.ProtocolVersion && oldestVSL <= Constants.ProtocolVersion) // newer client
-                return Constants.ProtocolVersion;
-            if (latestVSL < Constants.ProtocolVersion && latestVSL >= Constants.CompatibilityVersion) // newer server
-                return latestVSL;
-            return null;
-        }
-
-        /// <summary>
-        /// Gets the latest product version that is supported by both parties. If no matching version could be found the value is null.
-        /// </summary>
-        /// <param name="latestServer"></param>
-        /// <param name="oldestServer"></param>
-        /// <param name="latestClient"></param>
-        /// <param name="oldestClient"></param>
-        /// <returns></returns>
-        internal static ushort? GetSharedProductVersion(ushort latestServer, ushort oldestServer, ushort latestClient, ushort oldestClient)
+        internal static ushort? GetSharedVersion(ushort latestServer, ushort oldestServer, ushort latestClient, ushort oldestClient)
         {
             if (latestClient == latestServer) // same version
                 return latestClient;
@@ -77,8 +55,6 @@ namespace VSL
         /// <summary>
         /// Returns the default <see cref="CryptoAlgorithm"/> used for packet encryption.
         /// </summary>
-        /// <param name="connectionVersion"></param>
-        /// <returns></returns>
         internal static CryptoAlgorithm GetNetworkAlgorithm(ushort? connectionVersion)
         {
             if (connectionVersion.HasValue && netAlgs.TryGetValue(connectionVersion.Value, out CryptoAlgorithm alg))

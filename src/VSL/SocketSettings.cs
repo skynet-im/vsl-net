@@ -32,6 +32,16 @@ namespace VSL
         public bool CatchApplicationExceptions { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the latest VSL version that will be accepted.
+        /// </summary>
+        public ushort LatestVslVersion { get; set; } = Constants.ProtocolVersion;
+
+        /// <summary>
+        /// Gets or sets the oldest VSL version that will be accepted.
+        /// </summary>
+        public ushort OldestVslVersion { get; set; } = Constants.CompatibilityVersion;
+
+        /// <summary>
         /// Gets or sets the latest compatible user product version.
         /// </summary>
         public ushort LatestProductVersion { get; set; } = 0;
@@ -50,5 +60,17 @@ namespace VSL
         /// Gets or sets the RSA Key in XML format for asymmetric key exchange.
         /// </summary>
         public string RsaXmlKey { get => RsaKey.ExportXmlKey(); set => RsaKey = new RSAParameters().ImportXmlKey(value); }
+
+        internal void Validate()
+        {
+            if (OldestVslVersion > LatestVslVersion)
+                throw new ArgumentException("VSL version mismatch");
+            if (OldestVslVersion < Constants.CompatibilityVersion ||
+                LatestVslVersion > Constants.ProtocolVersion)
+                throw new ArgumentException($"This VSL implementation supports only protocol versions from {Constants.CompatibilityVersion} to {Constants.ProtocolVersion}");
+            if (OldestProductVersion > LatestProductVersion)
+                throw new ArgumentException("Product version mismatch");
+            RsaKey.AssertValid();
+        }
     }
 }
