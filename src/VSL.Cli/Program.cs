@@ -15,13 +15,9 @@ namespace VSL.Cli
                 Console.Write("VSL is running in debug mode. Please enter your command: ");
                 args = Console.ReadLine().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 Console.WriteLine();
-                int result = await CommandLineApplication.ExecuteAsync<VslCommand>(args);
-                Console.WriteLine();
-                Console.WriteLine("Press any key to exit...");
-                Console.ReadKey(true);
-                return result;
             }
-            else return await CommandLineApplication.ExecuteAsync<VslCommand>(args);
+
+            return await CommandLineApplication.ExecuteAsync<VslCommand>(args);
         }
     }
 }

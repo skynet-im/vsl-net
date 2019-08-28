@@ -11,6 +11,9 @@ namespace VSL
     public abstract class PacketBuffer : IDisposable
     {
         // © 2017 - 2019 Daniel Lerch
+        /// <summary>
+        /// Encoding for string operations.
+        /// </summary>
         protected static readonly Encoding encoding = Encoding.UTF8;
 
         #region constructors

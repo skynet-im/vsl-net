@@ -8,8 +8,8 @@ namespace VSL
 {
     internal static class VersionManager
     {
-        private static Dictionary<ushort, string> versions;
-        private static Dictionary<ushort, CryptoAlgorithm> netAlgs;
+        private static readonly Dictionary<ushort, string> versions;
+        private static readonly Dictionary<ushort, CryptoAlgorithm> netAlgs;
         static VersionManager()
         {
             versions = new Dictionary<ushort, string>()

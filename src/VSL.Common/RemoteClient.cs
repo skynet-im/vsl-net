@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
 
@@ -6,10 +7,12 @@ namespace VSL.Common
 {
     public class RemoteClient : IVSLCallback
     {
+        private readonly ILogger<RemoteClient> logger;
         protected VSLServer vsl;
 
-        public RemoteClient()
+        public RemoteClient(ILogger<RemoteClient> logger)
         {
+            this.logger = logger;
             ImmutableInterlocked.Update(ref Library.Clients, list => list.Add(this));
         }
 
@@ -20,16 +23,19 @@ namespace VSL.Common
 
         public virtual Task OnConnectionEstablished()
         {
+            logger.LogDebug("Connection established");
             return Task.CompletedTask;
         }
 
         public virtual Task OnPacketReceived(byte id, byte[] content)
         {
+            logger.LogDebug("Packet with ID {0} received", id);
             return Task.CompletedTask;
         }
 
         public virtual void OnConnectionClosed(ConnectionCloseReason reason, string message, Exception exception)
         {
+            logger.LogDebug("Connection closed: {0}", message);
             vsl.Dispose();
             ImmutableInterlocked.Update(ref Library.Clients, list => list.Remove(this));
         }
