@@ -1,11 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Security;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace VSL.Crypt.Streams
 {
-    [SecuritySafeCritical]
     internal class ShaStream : HashStream
     {
         private readonly CryptoStream shaStream;
@@ -39,6 +39,18 @@ namespace VSL.Crypt.Streams
             return done;
         }
 
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (mode != CryptoStreamMode.Read)
+                throw new InvalidOperationException("You cannot read from a stream in write mode.");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+
+            int done = await shaStream.ReadAsync(buffer, offset, count).ConfigureAwait(false);
+            _position += done;
+            return done;
+        }
+
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (mode != CryptoStreamMode.Write)
@@ -49,6 +61,19 @@ namespace VSL.Crypt.Streams
                 throw new ArgumentNullException(nameof(buffer));
 
             shaStream.Write(buffer, offset, count);
+            _position += count;
+        }
+
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (mode != CryptoStreamMode.Write)
+                throw new InvalidOperationException("You cannot write on a stream in read mode.");
+            if (HasFlushedFinalBlock)
+                throw new InvalidOperationException("You cannot write on the stream when the final block was already flushed.");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+
+            await shaStream.WriteAsync(buffer, offset, count).ConfigureAwait(false);
             _position += count;
         }
 

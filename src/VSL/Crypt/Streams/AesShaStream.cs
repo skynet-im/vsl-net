@@ -1,11 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Security;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace VSL.Crypt.Streams
 {
-    [SecuritySafeCritical]
     internal class AesShaStream : HashStream
     {
         private CryptoStream topStream;
@@ -55,9 +55,9 @@ namespace VSL.Crypt.Streams
                 throw new ArgumentNullException(nameof(buffer));
             int done = 0;
 
-            if (operation == CryptographicOperation.Encrypt)
+            if (first)
             {
-                if (first)
+                if (operation == CryptographicOperation.Encrypt)
                 {
                     Array.Copy(iv, 0, buffer, offset, 16); // copy iv to encrypted output
                     done += 16; // the method returns the iv so it has to be counted
@@ -69,10 +69,7 @@ namespace VSL.Crypt.Streams
                     topStream = aesStream; // Following operations will be done on this stream.
                     first = false;
                 }
-            }
-            else // CryptographicOperation.Decrypt
-            {
-                if (first)
+                else // CryptographicOperation.Decrypt
                 {
                     iv = new byte[16];
                     if (stream.Read(iv, 0, 16) < 16) return -1; // read iv from stream
@@ -85,6 +82,47 @@ namespace VSL.Crypt.Streams
                 }
             }
             done += topStream.Read(buffer, offset, count);
+            _position += done;
+            return done;
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (mode != CryptoStreamMode.Read)
+                throw new InvalidOperationException("You cannot read from a stream in write mode.");
+            if (HasFlushedFinalBlock)
+                throw new InvalidOperationException("You cannot write on the stream when the final block was already flushed.");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            int done = 0;
+
+            if (first)
+            {
+                if (operation == CryptographicOperation.Encrypt)
+                {
+                    Array.Copy(iv, 0, buffer, offset, 16); // copy iv to encrypted output
+                    done += 16; // the method returns the iv so it has to be counted
+                    offset += 16;
+                    count -= 16;
+                    transform = csp.CreateEncryptor(key, iv);
+                    shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Read); // compute SHA256 of plain data
+                    aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Read); // encrypt after computing hash
+                    topStream = aesStream; // Following operations will be done on this stream.
+                    first = false;
+                }
+                else // CryptographicOperation.Decrypt
+                {
+                    iv = new byte[16];
+                    if (await stream.ReadAsync(iv, 0, 16).ConfigureAwait(false) < 16) return -1; // read iv from stream
+                    // The method does not return an iv and its length is ignored.
+                    transform = csp.CreateDecryptor(key, iv);
+                    aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Read); // first decrypt data
+                    shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Read); // then compute hash of the plain data
+                    topStream = shaStream; // Following operations will be done on this stream.
+                    first = false;
+                }
+            }
+            done += await topStream.ReadAsync(buffer, offset, count).ConfigureAwait(false);
             _position += done;
             return done;
         }
@@ -105,9 +143,9 @@ namespace VSL.Crypt.Streams
                 throw new ArgumentNullException(nameof(buffer));
             int done = 0;
 
-            if (operation == CryptographicOperation.Encrypt)
+            if (first)
             {
-                if (first)
+                if (operation == CryptographicOperation.Encrypt)
                 {
                     stream.Write(iv, 0, 16); // write pre-generated iv on stream
                     // no iv is provided directly -> ignore the count of the iv
@@ -117,10 +155,7 @@ namespace VSL.Crypt.Streams
                     topStream = shaStream; // Following operations will be done on this stream.
                     first = false;
                 }
-            }
-            else // CryptographicOperation.Decrypt
-            {
-                if (first)
+                else // CryptographicOperation.Decrypt
                 {
                     if (count < 16) throw new ArgumentOutOfRangeException("count", count, "The first block must be at least 16 bytes large.");
                     iv = new byte[16];
@@ -136,6 +171,47 @@ namespace VSL.Crypt.Streams
                 }
             }
             topStream.Write(buffer, offset, count);
+            _position += done + count;
+        }
+
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (mode != CryptoStreamMode.Write)
+                throw new InvalidOperationException("You cannot write on a stream in read mode.");
+            if (HasFlushedFinalBlock)
+                throw new InvalidOperationException("You cannot write on the stream when the final block was already flushed.");
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            int done = 0;
+
+            if (first)
+            {
+                if (operation == CryptographicOperation.Encrypt)
+                {
+                    await stream.WriteAsync(iv, 0, 16).ConfigureAwait(false); // write pre-generated iv on stream
+                    // no iv is provided directly -> ignore the count of the iv
+                    transform = csp.CreateEncryptor(key, iv);
+                    aesStream = new CryptoStream(stream, transform, CryptoStreamMode.Write); // write encrypted data on stream
+                    shaStream = new CryptoStream(aesStream, sha, CryptoStreamMode.Write); // compute hash before encrypting
+                    topStream = shaStream; // Following operations will be done on this stream.
+                    first = false;
+                }
+                else // CryptographicOperation.Decrypt
+                {
+                    if (count < 16) throw new ArgumentOutOfRangeException("count", count, "The first block must be at least 16 bytes large.");
+                    iv = new byte[16];
+                    Array.Copy(buffer, offset, iv, 0, 16); // read iv from buffer
+                    offset += 16;
+                    count -= 16;
+                    done += 16; // the iv is directly provided and will be counted
+                    transform = csp.CreateDecryptor(key, iv);
+                    shaStream = new CryptoStream(stream, sha, CryptoStreamMode.Write); // compute hash of plain data and write on stream
+                    aesStream = new CryptoStream(shaStream, transform, CryptoStreamMode.Write); // decrypt before computing hash
+                    topStream = aesStream; // Following operations will be done on this stream.
+                    first = false;
+                }
+            }
+            await topStream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             _position += done + count;
         }
 

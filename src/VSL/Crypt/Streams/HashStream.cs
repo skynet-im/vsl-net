@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace VSL.Crypt.Streams
 {
@@ -23,9 +25,9 @@ namespace VSL.Crypt.Streams
             this.mode = mode;
         }
 
-        public override bool CanRead => mode == CryptoStreamMode.Read;
-        public override bool CanSeek => false;
-        public override bool CanWrite => mode == CryptoStreamMode.Write;
+        public sealed override bool CanRead => mode == CryptoStreamMode.Read;
+        public sealed override bool CanSeek => false;
+        public sealed override bool CanWrite => mode == CryptoStreamMode.Write;
 
         public bool HasFlushedFinalBlock { get; protected set; }
         /// <summary>
@@ -35,16 +37,20 @@ namespace VSL.Crypt.Streams
         /// <summary>
         /// This property is not supported because a <see cref="CryptoStream"/> has no constant length.
         /// </summary>
-        public override long Length => throw new NotSupportedException();
+        public sealed override long Length => throw new NotSupportedException();
         /// <summary>
         /// Gets the current position in the top layer stream. The position in underlying streams are ignored.
         /// </summary>
-        public override long Position { get => _position; set => throw new NotSupportedException(); }
+        public sealed override long Position { get => _position; set => throw new NotSupportedException(); }
 
         /// <summary>
         /// This method does not do anything. If you have finished working on this stream call <see cref="FlushFinalBlock"/> and dispose the stream.
         /// </summary>
         public override void Flush() { }
+        /// <summary>
+        /// This method does not do anything. If you have finished working on this stream call <see cref="FlushFinalBlock"/> and dispose the stream.
+        /// </summary>
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         /// <summary>
         /// Updates the underlying data source or repository with the current state of the buffer, then clears the buffer.
         /// </summary>
@@ -57,11 +63,11 @@ namespace VSL.Crypt.Streams
         /// <param name="offset"></param>
         /// <param name="origin"></param>
         /// <returns></returns>
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public sealed override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         /// <summary>
         /// This function is not supported because a <see cref="HashStream"/> only operates on an underlying stream.
         /// </summary>
         /// <param name="value"></param>
-        public override void SetLength(long value) => throw new NotSupportedException();
+        public sealed override void SetLength(long value) => throw new NotSupportedException();
     }
 }
