@@ -9,7 +9,7 @@ namespace VSL.Crypt
     /// </summary>
     public static class AesStatic
     {
-        private static Aes aes;
+        private static readonly Aes aes;
 
         static AesStatic()
         {
@@ -182,12 +182,8 @@ namespace VSL.Crypt
         private static byte[] GenerateRandom(uint length)
         {
             byte[] random = new byte[length];
-#if WINDOWS_UWP
-            DataReader.FromBuffer(CryptographicBuffer.GenerateRandom(length)).ReadBytes(random);
-#else
-            using (RNGCryptoServiceProvider csp = new RNGCryptoServiceProvider())
+            using (RandomNumberGenerator csp = RandomNumberGenerator.Create())
                 csp.GetBytes(random);
-#endif
             return random;
         }
         #endregion

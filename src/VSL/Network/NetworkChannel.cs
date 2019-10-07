@@ -77,7 +77,7 @@ namespace VSL.Network
         /// Sends data to the remote host asynchronously.
         /// </summary>
         /// <exception cref="ObjectDisposedException" />
-        public Task<bool> SendAsync(byte[] buffer, int offset, int count)
+        public Task<bool> SendAsync(byte[] buffer, int offset, int count, bool background)
         {
             if (disposed)
                 throw new ObjectDisposedException(GetType().FullName);
@@ -85,24 +85,10 @@ namespace VSL.Network
                 return Task.FromResult(false);
 
             ReceiveSendItem item = new ReceiveSendItem(buffer, offset, count);
-            realtimeQueue.Enqueue(item);
-            EnsureSend();
-            return item.Task;
-        }
-
-        /// <summary>
-        /// Sends data to the remote host asynchronously without blocking the connection.
-        /// </summary>
-        /// <exception cref="ObjectDisposedException" />
-        public Task<bool> SendAsyncBackground(byte[] buffer, int offset, int count)
-        {
-            if (disposed)
-                throw new ObjectDisposedException(GetType().FullName);
-            if (shutdown)
-                return Task.FromResult(false);
-
-            ReceiveSendItem item = new ReceiveSendItem(buffer, offset, count);
-            backgroundQueue.Enqueue(item);
+            if (background)
+                backgroundQueue.Enqueue(item);
+            else
+                realtimeQueue.Enqueue(item);
             EnsureSend();
             return item.Task;
         }

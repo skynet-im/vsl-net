@@ -11,7 +11,7 @@ namespace VSL.FileTransfer
     /// </summary>
     public class FTSocket : IDisposable
     {
-        private VSLSocket parent;
+        private readonly VSLSocket parent;
         private FTEventArgs currentItem;
 
         internal FTSocket(VSLSocket parent)
@@ -217,7 +217,7 @@ namespace VSL.FileTransfer
                 return false;
             }
             var packet = new P09FileDataBlock(pos, new ArraySegment<byte>(buffer, 0, count));
-            if (!await parent.Manager.SendPacketAsyncBackground(packet)) return false;
+            if (!await parent.Manager.SendPacketAsync(packet, background: true)) return false;
             currentItem.OnProgress();
             if (count < buffer.Length)
                 return currentItem.Finish(success: true);
@@ -236,7 +236,7 @@ namespace VSL.FileTransfer
                     position = (ulong)currentItem.Stream.Position;
                     count = await currentItem.Stream.ReadAsync(buffer, 0, buffer.Length);
                     var packet = new P09FileDataBlock(position, new ArraySegment<byte>(buffer, 0, count));
-                    if (!await parent.Manager.SendPacketAsyncBackground(packet)) return;
+                    if (!await parent.Manager.SendPacketAsync(packet, background: true)) return;
                     currentItem.OnProgress();
                 } while (count == buffer.Length);
                 currentItem.Finish(success: true);

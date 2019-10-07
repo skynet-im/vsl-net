@@ -8,12 +8,12 @@ namespace VSL.Crypt.Streams
     [SecuritySafeCritical]
     internal class ShaStream : HashStream
     {
-        private CryptoStream shaStream;
-        private SHA256CryptoServiceProvider sha;
+        private readonly CryptoStream shaStream;
+        private readonly SHA256 sha;
 
         internal ShaStream(Stream stream, CryptoStreamMode mode) : base(stream, mode)
         {
-            sha = new SHA256CryptoServiceProvider();
+            sha = SHA256.Create();
             shaStream = new CryptoStream(stream, sha, mode);
         }
 
